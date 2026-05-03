@@ -2,179 +2,166 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Academy Library</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Learning Game Galaxy</title>
+    <!-- Friendly Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --comic-yellow: #FFDE00;
-            --comic-blue: #2E97FF;
-            --comic-red: #FF4B2B;
-            --border-width: 3px;
-            --shadow: 6px 6px 0px #000;
+            --soft-pink: #ffc2d1;
+            --soft-blue: #bde0fe;
+            --soft-purple: #e2afff;
+            --soft-yellow: #fff4ad;
+            --text-main: #5d5d5d;
+            --card-shadow: 0 8px 20px rgba(0,0,0,0.08);
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #f0f0f0;
-            background-image: radial-gradient(#ccc 10%, transparent 10%);
+            background-color: #fafafc;
+            background-image: radial-gradient(#e5e5f7 1px, transparent 1px);
             background-size: 20px 20px;
             margin: 0;
-            padding-top: 80px;
+            color: var(--text-main);
+            padding-top: 70px;
         }
 
-        /* NAVIGATION BAR */
+        /* NAVIGATION BAR - CUTESY STYLE */
         nav {
             position: fixed;
             top: 0; width: 100%;
-            background: white;
-            border-bottom: var(--border-width) solid black;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
             z-index: 1000;
             display: flex;
             justify-content: center;
-            padding: 10px 0;
-            flex-wrap: wrap;
+            padding: 12px 0;
+            border-bottom: 3px solid var(--soft-blue);
         }
 
         nav a {
             text-decoration: none;
-            color: black;
-            font-weight: 700;
-            text-transform: uppercase;
-            padding: 8px 15px;
-            margin: 0 5px;
-            border: 2px solid transparent;
-            border-radius: 8px;
+            color: var(--text-main);
+            font-weight: 600;
+            padding: 8px 18px;
+            margin: 0 4px;
+            border-radius: 50px;
             font-size: 0.9rem;
+            transition: 0.3s;
         }
 
         nav a.active {
-            background: var(--comic-yellow);
-            border-color: black;
-            box-shadow: 3px 3px 0px black;
+            background: var(--soft-pink);
+            color: white;
         }
 
-        /* PAGE TITLES */
-        .page-header {
-            text-align: center;
-            padding: 20px;
-        }
-
+        /* HEADER */
+        header { text-align: center; padding: 30px 10px; }
         h1 {
-            font-family: 'Bangers', cursive;
-            font-size: 4rem;
-            letter-spacing: 2px;
-            text-shadow: 4px 4px 0px var(--comic-blue);
+            font-family: 'Fredoka', sans-serif;
+            font-size: 3rem;
+            color: #ff85a1;
             margin: 0;
         }
 
-        /* GRID SYSTEM */
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        /* GRID */
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
         
         .section-title {
-            font-family: 'Bangers', cursive;
-            font-size: 2.5rem;
-            margin-top: 40px;
-            border-bottom: 4px solid black;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 1.8rem;
+            color: #72efdd;
+            margin-top: 30px;
+            border-bottom: 3px dashed #72efdd;
             display: inline-block;
         }
 
         .game-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
             margin-top: 20px;
         }
 
-        /* COMIC CARD STYLE */
+        /* GAME CARD - ROUNDED & SOFT */
         .game-card {
             background: white;
-            border: var(--border-width) solid black;
-            box-shadow: var(--shadow);
-            border-radius: 0px;
+            border-radius: 30px;
             overflow: hidden;
+            box-shadow: var(--card-shadow);
             display: flex;
             flex-direction: column;
             transition: transform 0.2s;
+            border: 4px solid white;
         }
 
-        .game-card:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0px black; }
+        .game-card:active { transform: scale(0.96); }
 
         .snapshot {
             width: 100%;
-            height: 180px;
+            height: 160px;
             background-size: cover;
-            background-position: top center;
-            border-bottom: var(--border-width) solid black;
+            background-position: center;
+            background-color: var(--soft-blue);
         }
 
-        .card-content { padding: 20px; flex-grow: 1; }
-
-        .card-title {
-            font-family: 'Bangers', cursive;
-            font-size: 1.8rem;
-            margin: 0 0 10px 0;
-            color: var(--comic-red);
-        }
-
-        .card-desc { font-size: 0.95rem; line-height: 1.4; color: #333; margin-bottom: 15px; }
-
-        .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; }
-        
-        .tag {
-            background: #eee;
-            border: 1px solid black;
-            padding: 2px 8px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            border-radius: 4px;
-        }
+        .card-content { padding: 20px; text-align: center; }
+        .card-title { font-family: 'Fredoka', sans-serif; font-size: 1.4rem; color: #ff85a1; margin: 0 0 8px 0; }
+        .card-desc { font-size: 0.85rem; color: #888; margin-bottom: 15px; }
 
         .play-btn {
-            display: block;
-            background: var(--comic-blue);
+            display: inline-block;
+            background: #72efdd;
             color: white;
-            text-align: center;
-            padding: 15px;
+            padding: 10px 25px;
+            border-radius: 50px;
             text-decoration: none;
             font-weight: 700;
-            border: 2px solid black;
-            box-shadow: 3px 3px 0px black;
-            font-size: 1.1rem;
+            font-size: 1rem;
             cursor: pointer;
+            box-shadow: 0 4px 10px rgba(114, 239, 221, 0.4);
         }
 
-        /* MODAL */
+        /* FULLSCREEN MODAL & HOVER CLOSE BUTTON */
         #modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
+            background: white;
             z-index: 2000;
         }
 
-        .modal-controls {
-            height: 60px;
+        /* The floating/hovering Close Button */
+        .close-hover-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 133, 161, 0.8);
+            color: white;
+            border: 3px solid white;
+            border-radius: 50%;
+            font-size: 24px;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            padding: 0 20px;
-            background: var(--comic-yellow);
-            border-bottom: 3px solid black;
-        }
-
-        .close-btn {
-            background: white;
-            border: 2px solid black;
-            padding: 5px 20px;
-            font-weight: bold;
+            justify-content: center;
             cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 2001;
         }
 
-        iframe { width: 100%; height: calc(100% - 63px); border: none; background: white; }
+        iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            background: white; 
+        }
 
         @media (max-width: 600px) {
-            h1 { font-size: 2.5rem; }
-            nav a { padding: 5px 8px; font-size: 0.7rem; }
+            h1 { font-size: 2.2rem; }
+            nav a { padding: 6px 12px; font-size: 0.75rem; }
         }
     </style>
 </head>
@@ -185,23 +172,21 @@
     <a href="#" onclick="showCategory('Literacy')">Literacy</a>
     <a href="#" onclick="showCategory('Numeracy')">Numeracy</a>
     <a href="#" onclick="showCategory('SEL')">SEL</a>
-    <a href="#" onclick="showCategory('Daily Living')">Daily Living</a>
+    <a href="#" onclick="showCategory('Daily Living')">Daily</a>
     <a href="#" onclick="showCategory('General')">General</a>
 </nav>
 
 <div class="container">
-    <div class="page-header">
-        <h1 id="page-title">Game Academy</h1>
-    </div>
-
+    <header>
+        <h1>Game Galaxy</h1>
+    </header>
     <div id="main-content"></div>
 </div>
 
 <div id="modal">
-    <div class="modal-controls">
-        <button class="close-btn" onclick="closeGame()">✖ CLOSE GAME</button>
-    </div>
-    <iframe id="game-frame" src=""></iframe>
+    <button class="close-hover-btn" onclick="closeGame()">✖</button>
+    <!-- Notice the 'allow' section below - this helps assets load -->
+    <iframe id="game-frame" src="" allow="autoplay; fullscreen; clipboard-read; clipboard-write; encrypted-media; picture-in-picture"></iframe>
 </div>
 
 <script>
@@ -220,19 +205,15 @@
                 <div class="card-content">
                     <h3 class="card-title">${game.title}</h3>
                     <p class="card-desc">${game.description}</p>
-                    <div class="tags">
-                        ${game.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
-                    </div>
+                    <a class="play-btn" onclick="playGame('${game.id}')">PLAY!</a>
                 </div>
-                <a class="play-btn" onclick="playGame('${game.id}')">PLAY NOW!</a>
             </div>
         `;
     }
 
     function showCategory(cat) {
-        // Update Nav UI
         document.querySelectorAll('nav a').forEach(a => {
-            a.classList.toggle('active', a.innerText === cat);
+            a.classList.toggle('active', a.innerText === cat || (cat === 'Home' && a.innerText === 'Home'));
         });
 
         const content = document.getElementById('main-content');
@@ -243,17 +224,16 @@
             const popularGames = allGames.filter(g => g.isPopular);
 
             content.innerHTML = `
-                <h2 class="section-title">NEW RELEASES</h2>
+                <h2 class="section-title">New Stars!</h2>
                 <div class="game-grid">${newGames.map(createCard).join('')}</div>
-                
-                <h2 class="section-title">FAN FAVORITES</h2>
+                <h2 class="section-title">Class Favorites</h2>
                 <div class="game-grid">${popularGames.map(createCard).join('')}</div>
             `;
         } else {
             const filtered = allGames.filter(g => g.category === cat);
             content.innerHTML = `
-                <h2 class="section-title">${cat.toUpperCase()}</h2>
-                <div class="game-grid">${filtered.length ? filtered.map(createCard).join('') : '<p>More games coming soon!</p>'}</div>
+                <h2 class="section-title">${cat}</h2>
+                <div class="game-grid">${filtered.length ? filtered.map(createCard).join('') : '<p>Coming soon!</p>'}</div>
             `;
         }
         window.scrollTo(0,0);
@@ -261,15 +241,16 @@
 
     function playGame(id) {
         const frame = document.getElementById('game-frame');
+        // We use /full/ to ensure it works for free accounts
         frame.src = `https://codepen.io/spedgames/full/${id}`;
         document.getElementById('modal').style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Stop scrolling
+        document.body.style.overflow = 'hidden';
     }
 
     function closeGame() {
         document.getElementById('modal').style.display = 'none';
         document.getElementById('game-frame').src = '';
-        document.body.style.overflow = 'auto'; // Re-enable scrolling
+        document.body.style.overflow = 'auto';
     }
 
     init();
