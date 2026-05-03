@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AHS Game Library</title>
+    <title>AHS Game Library 🎮</title>
     <!-- Professional, Clean Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -22,7 +22,7 @@
             background-color: var(--bg-main);
             margin: 0;
             color: var(--text-dark);
-            padding-top: 80px;
+            padding-top: 70px; /* Reduced from 80px */
             -webkit-font-smoothing: antialiased;
         }
 
@@ -35,7 +35,7 @@
             z-index: 1000;
             display: flex;
             justify-content: center;
-            padding: 15px 0;
+            padding: 12px 0; /* Tightened padding */
             border-bottom: 1px solid #e2e8f0;
         }
 
@@ -43,10 +43,10 @@
             text-decoration: none;
             color: var(--text-light);
             font-weight: 500;
-            padding: 8px 16px;
+            padding: 6px 14px;
             margin: 0 4px;
             border-radius: 8px;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             transition: all 0.2s ease;
         }
 
@@ -62,11 +62,11 @@
         
         .page-header {
             text-align: center;
-            padding: 40px 0 20px 0;
+            padding: 20px 0 10px 0; /* Drastically reduced vertical space */
         }
 
         .main-title {
-            font-size: 2.5rem;
+            font-size: 2.2rem; /* Slightly refined size */
             font-weight: 700;
             color: var(--text-dark);
             margin: 0;
@@ -74,8 +74,8 @@
         }
 
         .section-header {
-            margin-top: 40px;
-            padding-bottom: 10px;
+            margin-top: 30px; /* Reduced margin */
+            padding-bottom: 8px;
             border-bottom: 2px solid #e2e8f0;
             display: flex;
             align-items: center;
@@ -83,7 +83,7 @@
         }
 
         .section-title {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 700;
             color: var(--text-dark);
             margin: 0;
@@ -92,8 +92,8 @@
         .game-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 24px;
-            margin-top: 24px;
+            gap: 20px; /* Tighter gap */
+            margin-top: 20px;
         }
 
         /* PROFESSIONAL GAME CARD */
@@ -101,7 +101,7 @@
             background: var(--card-bg);
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
@@ -110,31 +110,31 @@
 
         .game-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.1);
         }
 
         .snapshot {
             width: 100%;
-            height: 180px;
+            height: 170px;
             background-size: cover;
             background-position: center;
             background-color: #cbd5e1;
         }
 
-        .card-content { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
+        .card-content { padding: 18px; flex-grow: 1; display: flex; flex-direction: column; }
         
         .card-title { 
-            font-size: 1.25rem; 
+            font-size: 1.2rem; 
             font-weight: 700; 
             color: var(--text-dark); 
-            margin: 0 0 8px 0; 
+            margin: 0 0 6px 0; 
         }
         
         .card-desc { 
-            font-size: 0.9rem; 
+            font-size: 0.85rem; 
             color: var(--text-light); 
-            line-height: 1.5;
-            margin-bottom: 20px; 
+            line-height: 1.4;
+            margin-bottom: 15px; 
             flex-grow: 1;
         }
 
@@ -142,12 +142,12 @@
             display: block;
             background: var(--primary);
             color: white;
-            padding: 12px;
+            padding: 10px;
             border-radius: 10px;
             text-decoration: none;
             font-weight: 600;
             text-align: center;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: background 0.2s;
         }
@@ -193,10 +193,11 @@
         }
 
         @media (max-width: 640px) {
-            nav { padding: 10px 0; }
-            nav a { padding: 6px 10px; font-size: 0.8rem; margin: 0 2px; }
-            .section-title { font-size: 1.25rem; }
-            .main-title { font-size: 1.8rem; }
+            nav { padding: 8px 0; }
+            nav a { padding: 5px 10px; font-size: 0.75rem; margin: 0 2px; }
+            .section-title { font-size: 1.15rem; }
+            .main-title { font-size: 1.7rem; }
+            .page-header { padding: 15px 0 5px 0; }
         }
     </style>
 </head>
@@ -213,7 +214,7 @@
 
 <div class="container">
     <div class="page-header">
-        <h1 class="main-title">AHS Game Library</h1>
+        <h1 class="main-title">AHS Game Library 🎮</h1>
     </div>
     <div id="main-content"></div>
 </div>
@@ -266,7 +267,7 @@
             content.innerHTML = `
                 <div class="section-header"><h2 class="section-title">New Releases</h2></div>
                 <div class="game-grid">${newGames.map(createCard).join('')}</div>
-                <div class="section-header" style="margin-top: 60px;"><h2 class="section-title">Most Popular</h2></div>
+                <div class="section-header" style="margin-top: 40px;"><h2 class="section-title">Most Popular</h2></div>
                 <div class="game-grid">${popularGames.map(createCard).join('')}</div>
             `;
         } else {
