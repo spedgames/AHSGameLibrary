@@ -1,37 +1,28 @@
 [
   {
-    "id": "YPpPEoa",
-    "title": "Toy Store",
-    "description": "Buy items from the toy store with Singapore money.",
-    "category": "Numeracy",
-    "tags": ["money", "purchasing"],
+    "id": "pvNJvpy",
+    "title": "Hazard Hunter",
+    "description": "Identify safe and dangerous items in the kitchen.",
+    "category": "Daily Living",
+    "tags": ["Safety", "Kitchen"],
     "isNew": true,
     "isPopular": false
   },
   {
-    "id": "PwbYObx",
-    "title": "Laundry Day",
-    "description": "Sort whites and coloured clothes.",
-    "category": "Daily Living",
-    "tags": ["self-care", "home living", "laundry""],
+    "id": "xbRbJYO",
+    "title": "Identify Emotions",
+    "description": "Look at the photos and choose the matching emotion.",
+    "category": "SEL",
+    "tags": ["Emotions", "Social"],
     "isNew": false,
     "isPopular": true
   },
   {
-    "id": "LEbPbYE",
-    "title": "Identify Emotions",
-    "description": "Tap on the correct emotions based on the image shown.",
-    "category": "SEL",
-    "tags": ["emotions", "feelings"],
-    "isNew": true,
-    "isPopular": true
-  },
-  {
-    "id": "ZYBzaGG",
+    "id": "dPOPEEY",
     "title": "The Hungry Observer",
-    "description": "Practice completing I eat... sentences.",
+    "description": "Type the sentence based on the food image shown.",
     "category": "Literacy",
-    "tags": ["predictable charts", "sentence building", "food"],
+    "tags": ["Typing", "Vocabulary"],
     "isNew": true,
     "isPopular": true
   }
