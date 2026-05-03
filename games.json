@@ -31,7 +31,7 @@
     "title": "EduGame Prompt Generator V4.0",
     "description": "Make your own game prompts.",
     "category": "General",
-    "tags": ["money", "tools"],
+    "tags": ["game making", "tools"],
     "isNew": true,
     "isPopular": false
   },
@@ -121,7 +121,7 @@
     "title": "Currency Combiner",
     "description": "Combine exact denominations.",
     "category": "Numeracy",
-    "tags": ["tools"],
+    "tags": ["money"],
     "isNew": true,
     "isPopular": true
   },
