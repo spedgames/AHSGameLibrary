@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Academy Library</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --comic-yellow: #FFDE00;
+            --comic-blue: #2E97FF;
+            --comic-red: #FF4B2B;
+            --border-width: 3px;
+            --shadow: 6px 6px 0px #000;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f0f0;
+            background-image: radial-gradient(#ccc 10%, transparent 10%);
+            background-size: 20px 20px;
+            margin: 0;
+            padding-top: 80px;
+        }
+
+        /* NAVIGATION BAR */
+        nav {
+            position: fixed;
+            top: 0; width: 100%;
+            background: white;
+            border-bottom: var(--border-width) solid black;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: black;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 8px 15px;
+            margin: 0 5px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        nav a.active {
+            background: var(--comic-yellow);
+            border-color: black;
+            box-shadow: 3px 3px 0px black;
+        }
+
+        /* PAGE TITLES */
+        .page-header {
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-family: 'Bangers', cursive;
+            font-size: 4rem;
+            letter-spacing: 2px;
+            text-shadow: 4px 4px 0px var(--comic-blue);
+            margin: 0;
+        }
+
+        /* GRID SYSTEM */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        .section-title {
+            font-family: 'Bangers', cursive;
+            font-size: 2.5rem;
+            margin-top: 40px;
+            border-bottom: 4px solid black;
+            display: inline-block;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        /* COMIC CARD STYLE */
+        .game-card {
+            background: white;
+            border: var(--border-width) solid black;
+            box-shadow: var(--shadow);
+            border-radius: 0px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s;
+        }
+
+        .game-card:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0px black; }
+
+        .snapshot {
+            width: 100%;
+            height: 180px;
+            background-size: cover;
+            background-position: top center;
+            border-bottom: var(--border-width) solid black;
+        }
+
+        .card-content { padding: 20px; flex-grow: 1; }
+
+        .card-title {
+            font-family: 'Bangers', cursive;
+            font-size: 1.8rem;
+            margin: 0 0 10px 0;
+            color: var(--comic-red);
+        }
+
+        .card-desc { font-size: 0.95rem; line-height: 1.4; color: #333; margin-bottom: 15px; }
+
+        .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; }
+        
+        .tag {
+            background: #eee;
+            border: 1px solid black;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        .play-btn {
+            display: block;
+            background: var(--comic-blue);
+            color: white;
+            text-align: center;
+            padding: 15px;
+            text-decoration: none;
+            font-weight: 700;
+            border: 2px solid black;
+            box-shadow: 3px 3px 0px black;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        /* MODAL */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+        }
+
+        .modal-controls {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            background: var(--comic-yellow);
+            border-bottom: 3px solid black;
+        }
+
+        .close-btn {
+            background: white;
+            border: 2px solid black;
+            padding: 5px 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        iframe { width: 100%; height: calc(100% - 63px); border: none; background: white; }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2.5rem; }
+            nav a { padding: 5px 8px; font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav id="navbar">
+    <a href="#" class="active" onclick="showCategory('Home')">Home</a>
+    <a href="#" onclick="showCategory('Literacy')">Literacy</a>
+    <a href="#" onclick="showCategory('Numeracy')">Numeracy</a>
+    <a href="#" onclick="showCategory('SEL')">SEL</a>
+    <a href="#" onclick="showCategory('Daily Living')">Daily Living</a>
+    <a href="#" onclick="showCategory('General')">General</a>
+</nav>
+
+<div class="container">
+    <div class="page-header">
+        <h1 id="page-title">Game Academy</h1>
+    </div>
+
+    <div id="main-content"></div>
+</div>
+
+<div id="modal">
+    <div class="modal-controls">
+        <button class="close-btn" onclick="closeGame()">✖ CLOSE GAME</button>
+    </div>
+    <iframe id="game-frame" src=""></iframe>
+</div>
+
+<script>
+    let allGames = [];
+
+    async function init() {
+        const response = await fetch('games.json');
+        allGames = await response.json();
+        showCategory('Home');
+    }
+
+    function createCard(game) {
+        return `
+            <div class="game-card">
+                <div class="snapshot" style="background-image: url('https://codepen.io/spedgames/pen/${game.id}/image/large.png')"></div>
+                <div class="card-content">
+                    <h3 class="card-title">${game.title}</h3>
+                    <p class="card-desc">${game.description}</p>
+                    <div class="tags">
+                        ${game.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    </div>
+                </div>
+                <a class="play-btn" onclick="playGame('${game.id}')">PLAY NOW!</a>
+            </div>
+        `;
+    }
+
+    function showCategory(cat) {
+        // Update Nav UI
+        document.querySelectorAll('nav a').forEach(a => {
+            a.classList.toggle('active', a.innerText === cat);
+        });
+
+        const content = document.getElementById('main-content');
+        content.innerHTML = '';
+
+        if (cat === 'Home') {
+            const newGames = allGames.filter(g => g.isNew);
+            const popularGames = allGames.filter(g => g.isPopular);
+
+            content.innerHTML = `
+                <h2 class="section-title">NEW RELEASES</h2>
+                <div class="game-grid">${newGames.map(createCard).join('')}</div>
+                
+                <h2 class="section-title">FAN FAVORITES</h2>
+                <div class="game-grid">${popularGames.map(createCard).join('')}</div>
+            `;
+        } else {
+            const filtered = allGames.filter(g => g.category === cat);
+            content.innerHTML = `
+                <h2 class="section-title">${cat.toUpperCase()}</h2>
+                <div class="game-grid">${filtered.length ? filtered.map(createCard).join('') : '<p>More games coming soon!</p>'}</div>
+            `;
+        }
+        window.scrollTo(0,0);
+    }
+
+    function playGame(id) {
+        const frame = document.getElementById('game-frame');
+        frame.src = `https://codepen.io/spedgames/full/${id}`;
+        document.getElementById('modal').style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Stop scrolling
+    }
+
+    function closeGame() {
+        document.getElementById('modal').style.display = 'none';
+        document.getElementById('game-frame').src = '';
+        document.body.style.overflow = 'auto'; // Re-enable scrolling
+    }
+
+    init();
+</script>
+</body>
+</html>
