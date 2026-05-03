@@ -239,7 +239,7 @@
     <div class="page-header">
         <h1 class="main-title">AHS Game Library 🎮</h1>
         <div class="search-container">
-            <input type="text" id="game-search" placeholder="Search for a game..." onkeyup="handleSearch()">
+            <input type="text" id="game-search" placeholder="Search by name, description, or tags..." onkeyup="handleSearch()">
         </div>
     </div>
     <div id="main-content"></div>
@@ -278,19 +278,22 @@
     }
 
     function handleSearch() {
-        const query = document.getElementById('game-search').value.toLowerCase();
+        const query = document.getElementById('game-search').value.toLowerCase().trim();
         const content = document.getElementById('main-content');
         
-        if (query.trim() === "") {
+        if (query === "") {
             showCategory(currentCategory);
             return;
         }
 
-        // Search through all games regardless of current category for better UX
-        const filtered = allGames.filter(g => 
-            g.title.toLowerCase().includes(query) || 
-            g.description.toLowerCase().includes(query)
-        );
+        const filtered = allGames.filter(g => {
+            const inTitle = g.title.toLowerCase().includes(query);
+            const inDesc = g.description.toLowerCase().includes(query);
+            // Look through tags array
+            const inTags = g.tags.some(tag => tag.toLowerCase().includes(query));
+            
+            return inTitle || inDesc || inTags;
+        });
 
         content.innerHTML = `
             <div class="section-header"><h2 class="section-title">Search Results</h2></div>
@@ -302,7 +305,6 @@
 
     function showCategory(cat) {
         currentCategory = cat;
-        // Reset search input when switching categories
         document.getElementById('game-search').value = "";
 
         document.querySelectorAll('nav a').forEach(a => {
