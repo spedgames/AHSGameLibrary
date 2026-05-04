@@ -15,7 +15,8 @@
             --text-light: #64748b;
             --nav-bg: rgba(255, 255, 255, 0.9);
             --placeholder-gray: #e2e8f0;
-            --error: #ef4444;
+            --warning-bg: #fff7ed;
+            --warning-text: #9a3412;
         }
 
         body {
@@ -88,26 +89,26 @@
         .card-title { font-size: 1.15rem; font-weight: 700; color: var(--text-dark); margin: 0 0 8px 0; }
         .card-desc { font-size: 0.85rem; color: var(--text-light); line-height: 1.5; margin-bottom: 16px; flex-grow: 1; }
 
-        .play-btn { background: var(--primary); color: white; padding: 10px; border-radius: 10px; font-weight: 600; text-align: center; font-size: 0.85rem; cursor: pointer; border: none; }
-        .play-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .play-btn { background: var(--primary); color: white; padding: 10px; border-radius: 10px; font-weight: 600; text-align: center; font-size: 0.85rem; cursor: pointer; border: none; transition: background 0.2s; }
+        .play-btn:hover { background: var(--primary-hover); }
 
         /* INFO MODAL VIEW */
         #detail-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 3000; overflow-y: auto; padding: 40px 20px; box-sizing: border-box; }
         .detail-container { position: relative; max-width: 900px; margin: 0 auto; background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
         
-        .close-detail-x { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; cursor: pointer; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 10; transition: transform 0.2s; }
+        .close-detail-x { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; cursor: pointer; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 10; }
         
         .detail-hero { width: 100%; height: 350px; background-size: cover; background-position: center; }
         .detail-body { padding: 40px; }
         .detail-grid { display: grid; grid-template-columns: 1fr 220px; gap: 40px; }
         
-        .compat-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; background: #f1f5f9; color: var(--text-light); font-size: 0.75rem; font-weight: 600; margin-right: 5px; text-transform: capitalize; }
-        .compat-warning { margin-top: 15px; padding: 12px; border-radius: 8px; background: #fee2e2; color: var(--error); font-size: 0.85rem; font-weight: 500; display: none; border-left: 4px solid var(--error); }
+        .compat-row { margin-bottom: 20px; padding: 12px; border-radius: 12px; background: #f8fafc; }
+        .compat-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; background: #e2e8f0; color: var(--text-dark); font-size: 0.7rem; font-weight: 600; margin-right: 5px; text-transform: uppercase; }
 
         .qr-section { text-align: center; border-left: 1px solid #e2e8f0; padding-left: 40px; }
         .qr-code { width: 160px; height: 160px; margin-bottom: 15px; border-radius: 12px; }
 
-        /* MODAL */
+        /* GAME MODAL */
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 4000; }
         .close-btn { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(30,41,59,0.8); color: white; border: none; border-radius: 50%; font-size: 20px; cursor: pointer; z-index: 4001; }
         iframe { width: 100%; height: 100%; border: none; }
@@ -156,14 +157,13 @@
                     <h2 id="detail-title" style="margin:0 0 10px 0; font-size:2.2rem;"></h2>
                     <div id="detail-creator" class="creator-info" style="margin-bottom:15px;"></div>
                     
-                    <div style="margin-bottom: 20px;">
-                        <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: var(--text-dark);">Device Compatibility</h4>
+                    <div class="compat-row">
+                        <p style="margin:0 0 8px 0; font-size:0.8rem; font-weight:600; color:var(--text-light);">Device Compatibility</p>
                         <div id="detail-compat"></div>
-                        <div id="compat-alert" class="compat-warning"></div>
                     </div>
 
                     <p id="detail-desc" style="line-height:1.7; color:var(--text-light);"></p>
-                    <button id="detail-play-btn" class="play-btn" style="padding:16px 40px; margin-top:20px;">Launch Game</button>
+                    <button id="detail-play-btn" class="play-btn" style="padding:16px 40px; margin-top:20px; font-size:1rem;">Launch Game</button>
                 </div>
                 <div class="qr-section">
                     <p style="font-weight:600; margin-bottom:12px; font-size:0.95rem;">Scan for Tablet</p>
@@ -187,16 +187,18 @@
     let currentView = 'grid';
     const nicePlaceholder = `<div class="creator-img-wrapper"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
 
+    // Robust device detection (fixing the iPad "Mac" mask issue)
     function getDeviceType() {
         const ua = navigator.userAgent;
-        if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return "tablet";
-        if (/Mobile|iP(hone|od)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune/.test(ua)) return "mobile";
+        if (/Mobile|iP(hone|od)|Android.*Mobi|BlackBerry|IEMobile/.test(ua)) return "mobile";
+        const isIPad = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
+        if (isIPad || /Android/i.test(ua) || /(tablet|playbook|silk)/i.test(ua)) return "tablet";
         return "desktop";
     }
 
     async function init() {
         try {
-            const response = await fetch('games.json');
+            const response = await fetch('games.json?v=' + Date.now());
             allGames = await response.json();
             renderContent();
         } catch (e) { console.error("Error loading JSON", e); }
@@ -209,10 +211,10 @@
             <div class="game-card">
                 <div class="snapshot" onclick="openDetails('${game.id}')" style="background-image: url('https://codepen.io/spedgames/pen/${game.id}/image/large.png')"></div>
                 <div class="card-content">
-                    <div class="creator-info">${nicePlaceholder}<span class="creator-name">${game.creatorName || 'Instructor'}</span></div>
+                    <div class="creator-info">${nicePlaceholder}<span class="creator-name">Created by ${game.creatorName || 'Instructor'}</span></div>
                     <h3 class="card-title">${game.title}</h3>
                     <p class="card-desc">${game.description}</p>
-                    <button class="play-btn" onclick="playGame('${game.id}')">Play Game</button>
+                    <button class="play-btn" onclick="validateAndPlay('${game.id}')">Play Game</button>
                 </div>
             </div>
         `;
@@ -235,6 +237,19 @@
         }
     }
 
+    function validateAndPlay(id) {
+        const game = allGames.find(g => g.id === id);
+        const device = getDeviceType();
+        const isCompatible = game.compatibility ? game.compatibility.includes(device) : true;
+
+        if (!isCompatible) {
+            const confirmPlay = confirm(`⚠️ Optimization Warning: This game is designed for ${game.compatibility.join(' or ')}. Your ${device} might experience issues. Play anyway?`);
+            if (confirmPlay) playGame(id);
+        } else {
+            playGame(id);
+        }
+    }
+
     function showCategory(cat) { 
         currentCategory = cat; 
         document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.innerText === cat));
@@ -252,8 +267,6 @@
     function openDetails(id) {
         const g = allGames.find(game => game.id === id);
         const url = `https://codepen.io/spedgames/full/${id}`;
-        const currentDevice = getDeviceType();
-        const isCompatible = g.compatibility ? g.compatibility.includes(currentDevice) : true;
 
         document.getElementById('detail-title').innerText = g.title;
         document.getElementById('detail-desc').innerText = g.description;
@@ -261,35 +274,30 @@
         document.getElementById('detail-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`;
         document.getElementById('detail-link').href = url;
         document.getElementById('detail-link').innerText = url;
-        document.getElementById('detail-creator').innerHTML = `${nicePlaceholder}<span class="creator-name">Created by: <b>${g.creatorName || 'Instructor'}</b></span>`;
+        document.getElementById('detail-creator').innerHTML = `${nicePlaceholder}<span class="creator-name">Created by <b>${g.creatorName || 'Instructor'}</b></span>`;
         
-        // Compatibility Logic
         const compatDiv = document.getElementById('detail-compat');
         compatDiv.innerHTML = g.compatibility ? g.compatibility.map(c => `<span class="compat-badge">${c}</span>`).join('') : '<span class="compat-badge">Universal</span>';
         
-        const alertBox = document.getElementById('compat-alert');
-        const playBtn = document.getElementById('detail-play-btn');
-        
-        if (!isCompatible) {
-            alertBox.style.display = 'block';
-            alertBox.innerText = `⚠️ This game is not compatible with your ${currentDevice}. It is designed for: ${g.compatibility.join(', ')}.`;
-            playBtn.disabled = true;
-            playBtn.innerText = "Incompatible Device";
-        } else {
-            alertBox.style.display = 'none';
-            playBtn.disabled = false;
-            playBtn.innerText = "Launch Game";
-            playBtn.onclick = () => playGame(id);
-        }
-
+        document.getElementById('detail-play-btn').onclick = () => validateAndPlay(id);
         document.getElementById('detail-view').style.display = 'block';
         document.body.style.overflow = 'hidden';
     }
 
     function closeDetails() { document.getElementById('detail-view').style.display = 'none'; document.body.style.overflow = 'auto'; }
     function handleBackdropClick(e) { if (e.target.id === 'detail-view') closeDetails(); }
-    function playGame(id) { document.getElementById('game-frame').src = `https://codepen.io/spedgames/full/${id}`; document.getElementById('modal').style.display = 'block'; document.body.style.overflow = 'hidden'; }
-    function closeGame() { document.getElementById('modal').style.display = 'none'; document.getElementById('game-frame').src = ''; if (document.getElementById('detail-view').style.display !== 'block') document.body.style.overflow = 'auto'; }
+    
+    function playGame(id) { 
+        document.getElementById('game-frame').src = `https://codepen.io/spedgames/full/${id}`; 
+        document.getElementById('modal').style.display = 'block'; 
+        document.body.style.overflow = 'hidden'; 
+    }
+    
+    function closeGame() { 
+        document.getElementById('modal').style.display = 'none'; 
+        document.getElementById('game-frame').src = ''; 
+        if (document.getElementById('detail-view').style.display !== 'block') document.body.style.overflow = 'auto'; 
+    }
 
     init();
 </script>
