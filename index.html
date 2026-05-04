@@ -14,6 +14,7 @@
             --text-dark: #1e293b;
             --text-light: #64748b;
             --nav-bg: rgba(255, 255, 255, 0.9);
+            --placeholder-gray: #e2e8f0;
         }
 
         body {
@@ -67,22 +68,15 @@
         .view-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
         /* DYNAMIC GRID SYSTEM */
-        .game-grid { 
-            display: grid; 
-            gap: 24px; 
-            margin-top: 20px; 
-            transition: all 0.3s ease;
-        }
-
-        /* GRID VIEW (Large Cards) */
+        .game-grid { display: grid; gap: 24px; margin-top: 20px; transition: all 0.3s ease; }
         .view-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
 
-        /* COMPACT VIEW (Smaller Version of Grid) */
+        /* COMPACT VIEW */
         .view-compact { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
         .view-compact .snapshot { height: 120px; }
         .view-compact .card-title { font-size: 1rem; }
         .view-compact .card-desc { font-size: 0.75rem; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
-        .view-compact .creator-img { width: 22px; height: 22px; }
+        .view-compact .creator-img-wrapper { width: 22px; height: 22px; }
         .view-compact .creator-name { font-size: 0.7rem; }
 
         /* CARD BASE */
@@ -107,9 +101,17 @@
 
         .card-content { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; }
         .creator-info { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-        .creator-img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: #e2e8f0; }
-        .creator-name { font-size: 0.75rem; font-weight: 500; color: var(--text-light); }
         
+        /* NEW NICE PLACEHOLDER */
+        .creator-img-wrapper { 
+            width: 26px; height: 26px; border-radius: 50%; 
+            background: var(--placeholder-gray); 
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .creator-img-wrapper svg { width: 14px; height: 14px; fill: #94a3b8; }
+
+        .creator-name { font-size: 0.75rem; font-weight: 500; color: var(--text-light); }
         .card-title { font-size: 1.15rem; font-weight: 700; color: var(--text-dark); margin: 0 0 8px 0; line-height: 1.3; }
         .card-desc { font-size: 0.85rem; color: var(--text-light); line-height: 1.5; margin-bottom: 16px; flex-grow: 1; }
 
@@ -139,13 +141,9 @@
         .close-btn { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(30,41,59,0.8); color: white; border: none; border-radius: 50%; font-size: 20px; cursor: pointer; z-index: 4001; }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* RESPONSIVE FIXES */
         @media (max-width: 768px) {
             .detail-grid { grid-template-columns: 1fr; }
             .qr-section { border-left: none; padding-left: 0; border-top: 1px solid #e2e8f0; padding-top: 30px; }
-            .view-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-            .main-title { font-size: 1.8rem; }
-            nav a { padding: 6px 10px; font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -153,11 +151,11 @@
 
 <nav id="navbar">
     <a href="#" id="nav-Home" class="active" onclick="showCategory('Home')">Home</a>
-    <a href="#" id="nav-Literacy" onclick="showCategory('Literacy')">Literacy</a>
-    <a href="#" id="nav-Numeracy" onclick="showCategory('Numeracy')">Numeracy</a>
-    <a href="#" id="nav-SEL" onclick="showCategory('SEL')">SEL</a>
-    <a href="#" id="nav-DailyLiving" onclick="showCategory('Daily Living')">Daily Living</a>
-    <a href="#" id="nav-General" onclick="showCategory('General')">General</a>
+    <a href="#" onclick="showCategory('Literacy')">Literacy</a>
+    <a href="#" onclick="showCategory('Numeracy')">Numeracy</a>
+    <a href="#" onclick="showCategory('SEL')">SEL</a>
+    <a href="#" onclick="showCategory('Daily Living')">Daily Living</a>
+    <a href="#" onclick="showCategory('General')">General</a>
 </nav>
 
 <div class="container">
@@ -181,19 +179,19 @@
     <div class="detail-container">
         <div id="detail-img" class="detail-hero"></div>
         <div class="detail-body">
-            <button onclick="closeDetails()" style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:600; margin-bottom:20px; font-family:'Poppins';">← Back to Library</button>
+            <button onclick="closeDetails()" style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:600; margin-bottom:20px;">← Back to Library</button>
             <div class="detail-grid">
                 <div>
-                    <h2 id="detail-title" style="margin:0 0 10px 0; font-size:2.2rem; color:var(--text-dark);"></h2>
+                    <h2 id="detail-title" style="margin:0 0 10px 0; font-size:2.2rem;"></h2>
                     <div id="detail-creator" class="creator-info" style="margin-bottom:25px;"></div>
-                    <p id="detail-desc" style="line-height:1.7; color:var(--text-light); font-size:1rem;"></p>
-                    <button id="detail-play-btn" class="play-btn" style="padding:16px 40px; margin-top:20px; font-size:1rem;">Launch Fullscreen</button>
+                    <p id="detail-desc" style="line-height:1.7; color:var(--text-light);"></p>
+                    <button id="detail-play-btn" class="play-btn" style="padding:16px 40px; margin-top:20px;">Launch Game</button>
                 </div>
                 <div class="qr-section">
                     <p style="font-weight:600; margin-bottom:12px; font-size:0.95rem;">Scan for iPad / Tablet</p>
-                    <img id="detail-qr" src="" class="qr-code" alt="QR Code">
+                    <img id="detail-qr" src="" class="qr-code">
                     <br>
-                    <a id="detail-link" href="" target="_blank" style="color:var(--primary); font-size:0.8rem; text-decoration:none; word-break:break-all;"></a>
+                    <a id="detail-link" href="" target="_blank" style="color:var(--primary); font-size:0.8rem; word-break:break-all;"></a>
                 </div>
             </div>
         </div>
@@ -209,8 +207,9 @@
     let allGames = [];
     let currentCategory = 'Home';
     let currentView = 'grid';
-    // Standard professional placeholder for all creators
-    const placeholderCreatorImg = "https://ui-avatars.com/api/?background=cbd5e1&color=64748b&name=Instructor";
+
+    // Nice SVG User Icon Placeholder
+    const nicePlaceholder = `<div class="creator-img-wrapper"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
 
     async function init() {
         try {
@@ -236,7 +235,7 @@
                 </div>
                 <div class="card-content">
                     <div class="creator-info">
-                        <img src="${placeholderCreatorImg}" class="creator-img">
+                        ${nicePlaceholder}
                         <span class="creator-name">${game.creatorName || 'Instructor'}</span>
                     </div>
                     <h3 class="card-title">${game.title}</h3>
@@ -250,17 +249,11 @@
     function renderContent(filteredList = null) {
         const content = document.getElementById('main-content');
         const listToRender = filteredList || (currentCategory === 'Home' ? allGames : allGames.filter(g => g.category === currentCategory));
-        
-        content.innerHTML = `
-            <div class="game-grid view-${currentView}">
-                ${listToRender.map(createCard).join('')}
-            </div>
-        `;
+        content.innerHTML = `<div class="game-grid view-${currentView}">${listToRender.map(createCard).join('')}</div>`;
     }
 
     function showCategory(cat) {
         currentCategory = cat;
-        document.getElementById('game-search').value = "";
         document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.innerText === cat));
         renderContent();
         window.scrollTo({top: 0, behavior: 'smooth'});
@@ -269,19 +262,13 @@
     function handleSearch() {
         const q = document.getElementById('game-search').value.toLowerCase().trim();
         if (!q) { renderContent(); return; }
-        
-        const filtered = allGames.filter(g => 
-            g.title.toLowerCase().includes(q) || 
-            g.description.toLowerCase().includes(q) || 
-            (g.tags && g.tags.some(t => t.toLowerCase().includes(q)))
-        );
+        const filtered = allGames.filter(g => g.title.toLowerCase().includes(q) || g.description.toLowerCase().includes(q) || (g.tags && g.tags.some(t => t.toLowerCase().includes(q))));
         renderContent(filtered);
     }
 
     function openDetails(id) {
         const game = allGames.find(g => g.id === id);
         const url = `https://codepen.io/spedgames/full/${id}`;
-        
         document.getElementById('detail-title').innerText = game.title;
         document.getElementById('detail-desc').innerText = game.description;
         document.getElementById('detail-img').style.backgroundImage = `url('https://codepen.io/spedgames/pen/${id}/image/large.png')`;
@@ -289,34 +276,14 @@
         document.getElementById('detail-link').innerText = url;
         document.getElementById('detail-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`;
         document.getElementById('detail-play-btn').onclick = () => playGame(id);
-        
-        document.getElementById('detail-creator').innerHTML = `
-            <img src="${placeholderCreatorImg}" class="creator-img" style="width:32px; height:32px;">
-            <span class="creator-name" style="font-size:0.9rem;">Course Instructor: <b>${game.creatorName || 'Instructor'}</b></span>
-        `;
-        
+        document.getElementById('detail-creator').innerHTML = `${nicePlaceholder}<span class="creator-name">Instructor: <b>${game.creatorName || 'Instructor'}</b></span>`;
         document.getElementById('detail-view').style.display = 'block';
         document.body.style.overflow = 'hidden';
     }
 
-    function closeDetails() {
-        document.getElementById('detail-view').style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-
-    function playGame(id) {
-        document.getElementById('game-frame').src = `https://codepen.io/spedgames/full/${id}`;
-        document.getElementById('modal').style.display = 'block';
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeGame() {
-        document.getElementById('modal').style.display = 'none';
-        document.getElementById('game-frame').src = '';
-        if (document.getElementById('detail-view').style.display !== 'block') {
-            document.body.style.overflow = 'auto';
-        }
-    }
+    function closeDetails() { document.getElementById('detail-view').style.display = 'none'; document.body.style.overflow = 'auto'; }
+    function playGame(id) { document.getElementById('game-frame').src = `https://codepen.io/spedgames/full/${id}`; document.getElementById('modal').style.display = 'block'; document.body.style.overflow = 'hidden'; }
+    function closeGame() { document.getElementById('modal').style.display = 'none'; document.getElementById('game-frame').src = ''; if (document.getElementById('detail-view').style.display !== 'block') document.body.style.overflow = 'auto'; }
 
     init();
 </script>
