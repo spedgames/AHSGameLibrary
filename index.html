@@ -47,6 +47,7 @@
             border-radius: 8px;
             font-size: 0.9rem;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
         nav a.active { background: var(--primary); color: white; }
@@ -60,17 +61,31 @@
         .controls-row { display: flex; justify-content: center; align-items: center; gap: 12px; max-width: 700px; margin: 0 auto 20px auto; }
         .search-container { flex-grow: 1; position: relative; }
         #game-search { width: 100%; padding: 12px 20px; border-radius: 12px; border: 2px solid #e2e8f0; font-family: 'Poppins', sans-serif; font-size: 0.95rem; outline: none; box-sizing: border-box; }
+        
         .view-switcher { display: flex; background: #e2e8f0; padding: 4px; border-radius: 10px; gap: 2px; }
-        .view-btn { background: none; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--text-light); }
+        .view-btn { background: none; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text-light); transition: all 0.2s; }
         .view-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        .section-header { margin-top: 30px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
-        .section-title { font-size: 1.4rem; font-weight: 700; margin: 0; }
+        /* DYNAMIC GRID SYSTEM */
+        .game-grid { 
+            display: grid; 
+            gap: 24px; 
+            margin-top: 20px; 
+            transition: all 0.3s ease;
+        }
 
-        /* GRID & CARDS */
-        .game-grid { display: grid; gap: 20px; margin-top: 20px; }
-        .view-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
-        
+        /* GRID VIEW (Large Cards) */
+        .view-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+        /* COMPACT VIEW (Smaller Version of Grid) */
+        .view-compact { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .view-compact .snapshot { height: 120px; }
+        .view-compact .card-title { font-size: 1rem; }
+        .view-compact .card-desc { font-size: 0.75rem; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+        .view-compact .creator-img { width: 22px; height: 22px; }
+        .view-compact .creator-name { font-size: 0.7rem; }
+
+        /* CARD BASE */
         .game-card {
             background: var(--card-bg);
             border-radius: 16px;
@@ -78,72 +93,71 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             border: 1px solid #f1f5f9;
         }
-        .game-card:hover { transform: translateY(-3px); }
+        .game-card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.15); }
 
         .snapshot { 
-            width: 100%; height: 170px; 
+            width: 100%; height: 180px; 
             background-size: cover; background-position: center; 
             cursor: pointer; position: relative;
+            background-color: #cbd5e1;
         }
-        .snapshot::after {
-            content: "🔍 View Details";
-            position: absolute; bottom: 10px; right: 10px;
-            background: rgba(0,0,0,0.6); color: white;
-            font-size: 0.7rem; padding: 4px 8px; border-radius: 4px;
-            opacity: 0; transition: opacity 0.2s;
-        }
-        .snapshot:hover::after { opacity: 1; }
 
-        .card-content { padding: 18px; flex-grow: 1; display: flex; flex-direction: column; }
-        .creator-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .creator-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
-        .creator-name { font-size: 0.8rem; font-weight: 500; color: var(--text-light); }
-        .card-title { font-size: 1.1rem; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
-        .card-desc { font-size: 0.85rem; color: var(--text-light); line-height: 1.4; margin-bottom: 15px; flex-grow: 1; }
+        .card-content { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; }
+        .creator-info { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .creator-img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: #e2e8f0; }
+        .creator-name { font-size: 0.75rem; font-weight: 500; color: var(--text-light); }
+        
+        .card-title { font-size: 1.15rem; font-weight: 700; color: var(--text-dark); margin: 0 0 8px 0; line-height: 1.3; }
+        .card-desc { font-size: 0.85rem; color: var(--text-light); line-height: 1.5; margin-bottom: 16px; flex-grow: 1; }
 
         .play-btn {
             background: var(--primary); color: white; padding: 10px;
             border-radius: 10px; text-decoration: none; font-weight: 600;
-            text-align: center; font-size: 0.9rem; cursor: pointer; border: none;
+            text-align: center; font-size: 0.85rem; cursor: pointer; border: none;
+            transition: background 0.2s;
         }
+        .play-btn:hover { background: var(--primary-hover); }
 
-        /* DETAIL PAGE (Overlay) */
+        /* DETAIL VIEW */
         #detail-view {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-main); z-index: 3000; overflow-y: auto; padding: 40px 20px;
             box-sizing: border-box;
         }
-        .detail-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .detail-hero { width: 100%; height: 300px; background-size: cover; background-position: center; }
+        .detail-container { max-width: 900px; margin: 0 auto; background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .detail-hero { width: 100%; height: 350px; background-size: cover; background-position: center; }
         .detail-body { padding: 40px; }
-        .detail-grid { display: grid; grid-template-columns: 1fr 200px; gap: 40px; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 220px; gap: 40px; }
         .qr-section { text-align: center; border-left: 1px solid #e2e8f0; padding-left: 40px; }
-        .qr-code { width: 150px; height: 150px; margin-bottom: 10px; border: 1px solid #eee; padding: 5px; }
-        .direct-link { color: var(--primary); font-size: 0.85rem; word-break: break-all; }
+        .qr-code { width: 160px; height: 160px; margin-bottom: 15px; border: 1px solid #eee; padding: 8px; border-radius: 12px; }
 
         /* MODAL */
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 4000; }
-        .close-btn { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(30,41,59,0.7); color: white; border: none; border-radius: 50%; font-size: 20px; cursor: pointer; }
+        .close-btn { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(30,41,59,0.8); color: white; border: none; border-radius: 50%; font-size: 20px; cursor: pointer; z-index: 4001; }
         iframe { width: 100%; height: 100%; border: none; }
 
+        /* RESPONSIVE FIXES */
         @media (max-width: 768px) {
             .detail-grid { grid-template-columns: 1fr; }
-            .qr-section { border-left: none; padding-left: 0; border-top: 1px solid #e2e8f0; padding-top: 40px; }
+            .qr-section { border-left: none; padding-left: 0; border-top: 1px solid #e2e8f0; padding-top: 30px; }
+            .view-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+            .main-title { font-size: 1.8rem; }
+            nav a { padding: 6px 10px; font-size: 0.8rem; }
         }
     </style>
 </head>
 <body>
 
 <nav id="navbar">
-    <a href="#" class="active" onclick="showCategory('Home')">Home</a>
-    <a href="#" onclick="showCategory('Literacy')">Literacy</a>
-    <a href="#" onclick="showCategory('Numeracy')">Numeracy</a>
-    <a href="#" onclick="showCategory('SEL')">SEL</a>
-    <a href="#" onclick="showCategory('Daily Living')">Daily Living</a>
-    <a href="#" onclick="showCategory('General')">General</a>
+    <a href="#" id="nav-Home" class="active" onclick="showCategory('Home')">Home</a>
+    <a href="#" id="nav-Literacy" onclick="showCategory('Literacy')">Literacy</a>
+    <a href="#" id="nav-Numeracy" onclick="showCategory('Numeracy')">Numeracy</a>
+    <a href="#" id="nav-SEL" onclick="showCategory('SEL')">SEL</a>
+    <a href="#" id="nav-DailyLiving" onclick="showCategory('Daily Living')">Daily Living</a>
+    <a href="#" id="nav-General" onclick="showCategory('General')">General</a>
 </nav>
 
 <div class="container">
@@ -151,12 +165,11 @@
         <h1 class="main-title">AHS Game Library 🎮</h1>
         <div class="controls-row">
             <div class="search-container">
-                <input type="text" id="game-search" placeholder="Search..." onkeyup="handleSearch()">
+                <input type="text" id="game-search" placeholder="Search games or topics..." onkeyup="handleSearch()">
             </div>
             <div class="view-switcher">
-                <button class="view-btn active" id="btn-grid" onclick="setView('grid')">Grid</button>
-                <button class="view-btn" id="btn-compact" onclick="setView('compact')">Compact</button>
-                <button class="view-btn" id="btn-list" onclick="setView('list')">List</button>
+                <button class="view-btn active" id="btn-grid" onclick="updateView('grid')">Grid</button>
+                <button class="view-btn" id="btn-compact" onclick="updateView('compact')">Compact</button>
             </div>
         </div>
     </div>
@@ -168,19 +181,19 @@
     <div class="detail-container">
         <div id="detail-img" class="detail-hero"></div>
         <div class="detail-body">
-            <button onclick="closeDetails()" style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:600; margin-bottom:20px;">← Back to Library</button>
+            <button onclick="closeDetails()" style="background:none; border:none; color:var(--primary); cursor:pointer; font-weight:600; margin-bottom:20px; font-family:'Poppins';">← Back to Library</button>
             <div class="detail-grid">
                 <div>
-                    <h2 id="detail-title" style="margin:0 0 10px 0; font-size:2rem;"></h2>
-                    <div id="detail-creator" class="creator-info" style="margin-bottom:20px;"></div>
-                    <p id="detail-desc" style="line-height:1.6; color:var(--text-light);"></p>
-                    <button id="detail-play-btn" class="play-btn" style="padding:15px 30px; margin-top:20px;">Play Now</button>
+                    <h2 id="detail-title" style="margin:0 0 10px 0; font-size:2.2rem; color:var(--text-dark);"></h2>
+                    <div id="detail-creator" class="creator-info" style="margin-bottom:25px;"></div>
+                    <p id="detail-desc" style="line-height:1.7; color:var(--text-light); font-size:1rem;"></p>
+                    <button id="detail-play-btn" class="play-btn" style="padding:16px 40px; margin-top:20px; font-size:1rem;">Launch Fullscreen</button>
                 </div>
                 <div class="qr-section">
-                    <p style="font-weight:600; margin-bottom:10px; font-size:0.9rem;">Scan for Tablet/iPad</p>
+                    <p style="font-weight:600; margin-bottom:12px; font-size:0.95rem;">Scan for iPad / Tablet</p>
                     <img id="detail-qr" src="" class="qr-code" alt="QR Code">
                     <br>
-                    <a id="detail-link" href="" target="_blank" class="direct-link"></a>
+                    <a id="detail-link" href="" target="_blank" style="color:var(--primary); font-size:0.8rem; text-decoration:none; word-break:break-all;"></a>
                 </div>
             </div>
         </div>
@@ -196,20 +209,22 @@
     let allGames = [];
     let currentCategory = 'Home';
     let currentView = 'grid';
+    // Standard professional placeholder for all creators
+    const placeholderCreatorImg = "https://ui-avatars.com/api/?background=cbd5e1&color=64748b&name=Instructor";
 
     async function init() {
         try {
             const response = await fetch('games.json');
             allGames = await response.json();
-            showCategory('Home');
+            renderContent();
         } catch (e) { console.error("Error loading games.json", e); }
     }
 
-    function setView(viewType) {
+    function updateView(viewType) {
         currentView = viewType;
         document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`btn-${viewType}`).classList.add('active');
-        showCategory(currentCategory);
+        renderContent();
     }
 
     function createCard(game) {
@@ -221,15 +236,46 @@
                 </div>
                 <div class="card-content">
                     <div class="creator-info">
-                        <img src="${game.creatorImage || 'https://via.placeholder.com/40'}" class="creator-img">
+                        <img src="${placeholderCreatorImg}" class="creator-img">
                         <span class="creator-name">${game.creatorName || 'Instructor'}</span>
                     </div>
                     <h3 class="card-title">${game.title}</h3>
                     <p class="card-desc">${game.description}</p>
-                    <button class="play-btn" onclick="playGame('${game.id}')">Play</button>
+                    <button class="play-btn" onclick="playGame('${game.id}')">Play Game</button>
                 </div>
             </div>
         `;
+    }
+
+    function renderContent(filteredList = null) {
+        const content = document.getElementById('main-content');
+        const listToRender = filteredList || (currentCategory === 'Home' ? allGames : allGames.filter(g => g.category === currentCategory));
+        
+        content.innerHTML = `
+            <div class="game-grid view-${currentView}">
+                ${listToRender.map(createCard).join('')}
+            </div>
+        `;
+    }
+
+    function showCategory(cat) {
+        currentCategory = cat;
+        document.getElementById('game-search').value = "";
+        document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.innerText === cat));
+        renderContent();
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function handleSearch() {
+        const q = document.getElementById('game-search').value.toLowerCase().trim();
+        if (!q) { renderContent(); return; }
+        
+        const filtered = allGames.filter(g => 
+            g.title.toLowerCase().includes(q) || 
+            g.description.toLowerCase().includes(q) || 
+            (g.tags && g.tags.some(t => t.toLowerCase().includes(q)))
+        );
+        renderContent(filtered);
     }
 
     function openDetails(id) {
@@ -241,12 +287,12 @@
         document.getElementById('detail-img').style.backgroundImage = `url('https://codepen.io/spedgames/pen/${id}/image/large.png')`;
         document.getElementById('detail-link').href = url;
         document.getElementById('detail-link').innerText = url;
-        document.getElementById('detail-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
+        document.getElementById('detail-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`;
         document.getElementById('detail-play-btn').onclick = () => playGame(id);
         
         document.getElementById('detail-creator').innerHTML = `
-            <img src="${game.creatorImage || 'https://via.placeholder.com/40'}" class="creator-img">
-            <span class="creator-name">Created by ${game.creatorName || 'Instructor'}</span>
+            <img src="${placeholderCreatorImg}" class="creator-img" style="width:32px; height:32px;">
+            <span class="creator-name" style="font-size:0.9rem;">Course Instructor: <b>${game.creatorName || 'Instructor'}</b></span>
         `;
         
         document.getElementById('detail-view').style.display = 'block';
@@ -256,25 +302,6 @@
     function closeDetails() {
         document.getElementById('detail-view').style.display = 'none';
         document.body.style.overflow = 'auto';
-    }
-
-    function showCategory(cat) {
-        currentCategory = cat;
-        document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.innerText === cat));
-        const content = document.getElementById('main-content');
-        
-        const filtered = cat === 'Home' ? allGames : allGames.filter(g => g.category === cat);
-        content.innerHTML = `<div class="game-grid view-${currentView}">${filtered.map(createCard).join('')}</div>`;
-    }
-
-    function handleSearch() {
-        const q = document.getElementById('game-search').value.toLowerCase();
-        const filtered = allGames.filter(g => 
-            g.title.toLowerCase().includes(q) || 
-            g.description.toLowerCase().includes(q) || 
-            g.tags.some(t => t.toLowerCase().includes(q))
-        );
-        document.getElementById('main-content').innerHTML = `<div class="game-grid view-${currentView}">${filtered.map(createCard).join('')}</div>`;
     }
 
     function playGame(id) {
