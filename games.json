@@ -27,7 +27,7 @@
     "description": "Sequence the Days of the Week.",
     "creatorName": "Teacher Carmina",
     "category": "Numeracy",
-    "compatibility": ["desktop", "tablet", "mobile"],
+    "compatibility": ["desktop", "tablet"],
     "tags": ["week"],
     "isNew": true,
     "isPopular": false
@@ -49,7 +49,7 @@
     "description": "Guided counting activity to support one-to-one correspondence.",
     "creatorName": "Teacher Carmina",
     "category": "Numeracy",
-    "compatibility": ["desktop", "tablet", "mobile"],
+    "compatibility": ["tablet", "mobile"],
     "tags": ["numbers", "counting"],
     "isNew": true,
     "isPopular": false
@@ -71,7 +71,7 @@
     "description": "Get treasure and fight enemies with math!",
     "creatorName": "Teacher Carmina",
     "category": "Numeracy",
-    "compatibility": ["desktop", "tablet", "mobile"],
+    "compatibility": ["desktop", "tablet"],
     "tags": ["addition", "subtraction"],
     "isNew": false,
     "isPopular": true
@@ -93,7 +93,7 @@
     "description": "Complete I eat... sentences.",
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
-    "compatibility": ["desktop", "tablet", "mobile"],
+    "compatibility": ["desktop"],
     "tags": ["sentence construction", "predictable charts"],
     "isNew": true,
     "isPopular": false
