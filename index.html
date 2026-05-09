@@ -14,7 +14,7 @@
             --text-dark: #1e293b;
             --text-light: #64748b;
             --nav-bg: rgba(255, 255, 255, 0.95);
-            --placeholder-gray: #e2e8f0;
+            --accent-new: #10b981;
         }
 
         body {
@@ -22,21 +22,33 @@
             background-color: var(--bg-main);
             margin: 0;
             color: var(--text-dark);
-            padding-top: 70px;
+            padding-top: 130px; /* Adjusted for Header + Nav */
             -webkit-font-smoothing: antialiased;
         }
 
-        /* NAVIGATION - Swipeable on Mobile */
-        nav {
+        /* HEADER & NAVIGATION */
+        header {
             position: fixed;
             top: 0; width: 100%;
             background: var(--nav-bg);
             backdrop-filter: blur(10px);
             z-index: 1000;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .brand-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            padding: 15px 0 5px 0;
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        nav {
             display: flex;
             justify-content: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 10px 0 15px 0;
             overflow-x: auto;
             white-space: nowrap;
             scrollbar-width: none;
@@ -86,6 +98,7 @@
         .view-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
         .view-compact { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 
+        /* CARDS */
         .game-card { 
             background: var(--card-bg); 
             border-radius: 16px; 
@@ -95,8 +108,24 @@
             flex-direction: column; 
             border: 1px solid #f1f5f9; 
             transition: transform 0.2s;
+            position: relative;
         }
         .game-card:hover { transform: translateY(-3px); }
+
+        /* FEATURE NEW BADGE */
+        .badge-new {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: var(--accent-new);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            z-index: 5;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
 
         .snapshot { width: 100%; height: 180px; background-size: cover; background-position: center; cursor: pointer; }
         .card-content { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; }
@@ -127,7 +156,6 @@
         .detail-hero { width: 100%; height: 300px; background-size: cover; background-position: center; }
         .detail-body { padding: 30px; display: grid; grid-template-columns: 1fr 200px; gap: 30px; }
         
-        /* RESTORED COMPATIBILITY UI */
         .compat-section { margin-bottom: 20px; }
         .compat-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.05em; margin-bottom: 8px; display: block; }
         .compat-badge { display: inline-block; padding: 4px 12px; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: var(--primary); margin-right: 6px; margin-bottom: 6px; }
@@ -140,6 +168,8 @@
         iframe { width: 100%; height: 100%; border: none; }
 
         @media (max-width: 650px) {
+            body { padding-top: 110px; }
+            .brand-title { font-size: 1.1rem; padding: 10px 0 2px 0; }
             nav { justify-content: flex-start; padding-left: 10px; }
             .detail-body { grid-template-columns: 1fr; }
             .qr-area { border-left: none; padding-left: 0; border-top: 1px solid #f1f5f9; padding-top: 20px; }
@@ -148,19 +178,23 @@
             .view-compact .card-content { padding: 12px; justify-content: center; }
             .view-compact .card-desc, .view-compact .creator-info { display: none; }
             .view-compact .card-title { font-size: 0.95rem; margin-bottom: 6px; }
+            .badge-new { top: 8px; left: 8px; padding: 2px 6px; font-size: 0.6rem; }
         }
     </style>
 </head>
 <body>
 
-<nav id="navbar">
-    <a href="#" class="active" onclick="showCategory('Home')">Home</a>
-    <a href="#" onclick="showCategory('Literacy')">Literacy</a>
-    <a href="#" onclick="showCategory('Numeracy')">Numeracy</a>
-    <a href="#" onclick="showCategory('SEL')">SEL</a>
-    <a href="#" onclick="showCategory('Daily Living')">Daily Living</a>
-    <a href="#" onclick="showCategory('General')">General</a>
-</nav>
+<header>
+    <h1 class="brand-title">AHS Game Library 🎮</h1>
+    <nav id="navbar">
+        <a href="#" class="active" onclick="showCategory('Home')">Home</a>
+        <a href="#" onclick="showCategory('Literacy')">Literacy</a>
+        <a href="#" onclick="showCategory('Numeracy')">Numeracy</a>
+        <a href="#" onclick="showCategory('SEL')">SEL</a>
+        <a href="#" onclick="showCategory('Daily Living')">Daily Living</a>
+        <a href="#" onclick="showCategory('General')">General</a>
+    </nav>
+</header>
 
 <div class="container">
     <div class="controls-row">
@@ -175,7 +209,6 @@
     <div id="main-content"></div>
 </div>
 
-<!-- Info Modal with Restored Compatibility UI -->
 <div id="detail-view" onclick="handleBackdropClick(event)">
     <div class="detail-container">
         <button class="close-detail-x" onclick="closeDetails()">✕</button>
@@ -184,12 +217,10 @@
             <div>
                 <h2 id="detail-title" style="margin-top:0; margin-bottom:10px;"></h2>
                 <div id="detail-creator-row" class="creator-info" style="margin-bottom:20px;"></div>
-                
                 <div class="compat-section">
                     <span class="compat-label">Device Compatibility</span>
                     <div id="detail-compat"></div>
                 </div>
-
                 <p id="detail-desc" style="line-height:1.6; color:var(--text-light); margin-bottom: 25px;"></p>
                 <button id="detail-play-btn" class="play-btn" style="width: 100%; padding: 15px; font-size:1rem;">Play Game</button>
             </div>
@@ -234,8 +265,12 @@
     }
 
     function createCard(game) {
+        // Feature logic: Add "NEW" badge if isNew property is true
+        const newBadge = game.isNew ? `<div class="badge-new">NEW</div>` : '';
+        
         return `
             <div class="game-card">
+                ${newBadge}
                 <div class="snapshot" onclick="openDetails('${game.id}')" style="background-image: url('https://codepen.io/spedgames/pen/${game.id}/image/large.png')"></div>
                 <div class="card-content">
                     <div class="creator-info">${avatarSvg}<span class="creator-name">Created by ${game.creatorName || 'Instructor'}</span></div>
@@ -257,7 +292,6 @@
         const game = allGames.find(g => g.id === id);
         const device = getDeviceType();
         const isCompatible = game.compatibility ? game.compatibility.includes(device) : true;
-
         if (!isCompatible) {
             if (confirm(`This game is optimized for ${game.compatibility.join('/')}. Continue anyway?`)) playGame(id);
         } else {
@@ -269,6 +303,7 @@
         currentCategory = cat; 
         document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.innerText === cat));
         renderContent();
+        window.scrollTo(0,0);
     }
 
     function handleSearch() {
@@ -280,18 +315,14 @@
     function openDetails(id) {
         const g = allGames.find(game => game.id === id);
         const fullUrl = `https://codepen.io/spedgames/full/${id}`;
-        
         document.getElementById('detail-title').innerText = g.title;
         document.getElementById('detail-desc').innerText = g.description;
         document.getElementById('detail-img').style.backgroundImage = `url('https://codepen.io/spedgames/pen/${id}/image/large.png')`;
         document.getElementById('detail-creator-row').innerHTML = `${avatarSvg}<span class="creator-name">Created by <b>${g.creatorName || 'Instructor'}</b></span>`;
         document.getElementById('detail-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
         document.getElementById('detail-id-label').innerText = `ID: ${id}`;
-        
-        // Render Restored Badges
         const compDiv = document.getElementById('detail-compat');
         compDiv.innerHTML = g.compatibility ? g.compatibility.map(c => `<span class="compat-badge">${c}</span>`).join('') : '<span class="compat-badge">Universal</span>';
-
         document.getElementById('detail-play-btn').onclick = () => validateAndPlay(id);
         document.getElementById('detail-view').style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -299,13 +330,11 @@
 
     function closeDetails() { document.getElementById('detail-view').style.display = 'none'; document.body.style.overflow = 'auto'; }
     function handleBackdropClick(e) { if (e.target.id === 'detail-view') closeDetails(); }
-    
     function playGame(id) { 
         document.getElementById('game-frame').src = `https://codepen.io/spedgames/full/${id}`; 
         document.getElementById('modal').style.display = 'block'; 
         document.body.style.overflow = 'hidden';
     }
-    
     function closeGame() { 
         document.getElementById('modal').style.display = 'none'; 
         document.getElementById('game-frame').src = ''; 
