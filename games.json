@@ -552,5 +552,23 @@
       "sentence building"
     ],
     "isNew": true
+  },
+  {
+    "id": "NM001",
+    "title": "Pay the Price",
+    "url": "https://spedgames.github.io/TestGames/",
+    "thumbnail": "https://spedgames.github.io/TestGames/preview.png",
+    "description": "Look at the price and tap the notes and coins that add up to the amount.",
+    "creatorName": "Teacher Carmina",
+    "category": "Numeracy",
+    "compatibility": [
+      "desktop",
+      "tablet"
+    ],
+    "tags": [
+      "money",
+      "combine absolute denominations"
+    ],
+    "isNew": true
   }
 ]
