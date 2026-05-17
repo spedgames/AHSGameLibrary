@@ -276,6 +276,15 @@
 
     const avatarSvg = `<div class="creator-avatar"><svg width="12" height="12" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
 
+    // Helpers to resolve platforms dynamically
+    function getGameUrl(game) {
+        return game.url || `https://codepen.io/spedgames/full/${game.id}`;
+    }
+
+    function getGameThumbnail(game) {
+        return game.thumbnail || `https://codepen.io/spedgames/pen/${game.id}/image/large.png`;
+    }
+
     async function init() {
         try {
             const response = await fetch('games.json?v=' + Date.now());
@@ -314,7 +323,6 @@
             list = allGames.filter(g => g.isNew === true);
             header.style.display = 'block';
         } else {
-            // Filter by category AND sort "isNew" to the top
             list = allGames.filter(g => g.category === currentCategory)
                            .sort((a, b) => (b.isNew || false) - (a.isNew || false));
             header.style.display = 'none';
@@ -328,7 +336,7 @@
         return `
             <div class="game-card">
                 ${newBadge}
-                <div class="snapshot" onclick="openDetails('${game.id}')" style="background-image: url('https://codepen.io/spedgames/pen/${game.id}/image/large.png')"></div>
+                <div class="snapshot" onclick="openDetails('${game.id}')" style="background-image: url('${getGameThumbnail(game)}')"></div>
                 <div class="card-content">
                     <div class="creator-info">${avatarSvg}<span class="creator-name">Created by ${game.creatorName || 'Instructor'}</span></div>
                     <h3 class="card-title">${game.title}</h3>
@@ -367,10 +375,10 @@
 
     function openDetails(id) {
         const g = allGames.find(game => game.id === id);
-        const fullUrl = `https://codepen.io/spedgames/full/${id}`;
+        const fullUrl = getGameUrl(g);
         document.getElementById('detail-title').innerText = g.title;
         document.getElementById('detail-desc').innerText = g.description;
-        document.getElementById('detail-img').style.backgroundImage = `url('https://codepen.io/spedgames/pen/${id}/image/large.png')`;
+        document.getElementById('detail-img').style.backgroundImage = `url('${getGameThumbnail(g)}')`;
         document.getElementById('detail-creator-row').innerHTML = `${avatarSvg}<span class="creator-name">Created by <b>${g.creatorName || 'Instructor'}</b></span>`;
         document.getElementById('detail-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(fullUrl)}`;
         document.getElementById('detail-id-label').innerText = `ID: ${id}`;
@@ -383,11 +391,14 @@
 
     function closeDetails() { document.getElementById('detail-view').style.display = 'none'; document.body.style.overflow = 'auto'; }
     function handleBackdropClick(e) { if (e.target.id === 'detail-view') closeDetails(); }
+    
     function playGame(id) { 
-        document.getElementById('game-frame').src = `https://codepen.io/spedgames/full/${id}`; 
+        const game = allGames.find(g => g.id === id);
+        document.getElementById('game-frame').src = getGameUrl(game); 
         document.getElementById('modal').style.display = 'block'; 
         document.body.style.overflow = 'hidden';
     }
+    
     function closeGame() { 
         document.getElementById('modal').style.display = 'none'; 
         document.getElementById('game-frame').src = ''; 
