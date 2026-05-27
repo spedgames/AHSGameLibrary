@@ -161,7 +161,6 @@
             border: none; 
             cursor: pointer;
             font-family: 'Poppins', sans-serif;
-            width: 100%;
         }
 
         #detail-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 3000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
@@ -179,8 +178,7 @@
         .qr-code { width: 150px; height: 150px; border-radius: 10px; margin-bottom: 10px; }
 
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 4000; }
-        .close-btn { position: absolute; top: 15px; right: 15px; background: #1e293b; color: white; border-radius: 50%; width: 44px; height: 44px; border: none; cursor: pointer; z-index: 4001; font-weight: bold; display: flex; align-items: center; justify-content: center; }
-        .modal-audio-btn { position: absolute; top: 15px; right: 70px; background: #e2e8f0; border-radius: 50%; width: 44px; height: 44px; border: none; cursor: pointer; z-index: 4001; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+        .close-btn { position: absolute; top: 15px; right: 15px; background: #1e293b; color: white; border-radius: 50%; width: 44px; height: 44px; border: none; cursor: pointer; z-index: 4001; }
         iframe { width: 100%; height: 100%; border: none; }
 
         @media (max-width: 650px) {
@@ -255,7 +253,7 @@
                     <div id="detail-compat"></div>
                 </div>
                 <p id="detail-desc" style="line-height:1.6; color:var(--text-light); margin-bottom: 25px;"></p>
-                <button id="detail-play-btn" class="play-btn" style="padding: 15px; font-size:1rem;">Play Game</button>
+                <button id="detail-play-btn" class="play-btn" style="width: 100%; padding: 15px; font-size:1rem;">Play Game</button>
             </div>
             <div class="qr-area">
                 <p style="font-size: 0.8rem; font-weight: 600; margin-bottom: 10px;">Open on Tablet</p>
@@ -267,7 +265,6 @@
 </div>
 
 <div id="modal">
-    <button id="modal-audio-btn" class="modal-audio-btn" onclick="toggleModalAudio()" title="Toggle Audio Immediately">🔊</button>
     <button class="close-btn" onclick="closeGame()">✕</button>
     <iframe id="game-frame" src=""></iframe>
 </div>
@@ -276,10 +273,10 @@
     let allGames = [];
     let currentCategory = 'Home';
     let currentView = 'grid';
-    let isMutedGlobal = false; // Tracks global sound preference inside the overlay layout
 
     const avatarSvg = `<div class="creator-avatar"><svg width="12" height="12" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
 
+    // Helpers to resolve platforms dynamically (Now targets category subfolders)
     function getGameUrl(game) {
         return game.url || `./${game.category}/${game.id}/index.html`;
     }
@@ -288,6 +285,7 @@
         return game.thumbnail || `./${game.category}/${game.id}/preview.png`;
     }
 
+    // Helper to evaluate if a game is less than 30 days old
     function checkIsNew(uploadDateStr) {
         if (!uploadDateStr) return false;
         const uploadDate = new Date(uploadDateStr);
@@ -301,7 +299,10 @@
         try {
             const response = await fetch('games.json?v=' + Date.now());
             allGames = await response.json();
+            
+            // Sort games globally by upload date descending (Newest on top)
             allGames.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+            
             renderContent();
         } catch (e) { console.error("Could not load games.json"); }
     }
@@ -333,9 +334,11 @@
             list = filtered;
             header.style.display = 'none';
         } else if (currentCategory === 'Home') {
+            // Evaluates dynamically if it is less than 30 days old
             list = allGames.filter(g => checkIsNew(g.uploadDate));
             header.style.display = 'block';
         } else {
+            // Filters based on chosen category tab. Naturally inherits chronological sort order.
             list = allGames.filter(g => g.category === currentCategory);
             header.style.display = 'none';
         }
@@ -346,7 +349,6 @@
     function createCard(game) {
         const isNew = checkIsNew(game.uploadDate);
         const newBadge = isNew ? `<div class="badge-new">NEW</div>` : '';
-
         return `
             <div class="game-card">
                 ${newBadge}
@@ -359,33 +361,6 @@
                 </div>
             </div>
         `;
-    }
-
-    function toggleModalAudio() {
-        isMutedGlobal = !isMutedGlobal;
-        
-        // Change overlay text status immediately without reloading page
-        document.getElementById('modal-audio-btn').innerText = isMutedGlobal ? '🔇' : '🔊';
-        
-        try {
-            const iframe = document.getElementById('game-frame');
-            const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
-            
-            // 1. Target standard HTML5 Audio/Video tags instantly
-            const mediaElements = innerDoc.querySelectorAll('audio, video');
-            mediaElements.forEach(el => {
-                el.muted = isMutedGlobal;
-            });
-
-            // 2. Send background message signaling internal game hooks
-            iframe.contentWindow.postMessage({ 
-                type: 'toggleAudio', 
-                muted: isMutedGlobal,
-                audio: isMutedGlobal ? 'off' : 'on'
-            }, '*');
-        } catch (e) {
-            console.log("Cross-origin security bounds prevented directly muting frame elements.");
-        }
     }
 
     function updateView(v) {
@@ -417,6 +392,8 @@
     function openDetails(id) {
         const g = allGames.find(game => game.id === id);
         const fullUrl = getGameUrl(g);
+        
+        // Ensure the QR code generator gets an absolute URL, even if the game URL is relative
         const absoluteUrl = new URL(fullUrl, window.location.href).href;
         
         document.getElementById('detail-title').innerText = g.title;
@@ -425,10 +402,8 @@
         document.getElementById('detail-creator-row').innerHTML = `${avatarSvg}<span class="creator-name">Created by <b>${g.creatorName || 'Instructor'}</b></span>`;
         document.getElementById('detail-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(absoluteUrl)}`;
         document.getElementById('detail-id-label').innerText = `ID: ${id}`;
-        
         const compDiv = document.getElementById('detail-compat');
         compDiv.innerHTML = g.compatibility ? g.compatibility.map(c => `<span class="compat-badge">${c}</span>`).join('') : '<span class="compat-badge">Universal</span>';
-        
         document.getElementById('detail-play-btn').onclick = () => validateAndPlay(id);
         document.getElementById('detail-view').style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -439,16 +414,7 @@
     
     function playGame(id) { 
         const game = allGames.find(g => g.id === id);
-        const baseUrl = getGameUrl(game);
-        
-        // Reset overlay display text tracking
-        document.getElementById('modal-audio-btn').innerText = isMutedGlobal ? '🔇' : '🔊';
-        
-        // Pass baseline parameter setup safely on startup
-        const separator = baseUrl.includes('?') ? '&' : '?';
-        const initialAudioParam = `audio=${isMutedGlobal ? 'off' : 'on'}`;
-        
-        document.getElementById('game-frame').src = baseUrl + separator + initialAudioParam; 
+        document.getElementById('game-frame').src = getGameUrl(game); 
         document.getElementById('modal').style.display = 'block'; 
         document.body.style.overflow = 'hidden';
     }
