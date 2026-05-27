@@ -94,7 +94,7 @@
             margin-bottom: 20px;
         }
 
-        /* Scrollable content areas */
+        /* Scrollable Configuration Items */
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
@@ -102,7 +102,6 @@
             margin-bottom: 16px;
         }
 
-        /* Custom Scrollbars */
         .scrollable-content::-webkit-scrollbar, 
         .modal-body::-webkit-scrollbar {
             width: 6px;
@@ -113,7 +112,6 @@
             border-radius: 3px;
         }
 
-        /* Config Forms */
         .config-section {
             margin-bottom: 20px;
         }
@@ -136,14 +134,14 @@
             margin-bottom: 8px;
         }
 
-        /* Interactive Elements & Touch Targets */
+        /* Interactive Controls */
         button {
             font-family: 'Poppins', sans-serif;
             cursor: pointer;
             border: none;
             outline: none;
             transition: var(--transition);
-            min-height: 48px; /* Ensures friendly mobile hit targets */
+            min-height: 48px; /* Safe mobile target layout */
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -204,11 +202,7 @@
             transform: translateY(-1px);
         }
 
-        .btn-main:active {
-            transform: translateY(1px);
-        }
-
-        /* Game Interface Screen */
+        /* Main Game Elements */
         .game-header {
             display: flex;
             justify-content: space-between;
@@ -260,17 +254,19 @@
             justify-content: center;
             box-shadow: 0 8px 16px rgba(79, 70, 229, 0.15);
             transition: var(--transition);
-        }
-
-        .btn-replay-audio:hover {
-            transform: scale(1.05);
-            background: #e0e7ff;
+            position: relative;
         }
 
         .btn-replay-audio img {
             width: 56px;
             height: 56px;
             object-fit: contain;
+        }
+
+        /* Continuous pulse while the child needs to listen */
+        .btn-replay-audio.playing {
+            animation: pulse-ring 1.2s infinite;
+            border-color: var(--secondary);
         }
 
         .audio-label {
@@ -287,6 +283,7 @@
             gap: 14px;
             margin-top: auto;
             margin-bottom: 10px;
+            transition: var(--transition);
         }
 
         .btn-option {
@@ -299,12 +296,18 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
 
+        /* Visual styling locks when the answer matrix is frozen */
+        .options-grid.locked .btn-option {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none; /* Hard browser layer lock */
+        }
+
         .btn-option:hover {
             border-color: var(--primary);
             background: #fafafa;
         }
 
-        /* Dynamic Feedback Visual Styling states */
         .btn-option.correct {
             background: var(--success) !important;
             border-color: var(--success) !important;
@@ -319,7 +322,7 @@
             animation: shake 0.4s ease;
         }
 
-        /* Performance End Screen Summary view */
+        /* End Screen Components */
         .end-card {
             flex: 1;
             display: flex;
@@ -359,7 +362,7 @@
             transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Filter Management Modal Windows configuration */
+        /* Modal Overlays */
         .modal-overlay {
             position: absolute;
             top: 0;
@@ -436,7 +439,6 @@
             margin-bottom: 16px;
         }
 
-        /* Word Selection Custom Filter Pills */
         .word-pill {
             display: flex;
             align-items: center;
@@ -465,7 +467,7 @@
             width: 100%;
         }
 
-        /* UI Micro-Animations */
+        /* Micro Animation Timelines */
         @keyframes popSuccess {
             0% { transform: scale(1); }
             50% { transform: scale(1.04); }
@@ -483,7 +485,12 @@
             50% { transform: translateY(-8px); }
         }
 
-        /* Viewport adjustment safety locks for shorter mobile displays */
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+
         @media(max-height: 600px) {
             h1 { font-size: 1.4rem; margin-bottom: 2px; }
             p.subtitle { margin-bottom: 10px; font-size: 0.8rem; }
@@ -505,8 +512,7 @@
             <div class="scrollable-content">
                 <div class="config-section">
                     <div class="section-title">Select Level</div>
-                    <div id="categories-container">
-                        </div>
+                    <div id="categories-container"></div>
                 </div>
 
                 <div class="config-section">
@@ -533,13 +539,12 @@
 
             <div class="audio-container">
                 <button id="btn-audio" class="btn-replay-audio" aria-label="Listen to word">
-                    <img src="https://api.arasaac.org/api/pictograms/2381" alt="Sound Audio Player Element">
+                    <img src="https://api.arasaac.org/api/pictograms/2381" alt="Sound Icon">
                 </button>
                 <div class="audio-label">Listen</div>
             </div>
 
-            <div id="options-container" class="options-grid">
-                </div>
+            <div id="options-container" class="options-grid"></div>
         </div>
 
         <div id="end-screen" class="screen hidden">
@@ -548,7 +553,7 @@
                 <h1>Fantastic Effort!</h1>
                 <p id="end-message" style="color: var(--text-muted);">You've completed the assessment pool.</p>
                 
-                <div class="score-report" id="end-score-text">4 / 5</div>
+                <div class="score-report" id="end-score-text">0 / 0</div>
                 
                 <div class="percentage-bar">
                     <div id="end-percentage-fill" class="percentage-fill"></div>
@@ -566,8 +571,7 @@
                     <button id="btn-modal-all" class="btn-sub">Select All</button>
                     <button id="btn-modal-none" class="btn-sub">Clear All</button>
                 </div>
-                <div id="modal-words-grid" class="modal-body">
-                    </div>
+                <div id="modal-words-grid" class="modal-body"></div>
                 <button id="btn-close-modal" class="btn-main btn-close-modal">Save Configuration</button>
             </div>
         </div>
@@ -575,7 +579,7 @@
     </div>
 
     <script>
-        // --- COMPLETE SYSTEM DOLCH REFERENCE DATABASES ---
+        // --- COMPLETE INFRASTRUCTURE SIGHT WORDS REFERENCE DATABASES ---
         const DOLCH_DATASET = {
             "Pre-Kindergarten": [
                 "a", "and", "away", "big", "blue", "can", "come", "down", "find", "for", 
@@ -613,11 +617,11 @@
             ]
         };
 
-        // --- GLOBAL RUNTIME STATE ARCHITECTURE ---
+        // --- GLOBAL APPS ENGINE STATES TRACKING SYSTEMS ---
         let configState = {
             currentCategory: "Pre-Kindergarten",
-            targetPoolCount: "5", // Options matrix track limits: "5", "10", or "all"
-            wordFilters: {} // Tracks user explicit selection filter arrays dynamically
+            targetPoolCount: "5",
+            wordFilters: {}
         };
 
         let gameState = {
@@ -628,14 +632,16 @@
             lockInput: false
         };
 
-        // Initialize state filter sets baseline rules mapping
+        // SINGLE PERSISTENT RESIDENT MEDIA NODE TO ESCAPE IOS/ANDROID SANDBOX LOCKS
+        const gameAudio = new Audio();
+
         function initFilters() {
             for (const category in DOLCH_DATASET) {
                 configState.wordFilters[category] = new Set(DOLCH_DATASET[category]);
             }
         }
 
-        // --- CORE UI SELECTOR MAPS ---
+        // --- TARGET UI SELECTION LINKS MAPS ---
         const categoriesContainer = document.getElementById('categories-container');
         const countButtons = document.querySelectorAll('.count-grid .btn-radio');
         const btnStartGame = document.getElementById('btn-start-game');
@@ -661,13 +667,20 @@
         const btnModalAll = document.getElementById('btn-modal-all');
         const btnModalNone = document.getElementById('btn-modal-none');
 
-        // --- APP ENGINE INITIALIZATION ---
+        // --- LIFE-CYCLE INIT PIPELINES ---
         function initApp() {
             initFilters();
             buildCategoryControls();
             setupConfigListeners();
             setupGameEngineListeners();
             setupModalListeners();
+            
+            // Audio complete playback cycle hook: removes the lock state instantly
+            gameAudio.addEventListener('ended', () => {
+                gameState.lockInput = false;
+                optionsContainer.classList.remove('locked');
+                btnAudio.classList.remove('playing');
+            });
         }
 
         function buildCategoryControls() {
@@ -688,7 +701,6 @@
                 editBtn.className = 'btn-edit';
                 editBtn.innerHTML = '⚙️';
                 editBtn.type = "button";
-                editBtn.title = `Filter customized ${catName} entries`;
                 editBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     openFilterModal(catName);
@@ -700,7 +712,6 @@
             });
         }
 
-        // --- LEVEL SELECTION MANAGEMENT ENGINE ---
         function selectCategory(categoryName) {
             configState.currentCategory = categoryName;
             const rows = categoriesContainer.querySelectorAll('.category-row');
@@ -728,12 +739,13 @@
 
         function setupGameEngineListeners() {
             btnAudio.addEventListener('click', () => {
-                speakWord(gameState.correctAnswer);
+                // Manual replays are native user gestures, they bypass all sandbox block rules
+                playCurrentAudioTrack();
             });
             btnRestart.addEventListener('click', resetToHome);
         }
 
-        // --- FILTER CONFIGURATION MODAL DIALOG CONTROLLER ---
+        // --- FILTER MODAL WINDOW DISPATCH INTERFACES ---
         let modalActiveCategory = "";
         
         function openFilterModal(categoryName) {
@@ -780,7 +792,11 @@
             });
         }
 
-        // --- CORE GAME SESSION CONTROLLER ---
+        // --- CORE GAME SESSION MANAGEMENT ACTIONS ---
+        function getAudioUrl(word) {
+            return `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(word.toLowerCase())}`;
+        }
+
         function launchGameValidation() {
             const activePool = Array.from(configState.wordFilters[configState.currentCategory]);
             
@@ -789,21 +805,20 @@
                 return;
             }
 
-            // Shuffle active words pool using a deterministic sort seed
             let shuffledPool = [...activePool].sort(() => 0.5 - Math.random());
-            
             let gameLength = shuffledPool.length;
             if (configState.targetPoolCount !== 'all') {
-                const requestedCount = parseInt(configState.targetPoolCount, 10);
-                gameLength = Math.min(requestedCount, shuffledPool.length);
+                gameLength = Math.min(parseInt(configState.targetPoolCount, 10), shuffledPool.length);
             }
 
             gameState.targetWordsList = shuffledPool.slice(0, gameLength);
             gameState.currentIndex = 0;
             gameState.score = 0;
-            gameState.lockInput = false;
 
-            // Shift Screen Panel displays
+            // MOBILE RULE 1: Synchronously bind the first track inside this exact click event loop
+            gameAudio.src = getAudioUrl(gameState.targetWordsList[0]);
+            gameAudio.load();
+
             startScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
             
@@ -811,7 +826,10 @@
         }
 
         function loadQuestion() {
-            gameState.lockInput = false;
+            // Force strict answer locking status until the audio finishes playing completely
+            gameState.lockInput = true; 
+            optionsContainer.classList.add('locked');
+
             const totalQuestions = gameState.targetWordsList.length;
             
             questionCounter.textContent = `${gameState.currentIndex + 1} / ${totalQuestions}`;
@@ -822,15 +840,13 @@
 
             gameState.correctAnswer = gameState.targetWordsList[gameState.currentIndex];
 
-            // Build Options Target Matrix (1 Correct Answer, 3 Random Distractors to keep interface balanced)
+            // Build Options Array Matrix Setup
             const masterList = DOLCH_DATASET[configState.currentCategory];
             let distractors = masterList.filter(word => word !== gameState.correctAnswer);
             distractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
             
             let choices = [gameState.correctAnswer, ...distractors];
-            while(choices.length < 4) {
-                choices.push("SightWord");
-            }
+            while(choices.length < 4) { choices.push("SightWord"); }
             choices = choices.sort(() => 0.5 - Math.random());
 
             optionsContainer.innerHTML = '';
@@ -843,14 +859,26 @@
                 optionsContainer.appendChild(btn);
             });
 
-            // Trigger the clear audio pronunciation stream output automatically on load
-            setTimeout(() => {
-                speakWord(gameState.correctAnswer);
-            }, 400);
+            // Fire audio track playback
+            playCurrentAudioTrack();
+        }
+
+        function playCurrentAudioTrack() {
+            gameState.lockInput = true;
+            optionsContainer.classList.add('locked');
+            btnAudio.classList.add('playing');
+            
+            gameAudio.play().catch(error => {
+                console.warn("Mobile autoplay restriction catch activated:", error);
+                // Emergency fail-safe safety lock release if audio errors out
+                gameState.lockInput = false;
+                optionsContainer.classList.remove('locked');
+                btnAudio.classList.remove('playing');
+            });
         }
 
         function evaluateChoice(selectedButton, chosenWord) {
-            if (gameState.lockInput) return;
+            if (gameState.lockInput) return; // Block actions if inputs are frozen
             gameState.lockInput = true;
 
             const totalQuestions = gameState.targetWordsList.length;
@@ -868,14 +896,23 @@
                 });
             }
 
-            setTimeout(() => {
-                gameState.currentIndex++;
-                if (gameState.currentIndex < totalQuestions) {
+            gameState.currentIndex++;
+            
+            if (gameState.currentIndex < totalQuestions) {
+                // MOBILE RULE 2: Grab and configure the NEXT audio track right now, 
+                // while the browser session is still actively running under this option button's click event.
+                const nextWord = gameState.targetWordsList[gameState.currentIndex];
+                gameAudio.src = getAudioUrl(nextWord);
+                gameAudio.load();
+
+                setTimeout(() => {
                     loadQuestion();
-                } else {
+                }, 1400);
+            } else {
+                setTimeout(() => {
                     triggerEndAssessment();
-                }
-            }, 1400);
+                }, 1400);
+            }
         }
 
         function triggerEndAssessment() {
@@ -887,7 +924,6 @@
             endScoreText.textContent = `${gameState.score} / ${total}`;
             
             const finalPercentage = (gameState.score / total) * 100;
-            
             setTimeout(() => {
                 endPercentageFill.style.width = `${finalPercentage}%`;
             }, 150);
@@ -899,35 +935,6 @@
             startScreen.classList.remove('hidden');
         }
 
-        // --- OPTION 1: STANDARDIZED CLOUD AUDIO ENGINE ---
-        function speakWord(textToSpeak) {
-            // Encode the string safely for query execution
-            const encodedWord = encodeURIComponent(textToSpeak.toLowerCase());
-            
-            // Utilizing a reliable, highly human open-protocol Google Translation voice stream line
-            const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodedWord}`;
-            
-            const audio = new Audio(audioUrl);
-            
-            audio.play().catch(error => {
-                console.warn("Audio stream playback blocked or failed. Running backup engine line fallback.", error);
-                // Trigger native fallback gracefully if client is operating entirely offline
-                fallbackNativeSpeak(textToSpeak);
-            });
-        }
-
-        // Emergency Offline Local Voice Fallback Strategy Engine Block
-        function fallbackNativeSpeak(textToSpeak) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(textToSpeak);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.85;
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        // App Initialization Trigger
         window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
