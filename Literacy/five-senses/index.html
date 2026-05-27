@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Five Senses Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card: #ffffff;
+            --primary: #6366f1;
+            --accent: #10b981;
+            --warning: #fbbf24;
+            --text: #111827;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --radius: 20px;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            margin: 0; padding: 0; 
+            user-select: none;
+            -webkit-user-drag: none; /* Prevents native Safari dragging */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            touch-action: none; /* Disables all browser zooming/panning globally */
+        }
+
+        #app { width: 95%; max-width: 800px; position: relative; }
+
+        .card {
+            background: var(--card);
+            padding: 2.5rem;
+            border-radius: var(--radius);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 0.5rem; font-weight: 700; color: var(--primary); }
+        .desc { color: var(--text-light); margin-bottom: 2rem; }
+
+        .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-light); margin-bottom: 0.5rem; }
+
+        button {
+            background: white;
+            border: 2px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        button.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-play { background: var(--accent); color: white; border: none; width: 100%; font-size: 1.2rem; margin-top: 1rem; }
+
+        .hidden { display: none !important; }
+        
+        .progress-container { width: 100%; height: 6px; background: var(--border); border-radius: 3px; margin-bottom: 2rem; overflow: hidden; }
+        #progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+
+        .sentence { 
+            font-size: 2rem; 
+            font-weight: 600; 
+            margin: 1.5rem 0 3rem 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-end; 
+            flex-wrap: wrap; 
+            gap: 12px;
+        }
+
+        .prefix-container { display: flex; flex-direction: column; align-items: center; }
+        .action-icon { width: 70px; height: 70px; margin-bottom: 10px; display: block; pointer-events: none; }
+        
+        .drop-zone {
+            display: inline-block;
+            min-width: 160px;
+            height: 2.8rem;
+            border-bottom: 4px solid var(--primary);
+            color: var(--primary);
+            text-transform: lowercase;
+            transition: background 0.15s ease;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .drop-zone.active-target { background: rgba(99, 102, 241, 0.15); }
+        .drop-zone.hover { background: var(--warning); border-bottom-color: #d97706; }
+
+        .options-box { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
+        
+        .tile {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 16px;
+            width: 125px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            touch-action: none;
+            z-index: 10;
+        }
+
+        .tile img { width: 60px; height: 60px; pointer-events: none; }
+        .tile span { display: block; margin-top: 8px; font-weight: 600; font-size: 0.9rem; pointer-events: none; }
+
+        .word-bank { display: flex; gap: 8px; justify-content: center; margin-top: 2rem; flex-wrap: wrap; }
+        .bank-pill { background: #f8fafc; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border); color: var(--text-light); }
+
+        #ghost-input { position: absolute; top: -9999px; left: -9999px; opacity: 0; }
+        #feedback { margin-top: 1rem; height: 1.5rem; font-weight: 700; color: var(--accent); }
+
+        .dragging { 
+            position: fixed !important; 
+            z-index: 9999 !important; 
+            pointer-events: none !important; 
+            transform: scale(1.15); 
+            opacity: 0.9; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4); 
+            margin: 0 !important;
+            left: 0; top: 0;
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="app">
+    <div id="screen-start" class="card">
+        <h1>Five Senses</h1>
+        <p class="desc">Match body parts to senses</p>
+        
+        <span class="label">Representation</span>
+        <div class="btn-row">
+            <button id="btn-words" class="active" onclick="setRep('words')">Words</button>
+            <button id="btn-visuals" onclick="setRep('visuals')">Visuals</button>
+        </div>
+
+        <span class="label">Mode</span>
+        <div class="btn-row">
+            <button id="btn-tap" class="active" onclick="setMode('tap')">Tap</button>
+            <button id="btn-drag" onclick="setMode('drag')">Drag</button>
+            <button id="btn-type" onclick="setMode('type')">Type</button>
+        </div>
+
+        <button class="btn-play" onclick="initGame()">Play Game</button>
+    </div>
+
+    <div id="screen-game" class="card hidden">
+        <div class="progress-container"><div id="progress-fill"></div></div>
+        
+        <div class="sentence" onclick="focusInput()">
+            <div class="prefix-container">
+                <img id="prefix-icon" class="action-icon hidden" draggable="false" src="">
+                <span id="txt-prefix"></span>
+            </div>
+            <span id="txt-answer" class="drop-zone"></span>
+            <input type="text" id="ghost-input" spellcheck="false" autocomplete="off">
+        </div>
+
+        <div id="ui-interaction"></div>
+        <div id="feedback"></div>
+    </div>
+
+    <div id="screen-end" class="card hidden">
+        <div style="font-size: 3rem;">🌟</div>
+        <h1>Well Done!</h1>
+        <p class="desc">You know your body parts.</p>
+        <button class="btn-play" onclick="reset()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    const DATA = [
+        { q: "I see with my", a: "eyes", id: 2876, actionId: 2474 },
+        { q: "I hear with my", a: "ears", id: 2871, actionId: 2381 },
+        { q: "I smell with my", a: "nose", id: 2887, actionId: 2486 },
+        { q: "I taste with my", a: "tongue", id: 2944, actionId: 2702 },
+        { q: "I touch with my", a: "hands", id: 9830, actionId: 3293 }
+    ];
+
+    let state = { rep: 'words', mode: 'tap', index: 0, deck: [] };
+    let activeClone = null;
+
+    function preCacheImages() {
+        const allIds = [...DATA.map(d => d.id), ...DATA.map(d => d.actionId)];
+        allIds.forEach(id => { const img = new Image(); img.src = `https://api.arasaac.org/api/pictograms/${id}`; });
+    }
+    preCacheImages();
+
+    function setRep(v) {
+        state.rep = v;
+        document.getElementById('btn-words').classList.toggle('active', v === 'words');
+        document.getElementById('btn-visuals').classList.toggle('active', v === 'visuals');
+        const typeBtn = document.getElementById('btn-type');
+        if (v === 'visuals') {
+            typeBtn.style.opacity = 0.3; typeBtn.style.pointerEvents = 'none';
+            if(state.mode === 'type') setMode('tap');
+        } else {
+            typeBtn.style.opacity = 1; typeBtn.style.pointerEvents = 'auto';
+        }
+    }
+
+    function setMode(v) {
+        state.mode = v;
+        ['tap','drag','type'].forEach(m => document.getElementById('btn-'+m).classList.toggle('active', v === m));
+    }
+
+    function initGame() {
+        state.deck = [...DATA].sort(() => Math.random() - 0.5);
+        state.index = 0;
+        document.getElementById('screen-start').classList.add('hidden');
+        document.getElementById('screen-game').classList.remove('hidden');
+        renderStep();
+    }
+
+    function renderStep() {
+        const item = state.deck[state.index];
+        const ui = document.getElementById('ui-interaction');
+        const ansDisplay = document.getElementById('txt-answer');
+        const prefixIcon = document.getElementById('prefix-icon');
+        const ghost = document.getElementById('ghost-input');
+        
+        document.getElementById('txt-prefix').textContent = item.q;
+        document.getElementById('progress-fill').style.width = (state.index / 5 * 100) + '%';
+        document.getElementById('feedback').textContent = "";
+        ansDisplay.textContent = "";
+        ansDisplay.className = 'drop-zone'; 
+        ui.innerHTML = "";
+
+        if (state.rep === 'visuals') {
+            prefixIcon.src = `https://api.arasaac.org/api/pictograms/${item.actionId}`;
+            prefixIcon.classList.remove('hidden');
+        } else { prefixIcon.classList.add('hidden'); }
+
+        if (state.mode === 'type') {
+            const bank = document.createElement('div');
+            bank.className = 'word-bank';
+            DATA.forEach(d => bank.innerHTML += `<div class="bank-pill">${d.a}</div>`);
+            ui.appendChild(bank);
+            ghost.value = "";
+            setTimeout(() => ghost.focus(), 100);
+            ghost.oninput = (e) => {
+                ansDisplay.textContent = e.target.value.toLowerCase();
+                if (e.target.value.toLowerCase().trim() === item.a) success();
+            };
+        } else {
+            const box = document.createElement('div');
+            box.className = 'options-box';
+            let options = (state.mode === 'tap') 
+                ? [item.a, ...DATA.filter(d => d.a !== item.a).sort(() => Math.random() - 0.5).slice(0,3).map(d => d.a)]
+                : DATA.map(d => d.a);
+            
+            options.sort(() => Math.random() - 0.5).forEach(opt => {
+                const tile = createTile(opt);
+                if (state.mode === 'tap') tile.onclick = () => (opt === item.a) ? success() : fail();
+                else setupBulletproofDrag(tile);
+                box.appendChild(tile);
+            });
+            ui.appendChild(box);
+        }
+    }
+
+    function createTile(ans) {
+        const d = DATA.find(x => x.a === ans);
+        const div = document.createElement('div');
+        div.className = 'tile';
+        div.setAttribute('draggable', 'false');
+        div.dataset.val = ans;
+        if (state.rep === 'visuals') div.innerHTML = `<img draggable="false" src="https://api.arasaac.org/api/pictograms/${d.id}">`;
+        div.innerHTML += `<span>${ans}</span>`;
+        return div;
+    }
+
+    function setupBulletproofDrag(el) {
+        el.onpointerdown = (e) => {
+            e.preventDefault();
+            el.setPointerCapture(e.pointerId);
+            
+            const dropZone = document.getElementById('txt-answer');
+            const rect = el.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+
+            dropZone.classList.add('active-target');
+
+            activeClone = el.cloneNode(true);
+            activeClone.classList.add('dragging');
+            activeClone.style.width = rect.width + 'px';
+            activeClone.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
+            document.body.appendChild(activeClone);
+
+            const onMove = (ev) => {
+                if (!activeClone) return;
+                const x = ev.clientX - offsetX;
+                const y = ev.clientY - offsetY;
+                activeClone.style.transform = `translate(${x}px, ${y}px)`;
+                
+                // Mathematical Hit Check
+                const dzRect = dropZone.getBoundingClientRect();
+                const isOver = ev.clientX >= dzRect.left && ev.clientX <= dzRect.right &&
+                               ev.clientY >= dzRect.top && ev.clientY <= dzRect.bottom;
+                
+                dropZone.classList.toggle('hover', isOver);
+            };
+
+            const onUp = (ev) => {
+                const dzRect = dropZone.getBoundingClientRect();
+                const isOver = ev.clientX >= dzRect.left && ev.clientX <= dzRect.right &&
+                               ev.clientY >= dzRect.top && ev.clientY <= dzRect.bottom;
+
+                if (isOver) {
+                    if (el.dataset.val === state.deck[state.index].a) success();
+                    else fail();
+                }
+
+                if(activeClone) activeClone.remove();
+                activeClone = null;
+                dropZone.classList.remove('active-target', 'hover');
+                
+                el.releasePointerCapture(e.pointerId);
+                el.onpointermove = null;
+                el.onpointerup = null;
+            };
+
+            el.onpointermove = onMove;
+            el.onpointerup = onUp;
+        };
+    }
+
+    function focusInput() { if(state.mode === 'type') document.getElementById('ghost-input').focus(); }
+
+    function success() {
+        const ans = state.deck[state.index].a;
+        const dz = document.getElementById('txt-answer');
+        dz.textContent = ans;
+        dz.style.color = "var(--accent)";
+        document.getElementById('feedback').textContent = "Excellent! ✨";
+        document.getElementById('ghost-input').blur();
+        setTimeout(() => {
+            state.index++;
+            if (state.index < 5) renderStep();
+            else finish();
+        }, 800);
+    }
+
+    function fail() {
+        const f = document.getElementById('feedback');
+        f.textContent = "Try again! 💫";
+        f.style.color = "#ef4444";
+        setTimeout(() => f.textContent = "", 1000);
+    }
+
+    function finish() {
+        document.getElementById('screen-game').classList.add('hidden');
+        document.getElementById('screen-end').classList.remove('hidden');
+    }
+
+    function reset() {
+        document.getElementById('screen-end').classList.add('hidden');
+        document.getElementById('screen-start').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>

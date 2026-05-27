@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  :root { --tile-size: 38px; }
+  body { 
+    font-family: 'Segoe UI', sans-serif; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    background: #2ecc71; 
+    margin: 0; 
+    overflow: hidden; 
+    touch-action: none; 
+  }
+  
+  #main-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  #game-container { position: relative; z-index: 1; }
+
+  #game-board {
+    display: grid;
+    grid-template-columns: repeat(15, var(--tile-size));
+    grid-template-rows: repeat(12, var(--tile-size));
+    background: #34495e;
+    border: 4px solid #2c3e50;
+    position: relative;
+    width: calc(15 * var(--tile-size));
+    height: calc(12 * var(--tile-size));
+  }
+
+  .tile { width: var(--tile-size); height: var(--tile-size); box-sizing: border-box; display: flex; align-items: center; justify-content: center; position: relative; }
+  .pavement { background-color: #bdc3c7; border: 0.5px solid rgba(0,0,0,0.1); }
+  .road-h { background-color: #34495e; border-top: 1px dashed rgba(255,255,255,0.1); }
+  .road-v { background-color: #34495e; border-left: 1px dashed rgba(255,255,255,0.1); }
+  .zebra-v { background: repeating-linear-gradient(0deg, #34495e, #34495e 4px, #fff 4px, #fff 8px); }
+  .zebra-h { background: repeating-linear-gradient(90deg, #34495e, #34495e 4px, #fff 4px, #fff 8px); }
+  .building { background-color: #ecf0f1; z-index: 2; font-size: 24px; }
+  
+  .target-goal { 
+    background-color: #f1c40f !important; 
+    box-shadow: 0 0 35px 5px #f1c40f !important;
+    animation: pulse 1.2s infinite;
+    z-index: 4 !important;
+    border: 2px solid #fff !important;
+  }
+
+  #target-arrow {
+    position: absolute; 
+    font-size: 40px; 
+    z-index: 20; 
+    pointer-events: none;
+    animation: bounce 1s infinite; 
+    transform: translateX(-50%);
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+  @keyframes bounce { 0%, 100% { margin-top: -65px; } 50% { margin-top: -95px; } }
+
+  #player {
+    display: flex; align-items: center; justify-content: center;
+    width: var(--tile-size); height: var(--tile-size);
+    position: absolute; z-index: 10; font-size: 28px;
+    transition: left 0.1s ease-out, top 0.1s ease-out; 
+  }
+
+  .car { 
+    position: absolute; z-index: 5; width: 30px; height: 20px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2px; box-sizing: border-box; 
+  }
+  .car-window { width: 12px; height: 14px; background: rgba(255,255,255,0.5); border-radius: 2px; }
+  .car-light { width: 4px; height: 6px; background: #f1c40f; border-radius: 1px; }
+
+  .screen-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); z-index: 100; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: white; text-align: center; padding: 20px; box-sizing: border-box;
+  }
+  
+  .btn-main {
+    padding: 15px 40px; font-size: 1.2em; cursor: pointer; border-radius: 50px; 
+    border: none; background: #3498db; color: white; margin-top: 20px; font-weight: bold;
+  }
+
+  /* Anchored Controls for iPad/Mobile comfort */
+  .controls { 
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    display: grid; 
+    grid-template-areas: ". up ." "left down right"; 
+    gap: 15px; 
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.2);
+    z-index: 10;
+  }
+
+  .btn-control { 
+    width: 70px; 
+    height: 70px; 
+    background: rgba(255, 255, 255, 0.3); 
+    border-radius: 16px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    color: white; 
+    font-size: 32px; 
+    border: 1px solid rgba(255,255,255,0.4); 
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-control:active { background: rgba(255, 255, 255, 0.5); transform: scale(0.95); }
+  
+  @media (min-width: 900px) { :root { --tile-size: 50px; } }
+</style>
+</head>
+<body>
+
+<div id="start-screen" class="screen-overlay">
+  <div style="max-width: 400px;">
+    <h2>City Crossings 🧍</h2>
+    <p>Use the zebra crossings to navigate safely to the target building.</p>
+    <p>Avoid getting hit by the cars!</p>
+    <button class="btn-main" onclick="initGame()">START GAME</button>
+  </div>
+</div>
+
+<div id="end-screen" class="screen-overlay" style="display: none;">
+  <div>
+    <h1 id="end-message" style="font-size: 2.5em;">🎉 You made it safely!</h1>
+    <button id="restart-btn" class="btn-main" style="background: #3498db;" onclick="goToStart()">PLAY AGAIN</button>
+  </div>
+</div>
+
+<div id="main-layout">
+  <div id="game-container">
+    <div id="game-board"></div>
+  </div>
+
+  <div class="controls">
+    <div class="btn-control" style="grid-area: up" id="up">↑</div>
+    <div class="btn-control" style="grid-area: left" id="left">←</div>
+    <div class="btn-control" style="grid-area: down" id="down">↓</div>
+    <div class="btn-control" style="grid-area: right" id="right">→</div>
+  </div>
+</div>
+
+<script>
+const map = [
+  [3,3,1,4,1,3,3,1,4,1,3,3,1,4,1],
+  [3,3,1,5,1,3,3,1,5,1,3,3,1,5,1],
+  [1,1,1,4,1,1,1,1,4,1,1,1,1,4,1],
+  [0,2,0,0,0,0,2,0,0,0,0,2,0,0,0],
+  [1,1,1,4,1,1,1,1,4,1,1,1,1,4,1],
+  [3,3,1,5,1,3,3,1,5,1,3,3,1,5,1],
+  [3,3,1,4,1,3,3,1,4,1,3,3,1,4,1],
+  [1,1,1,4,1,1,1,1,4,1,1,1,1,4,1],
+  [0,2,0,0,0,0,2,0,0,0,0,2,0,0,0],
+  [1,1,1,4,1,1,1,1,4,1,1,1,1,4,1],
+  [3,3,1,5,1,3,3,1,5,1,3,3,1,5,1],
+  [3,3,1,4,1,3,3,1,4,1,3,3,1,4,1]
+];
+
+const buildings = ["🏥", "🍕", "👮", "🏫", "🏢", "🏠"];
+let playerPos = { x: 2, y: 2 };
+let targetPos = null;
+let gameActive = false;
+let animationId = null;
+let arrowTimeout = null;
+
+let cars = [
+  { type: 'h', lane: 3, pos: 0, speed: 2, color: '#e67e22' },
+  { type: 'h', lane: 8, pos: 400, speed: -1.5, color: '#9b59b6' },
+  { type: 'v', lane: 3, pos: 0, speed: 2.5, color: '#3498db' },
+  { type: 'v', lane: 8, pos: 300, speed: 1.8, color: '#f1c40f' },
+  { type: 'v', lane: 13, pos: 100, speed: -2, color: '#ecf0f1' }
+];
+
+function initGame() {
+  if(arrowTimeout) clearTimeout(arrowTimeout);
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('end-screen').style.display = 'none';
+  
+  let reachableBuildings = [];
+  map.forEach((row, y) => {
+    row.forEach((tile, x) => { 
+      if (tile === 3) {
+          const neighbors = [[y-1,x], [y+1,x], [y,x-1], [y,x+1]];
+          const hasPath = neighbors.some(([ny, nx]) => {
+              if (ny >= 0 && ny < 12 && nx >= 0 && nx < 15) {
+                  const type = map[ny][nx];
+                  return type === 1 || type === 2 || type === 5;
+              }
+              return false;
+          });
+          if (hasPath && (x !== 2 || y !== 2)) reachableBuildings.push({x, y});
+      }
+    });
+  });
+  targetPos = reachableBuildings[Math.floor(Math.random() * reachableBuildings.length)];
+  
+  playerPos = { x: 2, y: 2 };
+  drawBoard();
+  createArrow();
+  
+  gameActive = true;
+  if (!animationId) updateCars();
+}
+
+function goToStart() {
+    gameActive = false;
+    document.getElementById('end-screen').style.display = 'none';
+    document.getElementById('start-screen').style.display = 'flex';
+}
+
+function gameOver() {
+    gameActive = false;
+    const endScreen = document.getElementById('end-screen');
+    const endMessage = document.getElementById('end-message');
+    const restartBtn = document.getElementById('restart-btn');
+    endMessage.innerText = "💥 Game Over! You got hit!";
+    restartBtn.innerText = "TRY AGAIN";
+    restartBtn.style.background = "#e74c3c";
+    endScreen.style.display = 'flex';
+}
+
+function showWin() {
+    gameActive = false;
+    const endScreen = document.getElementById('end-screen');
+    const endMessage = document.getElementById('end-message');
+    const restartBtn = document.getElementById('restart-btn');
+    endMessage.innerText = "🎉 You made it safely!";
+    restartBtn.innerText = "PLAY AGAIN";
+    restartBtn.style.background = "#3498db";
+    endScreen.style.display = 'flex';
+}
+
+function createArrow() {
+  const existing = document.getElementById('target-arrow');
+  if (existing) existing.remove();
+  const board = document.getElementById('game-board');
+  const arrow = document.createElement('div');
+  arrow.id = 'target-arrow';
+  arrow.innerText = '⬇️';
+  arrow.style.left = ((targetPos.x / 15) * 100 + (1/15/2)*100) + '%';
+  arrow.style.top = (targetPos.y / 12 * 100) + '%';
+  board.appendChild(arrow);
+  arrowTimeout = setTimeout(() => { if (arrow) arrow.remove(); }, 5000);
+}
+
+function drawBoard() {
+  const board = document.getElementById('game-board');
+  board.innerHTML = '';
+  map.forEach((row, y) => {
+    row.forEach((tileType, x) => {
+      const tile = document.createElement('div');
+      tile.classList.add('tile');
+      if (tileType === 0) tile.classList.add('road-h');
+      if (tileType === 1) tile.classList.add('pavement');
+      if (tileType === 2) tile.classList.add('zebra-v');
+      if (tileType === 4) tile.classList.add('road-v');
+      if (tileType === 5) tile.classList.add('zebra-h');
+      if (tileType === 3) {
+        tile.classList.add('building');
+        tile.innerText = buildings[(x + y) % buildings.length];
+        if (targetPos && x === targetPos.x && y === targetPos.y) {
+            tile.classList.add('target-goal');
+        }
+      }
+      board.appendChild(tile);
+    });
+  });
+  const p = document.createElement('div');
+  p.id = 'player';
+  p.innerText = '🧍';
+  board.appendChild(p);
+  updatePlayerUI();
+}
+
+function updatePlayerUI() {
+  const p = document.getElementById('player');
+  if(!p) return;
+  p.style.left = `calc(${playerPos.x} * var(--tile-size))`;
+  p.style.top = `calc(${playerPos.y} * var(--tile-size))`;
+}
+
+function move(dx, dy) {
+  if (!gameActive) return;
+  const nX = playerPos.x + dx;
+  const nY = playerPos.y + dy;
+  if (targetPos && nX === targetPos.x && nY === targetPos.y) {
+    showWin();
+    return;
+  }
+  if (nY >= 0 && nY < 12 && nX >= 0 && nX < 15) {
+    const tile = map[nY][nX];
+    if (tile === 1 || tile === 2 || tile === 5) {
+      playerPos.x = nX;
+      playerPos.y = nY;
+      updatePlayerUI();
+    }
+  }
+}
+
+function updateCars() {
+  if (!gameActive) { animationId = requestAnimationFrame(updateCars); return; }
+  const board = document.getElementById('game-board');
+  const bW = board.clientWidth;
+  const bH = board.clientHeight;
+
+  document.querySelectorAll('.car').forEach(c => c.remove());
+
+  cars.forEach(car => {
+    car.pos += car.speed;
+    const limit = car.type === 'h' ? bW : bH;
+    if (car.pos > limit) car.pos = -30;
+    if (car.pos < -30) car.pos = limit;
+
+    const currentTileSize = bW / 15;
+    let cX = Math.floor((car.pos + 15) / currentTileSize);
+    let cY = car.lane;
+    if (car.type === 'v') { cX = car.lane; cY = Math.floor((car.pos + 15) / currentTileSize); }
+
+    if (cX === playerPos.x && cY === playerPos.y) {
+      gameOver();
+    }
+
+    const carEl = document.createElement('div');
+    carEl.className = 'car';
+    carEl.style.backgroundColor = car.color;
+    const win = document.createElement('div'); win.className = 'car-window';
+    const light = document.createElement('div'); light.className = 'car-light';
+    
+    if (car.speed > 0) { carEl.append(win, light); } else { carEl.append(light, win); }
+
+    if (car.type === 'h') {
+      carEl.style.left = car.pos + 'px';
+      carEl.style.top = `calc(${car.lane} * var(--tile-size) + (var(--tile-size) - 20px) / 2)`;
+    } else {
+      carEl.style.width = '20px'; carEl.style.height = '30px'; carEl.style.flexDirection = 'column';
+      carEl.style.left = `calc(${car.lane} * var(--tile-size) + (var(--tile-size) - 20px) / 2)`;
+      carEl.style.top = car.pos + 'px';
+      win.style.width = '14px'; win.style.height = '12px';
+    }
+    board.appendChild(carEl);
+  });
+  animationId = requestAnimationFrame(updateCars);
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp') move(0, -1); if (e.key === 'ArrowDown') move(0, 1);
+  if (e.key === 'ArrowLeft') move(-1, 0); if (e.key === 'ArrowRight') move(1, 0);
+});
+
+['up','down','left','right'].forEach(id => {
+  document.getElementById(id).addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if(id==='up') move(0,-1); if(id==='down') move(0,1);
+    if(id==='left') move(-1,0); if(id==='right') move(1,0);
+  });
+});
+</script>
+</body>
+</html>

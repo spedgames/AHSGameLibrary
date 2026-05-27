@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Visuals Mate 3.0</title>
+    <style>
+        :root {
+            --primary: #6366f1; --primary-hover: #4f46e5;
+            --bg: #f1f5f9; --card: #ffffff;
+            --text: #0f172a; --border: #cbd5e1;
+            --shadow: 4px 4px 0px #0f172a;
+            --safe-padding: 45px; 
+        }
+        
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background: #f1f5f9; color: var(--text); 
+            margin: 0; padding: 0; overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .screen { display: none; height: 100vh; padding: 20px; box-sizing: border-box; flex-direction: column; }
+        .screen.active { display: flex; }
+        
+        .nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; gap: 10px; }
+
+        #output-area { 
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            overflow: hidden; padding: var(--safe-padding); box-sizing: border-box;
+        }
+
+        .output-container {
+            width: 100%; height: 100%; display: flex; flex-direction: column; gap: 15px;
+            max-width: 900px; max-height: 75vh; justify-content: center; margin: 0 auto;
+        }
+
+        .work-step { 
+            background: white; border: 3px solid #0f172a; border-radius: 16px; 
+            padding: 10px 20px; flex: 1; display: flex; align-items: center; 
+            gap: 20px; cursor: pointer; box-shadow: var(--shadow);
+            min-height: 0; overflow: hidden; position: relative;
+        }
+
+        .step-number {
+            background: #0f172a; color: white; border-radius: 50%;
+            width: 40px; height: 40px; display: flex; align-items: center;
+            justify-content: center; font-weight: 900; font-size: 1.4rem; flex-shrink: 0;
+        }
+        
+        .aac-grid-display { 
+            display: grid; gap: 15px; height: 100%; width: 100%;
+            grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+        }
+        .aac-cell { 
+            background: white; border: 3px solid #0f172a; border-radius: 16px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 10px; cursor: pointer; box-shadow: var(--shadow); min-height: 0;
+        }
+
+        .aac-cell img, .word-unit img { 
+            max-height: 70%; max-width: 90%; 
+            width: auto; height: auto; 
+            object-fit: contain; flex-shrink: 1;
+        }
+        
+        .aac-cell span { font-weight: 800; text-transform: uppercase; font-size: 1.1rem; margin-top: 5px; }
+        .word-unit { display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: center; flex: 1; min-width: 0; }
+        .word-unit span { font-size: 1rem; font-weight: 700; margin-top: 4px; text-align: center; }
+
+        #generic-modal { 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); 
+            z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px); 
+        }
+        .modal-content { 
+            background: white; width: 90%; max-width: 650px; border-radius: 24px; 
+            padding: 25px; max-height: 80vh; display: flex; flex-direction: column;
+        }
+        .list-container { overflow-y: auto; margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        
+        .gallery-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+            gap: 12px; overflow-y: auto; margin-top: 15px; padding: 5px;
+        }
+        .gallery-item { 
+            border: 2px solid var(--border); border-radius: 12px; padding: 10px; 
+            cursor: pointer; background: #fff; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;
+        }
+        .gallery-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .saved-item-btn {
+            background: white; border: 2px solid var(--border); padding: 15px;
+            border-radius: 12px; display: flex; justify-content: space-between;
+            align-items: center; cursor: pointer; font-weight: 600;
+        }
+
+        .input-row { display: flex; align-items: center; gap: 12px; background: white; padding: 12px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 8px; }
+        .btn { padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; }
+        .btn-primary { background: var(--primary); color: white; border: 2px solid #0f172a; box-shadow: 2px 2px 0px #0f172a; }
+        .btn-success { background: #22c55e; color: white; border: 2px solid #0f172a; box-shadow: 2px 2px 0px #0f172a; }
+        .btn-outline { background: white; border: 2px solid var(--border); }
+        
+        #generate-btn { width: 100%; margin-top: 20px; padding: 25px; font-size: 1.8rem; text-transform: uppercase; }
+        .preview-thumb { width: 40px; height: 40px; object-fit: contain; display: none; border-radius: 4px; border: 1px solid #ddd; }
+        .preview-thumb.active { display: block; }
+    </style>
+</head>
+<body>
+
+<div id="generic-modal">
+    <div class="modal-content" id="modal-body"></div>
+</div>
+
+<div id="home-screen" class="screen active" style="justify-content: center; align-items: center;">
+    <h1 style="font-size: 2.8rem; margin-bottom: 10px;">Visuals Mate</h1>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; width: 100%; max-width: 700px;">
+        <div style="background:white; padding:40px; border-radius:28px; border:3px solid #0f172a; box-shadow:var(--shadow); cursor:pointer; text-align:center" onclick="showEditor('work')">
+            <span style="font-size:4rem">📋</span>
+            <h3>Work System</h3>
+        </div>
+        <div style="background:white; padding:40px; border-radius:28px; border:3px solid #0f172a; box-shadow:var(--shadow); cursor:pointer; text-align:center" onclick="showEditor('aac')">
+            <span style="font-size:4rem">🗂️</span>
+            <h3>AAC Grid</h3>
+        </div>
+    </div>
+    <button class="btn btn-outline" style="margin-top: 30px; width: 300px; border-style: dashed; border-width: 3px;" onclick="openLibrary()">📚 Saved Library</button>
+</div>
+
+<div id="editor-screen" class="screen">
+    <div class="nav-header">
+        <button class="btn btn-outline" onclick="showHome()">← Home</button>
+        <h2 id="editor-title">Builder</h2>
+        <div style="width:70px"></div>
+    </div>
+    <div id="setup-inputs"></div>
+    <div id="content-inputs" style="overflow-y:auto; flex:1; margin-top:15px; -webkit-overflow-scrolling: touch;"></div>
+    <div id="editor-actions"></div>
+    <button class="btn btn-primary" id="generate-btn">Preview Result</button>
+</div>
+
+<div id="view-screen" class="screen">
+    <div class="nav-header">
+        <div style="display:flex; gap:10px">
+            <button class="btn btn-outline" onclick="backToEditor()">Edit</button>
+            <button class="btn btn-outline" onclick="showHome()">Home</button>
+        </div>
+        <button class="btn btn-success" id="save-trigger-btn" onclick="triggerSaveFlow()">💾 Save to Library</button>
+    </div>
+    <div id="output-area"></div>
+</div>
+
+<script>
+    let currentMode = '';
+    let targetInputId = null;
+    let lastRenderedData = null; // Store current view data for saving
+    const ARASAAC_API = 'https://api.arasaac.org/api/pictograms/en/search/';
+    const ARASAAC_IMG = 'https://static.arasaac.org/pictograms/';
+
+    function speak(text) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.rate = 0.9;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function showHome() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('home-screen').classList.add('active');
+    }
+
+    function backToEditor() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('editor-screen').classList.add('active');
+    }
+
+    // --- UPDATED SAVE FLOW ---
+    function triggerSaveFlow() {
+        if (!lastRenderedData) return;
+        const name = prompt("Enter a name for this project:");
+        if (name) {
+            let library = JSON.parse(localStorage.getItem('visual_library') || '[]');
+            library.push({
+                id: Date.now(),
+                name: name,
+                mode: currentMode,
+                setup: {
+                    cols: document.getElementById('cols')?.value,
+                    rows: document.getElementById('rows')?.value
+                },
+                content: lastRenderedData
+            });
+            localStorage.setItem('visual_library', JSON.stringify(library));
+            alert("Saved to Library!");
+        }
+    }
+
+    function deleteProject(id, e) {
+        e.stopPropagation();
+        let library = JSON.parse(localStorage.getItem('visual_library') || '[]');
+        library = library.filter(item => item.id !== id);
+        localStorage.setItem('visual_library', JSON.stringify(library));
+        openLibrary();
+    }
+
+    function openLibrary() {
+        const modal = document.getElementById('generic-modal');
+        const body = document.getElementById('modal-body');
+        modal.style.display = 'flex';
+        let library = JSON.parse(localStorage.getItem('visual_library') || '[]');
+        body.innerHTML = `
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <h2>Saved Library</h2>
+                <button class="btn btn-outline" onclick="closeModal()">✕</button>
+            </div>
+            <div class="list-container">
+                ${library.length === 0 ? '<p style="text-align:center; color:#64748b;">No saved items yet.</p>' : ''}
+                ${library.map(item => `
+                    <div class="saved-item-btn" onclick="loadFromLibrary(${item.id})">
+                        <span>${item.mode === 'work' ? '📋' : '🗂️'} ${item.name}</span>
+                        <button class="btn" style="color:red; font-size:0.8rem; padding: 5px 10px" onclick="deleteProject(${item.id}, event)">Delete</button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    async function loadFromLibrary(id) {
+        let library = JSON.parse(localStorage.getItem('visual_library') || '[]');
+        const project = library.find(item => item.id === id);
+        if (!project) return;
+        closeModal();
+        currentMode = project.mode;
+        showEditor(project.mode);
+        if (project.mode === 'aac') {
+            document.getElementById('cols').value = project.setup.cols;
+            document.getElementById('rows').value = project.setup.rows;
+            generateAACInputs();
+        }
+        const rows = document.querySelectorAll('.input-row');
+        project.content.forEach((item, index) => {
+            if (rows[index]) {
+                const input = rows[index].querySelector('input');
+                const thumb = rows[index].querySelector('.preview-thumb');
+                input.value = item.text;
+                if (item.imgId) {
+                    input.dataset.selectedId = item.imgId;
+                    thumb.src = `${ARASAAC_IMG}${item.imgId}/${item.imgId}_300.png`;
+                    thumb.classList.add('active');
+                }
+            }
+        });
+        // Hide the save button since it's already saved
+        document.getElementById('save-trigger-btn').style.display = 'none';
+        if (project.mode === 'work') await renderWorkSystem(project.content);
+        else await renderAACGrid(project.content, project.setup.cols, project.setup.rows);
+    }
+
+    function closeModal() { document.getElementById('generic-modal').style.display = 'none'; }
+
+    function showEditor(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('editor-screen').classList.add('active');
+        const setup = document.getElementById('setup-inputs');
+        const content = document.getElementById('content-inputs');
+        const actions = document.getElementById('editor-actions');
+        content.innerHTML = '';
+        if (mode === 'work') {
+            document.getElementById('editor-title').innerText = "Sequence Builder";
+            setup.innerHTML = '<label style="font-weight:700">Steps:</label>';
+            for (let i = 0; i < 4; i++) addInputRow();
+            actions.innerHTML = `<button class="btn btn-outline" style="width:100%; margin-top:10px; border-style:dashed" onclick="addInputRow()">+ Add More</button>`;
+            document.getElementById('generate-btn').onclick = previewCurrent;
+        } else {
+            document.getElementById('editor-title').innerText = "Grid Builder";
+            setup.innerHTML = `<div style="display:flex; gap:15px"><input type="number" id="cols" value="3" style="width:50%; padding:12px; border-radius:10px; border:1px solid #ccc" onchange="generateAACInputs()"><input type="number" id="rows" value="2" style="width:50%; padding:12px; border-radius:10px; border:1px solid #ccc" onchange="generateAACInputs()"></div>`;
+            generateAACInputs();
+            document.getElementById('generate-btn').onclick = previewCurrent;
+        }
+    }
+
+    function addInputRow() {
+        const content = document.getElementById('content-inputs');
+        const rowId = 'row-' + Math.random().toString(36).substr(2, 5);
+        const div = document.createElement('div');
+        div.className = 'input-row';
+        div.innerHTML = `<img id="prev-${rowId}" class="preview-thumb"><input type="text" id="${rowId}" placeholder="Type word..." style="flex:1; border:none; outline:none; font-size:18px"><button class="btn btn-outline" onclick="openGallery('${rowId}')">🔍</button>`;
+        content.appendChild(div);
+    }
+
+    function generateAACInputs() {
+        const content = document.getElementById('content-inputs');
+        const cols = document.getElementById('cols').value || 1;
+        const rows = document.getElementById('rows').value || 1;
+        content.innerHTML = '';
+        for (let i = 0; i < (cols * rows); i++) addInputRow();
+    }
+
+    async function previewCurrent() {
+        const rows = document.querySelectorAll('.input-row');
+        const data = [];
+        for (let row of rows) {
+            const input = row.querySelector('input');
+            if (input.value.trim()) data.push({ text: input.value.trim(), imgId: input.dataset.selectedId });
+        }
+        if (data.length === 0) return alert("Please enter at least one item.");
+        
+        lastRenderedData = data;
+        document.getElementById('save-trigger-btn').style.display = 'block'; // Show save button during preview
+        
+        if (currentMode === 'work') await renderWorkSystem(data);
+        else await renderAACGrid(data, document.getElementById('cols').value, document.getElementById('rows').value);
+    }
+
+    async function renderWorkSystem(data) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('view-screen').classList.add('active');
+        const output = document.getElementById('output-area');
+        const container = document.createElement('div');
+        container.className = 'output-container';
+        for (let i = 0; i < data.length; i++) {
+            const img = data[i].imgId ? `${ARASAAC_IMG}${data[i].imgId}/${data[i].imgId}_300.png` : await fetchAuto(data[i].text);
+            const div = document.createElement('div');
+            div.className = 'work-step';
+            div.onclick = () => speak(data[i].text);
+            div.innerHTML = `<div class="step-number">${i+1}</div><div class="word-unit">${img ? `<img src="${img}">` : ''}<span>${data[i].text}</span></div>`;
+            container.appendChild(div);
+        }
+        output.innerHTML = ''; output.appendChild(container);
+    }
+
+    async function renderAACGrid(data, cols, rowCount) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('view-screen').classList.add('active');
+        const output = document.getElementById('output-area');
+        const grid = document.createElement('div');
+        grid.className = 'aac-grid-display';
+        grid.style.setProperty('--rows', rowCount);
+        grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        for (let item of data) {
+            const img = item.imgId ? `${ARASAAC_IMG}${item.imgId}/${item.imgId}_300.png` : await fetchAuto(item.text);
+            const cell = document.createElement('div');
+            cell.className = 'aac-cell';
+            cell.onclick = () => speak(item.text);
+            cell.innerHTML = `<img src="${img || ''}" style="opacity:${img?1:0}"><span>${item.text}</span>`;
+            grid.appendChild(cell);
+        }
+        output.innerHTML = ''; output.appendChild(grid);
+    }
+
+    async function openGallery(inputId) {
+        targetInputId = inputId;
+        const term = document.getElementById(inputId).value.trim();
+        if(!term) return;
+        const modal = document.getElementById('generic-modal');
+        const body = document.getElementById('modal-body');
+        modal.style.display = 'flex';
+        body.innerHTML = `
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <h2>Choose Symbol</h2>
+                <button class="btn btn-outline" onclick="closeModal()">✕</button>
+            </div>
+            <div class="gallery-grid" id="gallery-results">Searching...</div>
+        `;
+        try {
+            const res = await fetch(ARASAAC_API + encodeURIComponent(term));
+            const items = await res.json();
+            document.getElementById('gallery-results').innerHTML = items.map(item => `
+                <div class="gallery-item" onclick="selectSymbol('${item._id}')">
+                    <img src="${ARASAAC_IMG}${item._id}/${item._id}_300.png">
+                </div>
+            `).join('');
+        } catch(e) { document.getElementById('gallery-results').innerHTML = 'Error.'; }
+    }
+
+    function selectSymbol(id) {
+        const input = document.getElementById(targetInputId);
+        input.dataset.selectedId = id;
+        const thumb = document.getElementById('prev-' + targetInputId);
+        thumb.src = `${ARASAAC_IMG}${id}/${id}_300.png`;
+        thumb.classList.add('active');
+        closeModal();
+    }
+
+    async function fetchAuto(word) {
+        try {
+            const res = await fetch(ARASAAC_API + encodeURIComponent(word));
+            const data = await res.json();
+            return data.length > 0 ? `${ARASAAC_IMG}${data[0]._id}/${data[0]._id}_300.png` : null;
+        } catch(e) { return null; }
+    }
+</script>
+</body>
+</html>

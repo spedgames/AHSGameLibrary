@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fruit Colours Sentence Builder</title>
+    <!-- Google Fonts: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --success: #47D7AC;
+            --bg: #F0F4F8;
+            --text: #2D3436;
+            --card: #FFFFFF;
+            --radius: 16px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Animated Colorful Background for Start Screen */
+        .bg-animated {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+            background: var(--card);
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .screen.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 { font-size: 2.2rem; margin-bottom: 1rem; color: var(--primary); }
+        #start-screen h1 { color: #2D3436; }
+        p { line-height: 1.6; margin-bottom: 2rem; }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            min-height: 48px;
+            min-width: 160px;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        /* Gameplay Elements */
+        #fruit-display {
+            font-size: 80px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
+        }
+
+        .drop-zone-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 30px 0;
+            min-height: 65px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        /* Adaptive slots to match word sizes */
+        .slot {
+            min-width: 80px;
+            height: 60px;
+            border: 2px dashed #CBD5E0;
+            border-radius: 12px;
+            background: #F8FAFC;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+            transition: all 0.2s;
+        }
+
+        .word-bank {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            padding: 20px;
+            background: #F8FAFC;
+            border-radius: var(--radius);
+        }
+
+        .word-tile {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 2px solid var(--primary);
+            cursor: grab;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            touch-action: none;
+            white-space: nowrap;
+        }
+
+        .word-tile.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .word-tile.placed {
+            cursor: default;
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            width: 100%;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #E2E8F0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--success);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container" class="bg-animated">
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen active">
+        <h1>Fruit Colours 🍎</h1>
+        <p>Drag the words to the boxes to build a sentence that describes the fruit!</p>
+        <button class="btn" onclick="game.start()">Start Playing</button>
+    </div>
+
+    <!-- Play Screen -->
+    <div id="play-screen" class="screen">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <div id="fruit-display">🍎</div>
+        <div class="drop-zone-container" id="drop-zones"></div>
+        <div class="word-bank" id="word-bank"></div>
+    </div>
+
+    <!-- End Screen -->
+    <div id="end-screen" class="screen">
+        <h1 style="color: var(--success)">Good Job!</h1>
+        <p>You've matched all the colors perfectly.</p>
+        <div id="fruit-display">🌟</div>
+        <button class="btn" onclick="game.init()">Play Again</button>
+    </div>
+</div>
+
+<script>
+const game = {
+    // Removed Kiwi from the list
+    allSentences: [
+        { fruit: '🍎', text: 'The apple is red' },
+        { fruit: '🍊', text: 'The orange is orange' },
+        { fruit: '🍐', text: 'The pear is green' },
+        { fruit: '🍌', text: 'The banana is yellow' },
+        { fruit: '🍇', text: 'The grape is purple' },
+        { fruit: '🍓', text: 'The strawberry is red' },
+        { fruit: '🍋', text: 'The lemon is yellow' },
+        { fruit: '🫐', text: 'The blueberry is blue' },
+        { fruit: '🍒', text: 'The cherry is red' }
+    ],
+    currentPool: [],
+    currentIndex: 0,
+    draggedElement: null,
+
+    init() {
+        document.getElementById('game-container').className = 'bg-animated';
+        this.showScreen('start-screen');
+    },
+
+    start() {
+        document.getElementById('game-container').className = ''; 
+        this.currentPool = [...this.allSentences]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 5);
+        this.currentIndex = 0;
+        this.showScreen('play-screen');
+        this.loadQuestion();
+    },
+
+    showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    },
+
+    loadQuestion() {
+        const current = this.currentPool[this.currentIndex];
+        const words = current.text.split(' ');
+        
+        document.getElementById('progress-fill').style.width = `${(this.currentIndex / 5) * 100}%`;
+        document.getElementById('fruit-display').textContent = current.fruit;
+
+        const dropContainer = document.getElementById('drop-zones');
+        dropContainer.innerHTML = '';
+        words.forEach((word, i) => {
+            const slot = document.createElement('div');
+            slot.className = 'slot';
+            slot.dataset.index = i;
+            dropContainer.appendChild(slot);
+        });
+
+        const bank = document.getElementById('word-bank');
+        bank.innerHTML = '';
+        [...words].sort(() => Math.random() - 0.5).forEach(word => {
+            const tile = document.createElement('div');
+            tile.className = 'word-tile';
+            tile.textContent = word;
+            tile.draggable = true;
+            
+            tile.addEventListener('dragstart', (e) => this.handleDragStart(e));
+            tile.addEventListener('touchstart', (e) => this.handleTouchStart(e), {passive: false});
+            tile.addEventListener('touchmove', (e) => this.handleTouchMove(e), {passive: false});
+            tile.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+            
+            bank.appendChild(tile);
+        });
+    },
+
+    handleDragStart(e) {
+        this.draggedElement = e.target;
+        e.dataTransfer.setData('text/plain', e.target.textContent);
+    },
+
+    handleTouchStart(e) {
+        const touch = e.touches[0];
+        this.draggedElement = e.target;
+        this.draggedElement.classList.add('dragging');
+        const rect = this.draggedElement.getBoundingClientRect();
+        this.offsetX = touch.clientX - rect.left;
+        this.offsetY = touch.clientY - rect.top;
+    },
+
+    handleTouchMove(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const tile = this.draggedElement;
+        tile.style.position = 'fixed';
+        tile.style.zIndex = '1000';
+        tile.style.left = (touch.clientX - this.offsetX) + 'px';
+        tile.style.top = (touch.clientY - this.offsetY) + 'px';
+    },
+
+    handleTouchEnd(e) {
+        const tile = this.draggedElement;
+        if (!tile) return;
+        tile.classList.remove('dragging');
+        tile.style.position = '';
+        tile.style.left = '';
+        tile.style.top = '';
+
+        const touch = e.changedTouches[0];
+        const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        const slot = elementBelow ? elementBelow.closest('.slot') : null;
+
+        if (slot) {
+            this.checkPlacement(tile, slot);
+        }
+    },
+
+    checkPlacement(tile, slot) {
+        const expectedWord = this.currentPool[this.currentIndex].text.split(' ')[slot.dataset.index];
+        
+        if (tile.textContent === expectedWord && !slot.hasChildNodes()) {
+            const clone = tile.cloneNode(true);
+            clone.className = 'word-tile placed';
+            clone.draggable = false;
+            
+            slot.style.border = 'none';
+            slot.style.background = 'transparent';
+            slot.style.minWidth = 'auto'; 
+            
+            slot.appendChild(clone);
+            tile.style.visibility = 'hidden';
+            
+            this.checkWin();
+        }
+    },
+
+    checkWin() {
+        const totalWords = this.currentPool[this.currentIndex].text.split(' ').length;
+        if (document.querySelectorAll('.word-tile.placed').length === totalWords) {
+            setTimeout(() => {
+                this.currentIndex++;
+                if (this.currentIndex < 5) {
+                    this.loadQuestion();
+                } else {
+                    document.getElementById('progress-fill').style.width = '100%';
+                    document.getElementById('game-container').className = 'bg-animated';
+                    this.showScreen('end-screen');
+                }
+            }, 600);
+        }
+    }
+};
+
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const slot = e.target.closest('.slot');
+    if (slot && game.draggedElement) {
+        game.checkPlacement(game.draggedElement, slot);
+    }
+});
+
+game.init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Counting Game Elite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF4757;
+            --secondary: #3742fa;
+            --accent: #ffa502;
+            --success: #2ed573;
+            --surface: #f1f2f6;
+            --text: #2f3542;
+            --glow: #FFD700;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            margin: 0; background: #e0e4e8; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden; font-family: 'Poppins', sans-serif;
+        }
+
+        #game-viewport {
+            width: 95vw; height: 95vh; max-width: 850px; max-height: 850px;
+            background: #ffffff; border-radius: 40px; display: flex; flex-direction: column;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.1); overflow: hidden;
+            padding: 15px 20px; transition: all 0.2s ease;
+        }
+
+        /* Responsive Layout Overrides */
+        #game-viewport.desktop { max-width: 750px; max-height: 750px; }
+        #game-viewport.tablet { max-width: 680px; max-height: 800px; }
+        #game-viewport.mobile {
+            width: 100vw; height: 100vh; max-width: 100%; max-height: 100%;
+            border-radius: 0; padding: 10px;
+        }
+
+        #game-viewport.mobile #stage-container { border-radius: 20px; }
+
+        .progress-track {
+            height: 12px; background: #eaeff2; border-radius: 10px;
+            margin: 5px 20px 15px; display: flex; overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05); flex-shrink: 0;
+        }
+
+        .prog-seg {
+            flex: 1; border-right: 2px solid white; transition: background 0.4s ease;
+        }
+
+        .prog-seg:last-child { border-right: none; }
+        .prog-seg.active { background: var(--success); }
+
+        #stage-container {
+            flex: 1; position: relative; background: var(--surface);
+            border-radius: 30px; box-shadow: inset 0 4px 15px rgba(0,0,0,0.08);
+            overflow: hidden; margin-bottom: 15px; min-height: 0; /* CRITICAL: Allows flex child to shrink below contents */
+        }
+
+        canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+
+        .modal {
+            position: absolute; inset: 0; background: rgba(255, 255, 255, 0.98);
+            z-index: 100; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; text-align: center; color: var(--text);
+            padding: 15px; overflow-y: auto;
+        }
+
+        .settings-group { margin: 4px 0; width: 100%; }
+        .settings-row { display: flex; gap: 6px; margin: 4px 0; justify-content: center; flex-wrap: wrap; }
+
+        .chip {
+            padding: 6px 14px; border-radius: 10px; border: 2px solid #ddd;
+            background: white; cursor: pointer; font-weight: 600; font-family: 'Poppins';
+            font-size: 0.8rem; transition: 0.2s;
+        }
+
+        .chip.active { background: var(--secondary); color: white; border-color: var(--secondary); }
+
+        .main-btn {
+            padding: 12px 35px; font-size: 1.3rem; font-weight: 800;
+            background: var(--primary); color: white; border: none; border-radius: 18px;
+            cursor: pointer; box-shadow: 0 5px 0 #cf3a48; margin-top: 10px; flex-shrink: 0;
+        }
+
+        .main-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #cf3a48; }
+
+        #controls {
+            display: flex; justify-content: center; align-items: center;
+            padding: 5px 0; width: 100%; height: 75px; flex-shrink: 0; /* Fixed height locks control panel space */
+        }
+
+        .button-row { display: flex; gap: 8px; justify-content: center; width: 100%; }
+
+        .ans-btn {
+            width: 58px; height: 58px; border-radius: 15px; border: none;
+            background: var(--secondary); color: white; font-size: 1.6rem; font-weight: 800;
+            cursor: pointer; box-shadow: 0 5px 0 #2730c7; transition: transform 0.2s, background 0.2s;
+        }
+
+        #game-viewport.mobile .ans-btn {
+            width: 50px; height: 50px; font-size: 1.4rem; border-radius: 12px;
+        }
+
+        .ans-btn.correct-highlight {
+            background: var(--success) !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px var(--success);
+            z-index: 10;
+        }
+
+        #next-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 50; background: var(--success); box-shadow: 0 5px 0 #1ca358;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="game-viewport">
+    <div id="progress-bar" class="progress-track"></div>
+
+    <div id="stage-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="start-screen" class="modal">
+            <h1 style="font-size: 1.8rem; margin: 0 0 5px 0; color: var(--primary);">Counting Fun!</h1>
+            
+            <div class="settings-group">
+                <p style="margin: 2px; font-size: 0.85rem; font-weight: 600;">Range:</p>
+                <div class="settings-row" id="range-select">
+                    <button class="chip active" data-min="1" data-max="5">1 to 5</button>
+                    <button class="chip" data-min="6" data-max="10">6 to 10</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <p style="margin: 2px; font-size: 0.85rem; font-weight: 600;">Shuffle Pattern:</p>
+                <div class="settings-row" id="shuffle-select">
+                    <button class="chip active" data-shuffle="random">Random</button>
+                    <button class="chip" data-shuffle="2e1h">2E - 1H</button>
+                    <button class="chip" data-shuffle="1e1h">1E - 1H</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <p style="margin: 2px; font-size: 0.85rem; font-weight: 600;">Rounds:</p>
+                <div class="settings-row" id="q-select">
+                    <button class="chip active" data-val="3">3</button>
+                    <button class="chip" data-val="6">6</button>
+                    <button class="chip" data-val="10">10</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <p style="margin: 2px; font-size: 0.85rem; font-weight: 600;">Mode:</p>
+                <div class="settings-row" id="mode-select">
+                    <button class="chip active" data-mode="not-guided">Not Guided</button>
+                    <button class="chip" data-mode="guided">Guided</button>
+                </div>
+            </div>
+
+            <button id="start-btn" class="main-btn">GO!</button>
+        </div>
+
+        <div id="end-screen" class="modal hidden">
+            <div style="font-size: 3.5rem; margin-bottom: 5px;">🌟</div>
+            <h2 style="font-size: 1.8rem; margin: 0;">Perfect!</h2>
+            <button id="restart-btn" class="main-btn">PLAY AGAIN</button>
+        </div>
+
+        <button id="next-btn" class="main-btn hidden">Next Question →</button>
+    </div>
+
+    <div id="controls" class="hidden">
+        <div id="button-row" class="button-row"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const emojis = ['🍎', '🍕', '🍦', '🍩', '🍓', '🍔', '🍉', '🍭'];
+    
+    const playNote = (freq, type, dur) => {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + dur);
+    };
+
+    let state = {
+        total: 3,
+        current: 0,
+        items: [],
+        ans: 0,
+        solved: false,
+        activeEmoji: '🍎',
+        mode: 'not-guided',
+        shuffle: 'random',
+        tapCount: 0,
+        range: { min: 1, max: 5 }
+    };
+
+    function detectDeviceLayout() {
+        const viewport = document.getElementById('game-viewport');
+        const width = window.innerWidth;
+        
+        viewport.classList.remove('desktop', 'tablet', 'mobile');
+        
+        if (width >= 1024) {
+            viewport.classList.add('desktop');
+        } else if (width >= 768) {
+            viewport.classList.add('tablet');
+        } else {
+            viewport.classList.add('mobile');
+        }
+
+        resizeCanvasToFit();
+    }
+
+    function resizeCanvasToFit() {
+        if (canvas && ctx) {
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                const oldW = canvas.width;
+                const oldH = canvas.height;
+                
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                
+                if (state.items.length > 0 && oldW > 0 && oldH > 0) {
+                    state.items.forEach(item => {
+                        item.x = (item.x / oldW) * canvas.width;
+                        item.y = (item.y / oldH) * canvas.height;
+                        
+                        // Recalculate radius based on new size
+                        const minCanvasDim = Math.min(canvas.width, canvas.height);
+                        item.radius = Math.max(22, Math.min(42, minCanvasDim * 0.08));
+                    });
+                    render();
+                }
+            }
+        }
+    }
+
+    window.addEventListener('resize', () => {
+        detectDeviceLayout();
+    });
+    
+    // Quick mutation observer to check when canvas size becomes computed upon screens switching
+    const observer = new ResizeObserver(() => resizeCanvasToFit());
+    observer.observe(document.getElementById('stage-container'));
+
+    detectDeviceLayout();
+
+    function getShuffleAnswer() {
+        const min = state.range.min;
+        const max = state.range.max;
+        
+        let easyPool = [min, min + 1];
+        let hardPool = [min + 2, min + 3, max];
+
+        if (state.shuffle === 'random') {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        let isHard = false;
+        const currentRoundOneIndexed = state.current + 1;
+
+        if (state.shuffle === '2e1h') {
+            isHard = (currentRoundOneIndexed % 3 === 0);
+        } else if (state.shuffle === '1e1h') {
+            isHard = (currentRoundOneIndexed % 2 === 0);
+        }
+
+        const targetPool = isHard ? hardPool : easyPool;
+        return targetPool[Math.floor(Math.random() * targetPool.length)];
+    }
+
+    function initButtons() {
+        const row = document.getElementById('button-row');
+        row.innerHTML = '';
+        for(let i = state.range.min; i <= state.range.max; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'ans-btn';
+            btn.innerText = i;
+            btn.onclick = () => handleGuess(i, btn);
+            row.appendChild(btn);
+        }
+    }
+
+    function initProgress() {
+        const bar = document.getElementById('progress-bar');
+        bar.innerHTML = '';
+        for(let i=0; i<state.total; i++) {
+            const d = document.createElement('div');
+            d.className = 'prog-seg';
+            d.id = `seg-${i}`;
+            bar.appendChild(d);
+        }
+    }
+
+    function generateRound() {
+        state.solved = false;
+        state.tapCount = 0;
+        state.activeEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        document.getElementById('next-btn').classList.add('hidden');
+        document.getElementById('controls').classList.remove('hidden');
+        document.querySelectorAll('.ans-btn').forEach(b => b.classList.remove('correct-highlight'));
+        
+        state.ans = getShuffleAnswer();
+        state.items = [];
+        
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+
+        const minCanvasDim = Math.min(canvas.width, canvas.height);
+        const dynamicRadius = Math.max(22, Math.min(42, minCanvasDim * 0.08));
+        const dynamicSpacing = Math.max(55, Math.min(100, minCanvasDim * 0.22));
+        const dynamicPadding = Math.max(35, Math.min(65, minCanvasDim * 0.15));
+
+        for(let i=0; i<state.ans; i++) {
+            let item = { x: 0, y: 0, tapped: false, radius: dynamicRadius, order: 0 };
+            let collision = true;
+            let safetyCounter = 0;
+            
+            while(collision && safetyCounter < 250) {
+                safetyCounter++;
+                item.x = dynamicPadding + Math.random() * (canvas.width - (dynamicPadding * 2));
+                item.y = dynamicPadding + Math.random() * (canvas.height - (dynamicPadding * 2));
+                collision = state.items.some(o => Math.hypot(item.x-o.x, item.y-o.y) < dynamicSpacing);
+            }
+            state.items.push(item);
+        }
+        render();
+    }
+
+    function render() {
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        state.items.forEach(item => {
+            if(item.tapped) {
+                ctx.save();
+                ctx.fillStyle = "#FFD700"; 
+                ctx.beginPath(); ctx.arc(item.x, item.y, item.radius + 3, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "white"; ctx.lineWidth = Math.max(3, item.radius * 0.12); ctx.stroke();
+                if(state.mode === 'guided' && item.order > 0) {
+                    ctx.font = `bold ${Math.max(14, item.radius * 0.75)}px Poppins`;
+                    ctx.fillStyle = "rgba(0,0,0,0.85)";
+                    ctx.fillText(item.order, item.x, item.y);
+                }
+                ctx.restore();
+            }
+            ctx.font = `${item.radius * 1.4}px serif`;
+            ctx.globalAlpha = (state.mode === 'guided' && item.tapped) ? 0.25 : 1.0;
+            ctx.fillText(state.activeEmoji, item.x, item.y);
+            ctx.globalAlpha = 1.0;
+        });
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+        if(state.solved) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        state.items.forEach(item => {
+            if(!item.tapped && Math.hypot(x - item.x, y - item.y) < item.radius + 15) {
+                item.tapped = true;
+                state.tapCount++;
+                item.order = state.tapCount;
+                playNote(400 + (state.tapCount * 30), 'sine', 0.1);
+            }
+        });
+        render();
+    });
+
+    function handleGuess(guess, btn) {
+        if(state.solved) return;
+        if(guess === state.ans) {
+            state.solved = true;
+            btn.classList.add('correct-highlight');
+            playNote(523, 'triangle', 0.2); 
+            setTimeout(() => playNote(659, 'triangle', 0.3), 100);
+            document.getElementById(`seg-${state.current}`).classList.add('active');
+            state.current++;
+            setTimeout(() => {
+                if(state.current >= state.total) {
+                    document.getElementById('end-screen').classList.remove('hidden');
+                    document.getElementById('controls').classList.add('hidden');
+                } else {
+                    document.getElementById('next-btn').classList.remove('hidden');
+                }
+            }, 2000);
+        } else { playNote(140, 'sawtooth', 0.2); }
+    }
+
+    function setupSelectors(id, stateKey) {
+        document.querySelectorAll(`#${id} .chip`).forEach(c => {
+            c.onclick = () => {
+                document.querySelectorAll(`#${id} .chip`).forEach(x => x.classList.remove('active'));
+                c.classList.add('active');
+                if (stateKey === 'range') {
+                    state.range.min = parseInt(c.dataset.min);
+                    state.range.max = parseInt(c.dataset.max);
+                } else if (stateKey === 'total') {
+                    state.total = parseInt(c.dataset.val);
+                } else {
+                    state[stateKey] = c.dataset[stateKey] || c.dataset.mode;
+                }
+            };
+        });
+    }
+
+    setupSelectors('range-select', 'range');
+    setupSelectors('shuffle-select', 'shuffle');
+    setupSelectors('q-select', 'total');
+    setupSelectors('mode-select', 'mode');
+
+    document.getElementById('start-btn').onclick = () => {
+        document.getElementById('start-screen').classList.add('hidden');
+        initProgress(); initButtons(); generateRound();
+        setTimeout(resizeCanvasToFit, 50); // Hard sync layout after view transition
+    };
+
+    document.getElementById('restart-btn').onclick = () => {
+        state.current = 0;
+        document.getElementById('end-screen').classList.add('hidden');
+        document.getElementById('start-screen').classList.remove('hidden');
+    };
+
+    document.getElementById('next-btn').onclick = generateRound;
+});
+</script>
+</body>
+</html>

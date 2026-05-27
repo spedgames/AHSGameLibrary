@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Scoop Shop – Money Learning Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+
+/* =============================================
+   RESET & ROOT
+============================================= */
+:root {
+  --pink:       #ff6b9d;
+  --pink-light: #ffb3d1;
+  --purple:     #a855f7;
+  --card-bg:    #fffdf9;
+  --border:     #ffe4cc;
+  --text-dark:  #2d1a0e;
+  --text-mid:   #6b4226;
+  --success:    #22c55e;
+  --fail:       #ef4444;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: 'Poppins', sans-serif;
+  background: #fff8f0;
+}
+
+/* Soft radial background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(circle at 12% 18%, #ffe4f0 0%, transparent 42%),
+    radial-gradient(circle at 88% 78%, #dff0ff 0%, transparent 40%),
+    radial-gradient(circle at 52% 52%, #fff5e0 0%, transparent 58%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* =============================================
+   APP SHELL
+============================================= */
+#app {
+  position: relative;
+  width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
+}
+
+/* =============================================
+   HEADER
+============================================= */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 1rem;
+  background: linear-gradient(135deg, #ff6b9d, #a855f7);
+  box-shadow: 0 4px 20px rgba(168,85,247,0.3);
+  flex-shrink: 0;
+  gap: 0.55rem;
+  position: relative;
+}
+
+#header h1 {
+  color: #fff;
+  font-size: clamp(0.9rem, 2.6vw, 1.45rem);
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.emoji-title { font-size: clamp(1rem, 2.6vw, 1.5rem); }
+
+/* Progress dots — sit below the cone label */
+#progress-bar {
+  display: flex;
+  gap: 0.28rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.prog-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: rgba(168,85,247,0.15);
+  border: 2px solid rgba(168,85,247,0.35);
+  transition: all 0.4s ease;
+  flex-shrink: 0;
+}
+
+.prog-dot.filled {
+  background: var(--purple);
+  border-color: var(--purple);
+  box-shadow: 0 0 8px rgba(168,85,247,0.55);
+}
+
+/* =============================================
+   GAME AREA
+============================================= */
+#game-area {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* =============================================
+   LEFT — CONE PANEL
+============================================= */
+#cone-panel {
+  width: 29%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.5rem 0.3rem 0.9rem;
+  position: relative;
+  flex-shrink: 0;
+}
+
+#cone-label {
+  position: absolute;
+  top: 0.45rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(0.44rem, 1.1vw, 0.65rem);
+  font-weight: 700;
+  color: var(--text-mid);
+  background: rgba(255,255,255,0.88);
+  padding: 0.18rem 0.5rem;
+  border-radius: 20px;
+  border: 2px solid var(--border);
+  white-space: nowrap;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The whole cone + scoops assembly bobs together */
+#cone-assembly {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: coneBob 3.2s ease-in-out infinite;
+  transform-origin: bottom center;
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes coneBob {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  30%       { transform: translateY(-6px) rotate(0.6deg); }
+  60%       { transform: translateY(-3px) rotate(-0.4deg); }
+  80%       { transform: translateY(-7px) rotate(0.3deg); }
+}
+
+/* Stack of scoops inside the assembly */
+#stacked-scoops {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  position: relative;
+  z-index: 3; /* above cone SVG */
+}
+
+/* Each stacked scoop image wrapper */
+.stacked-scoop-wrap {
+  /* deep negative margin so scoops truly sit inside each other */
+  margin-bottom: clamp(-30px, -6vw, -52px);
+  display: block;
+  position: relative;
+  /* Each scoop sways independently */
+  animation: scoopSway 2.8s ease-in-out infinite;
+}
+
+/* Stagger sway per child so they don't all move together */
+.stacked-scoop-wrap:nth-child(1) { animation-delay: 0s;    animation-duration: 2.9s; }
+.stacked-scoop-wrap:nth-child(2) { animation-delay: 0.4s;  animation-duration: 3.1s; }
+.stacked-scoop-wrap:nth-child(3) { animation-delay: 0.2s;  animation-duration: 2.7s; }
+.stacked-scoop-wrap:nth-child(4) { animation-delay: 0.6s;  animation-duration: 3.3s; }
+.stacked-scoop-wrap:nth-child(5) { animation-delay: 0.1s;  animation-duration: 2.6s; }
+
+@keyframes scoopSway {
+  0%, 100% { transform: rotate(0deg)   translateX(0px); }
+  25%       { transform: rotate(1.2deg) translateX(2px); }
+  75%       { transform: rotate(-1deg)  translateX(-2px); }
+}
+
+/* The actual image inside the wrapper */
+.stacked-scoop-img {
+  display: block;
+  width: clamp(52px, 9.5vw, 86px);
+  height: clamp(52px, 9.5vw, 86px);
+  object-fit: contain;
+  filter: drop-shadow(0 4px 7px rgba(0,0,0,0.2));
+  /* pop-in on land */
+  animation: scoopLand 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes scoopLand {
+  from { transform: scale(1.2) translateY(-6px); opacity: 0.6; }
+  to   { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+
+/* Cone SVG */
+#cone-svg-wrap {
+  width: clamp(52px, 9.5vw, 88px);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1; /* behind scoops */
+}
+
+/* =============================================
+   DIVIDER
+============================================= */
+#divider {
+  width: 4px;
+  background: linear-gradient(180deg, var(--pink-light), var(--purple), var(--pink-light));
+  border-radius: 4px;
+  margin: 0.5rem 0;
+  flex-shrink: 0;
+  opacity: 0.32;
+}
+
+/* =============================================
+   RIGHT — MENU PANEL
+============================================= */
+#menu-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem 0.5rem 0.5rem;
+  overflow: hidden;
+  min-width: 0;
+}
+
+#menu-title {
+  text-align: center;
+  font-size: clamp(0.62rem, 1.7vw, 0.92rem);
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 0.28rem;
+}
+
+/* 3×3 grid */
+#flavour-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(0.22rem, 0.85vw, 0.52rem);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Flavour card */
+.flavour-card {
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  cursor: pointer;
+  transition: transform 0.17s ease, box-shadow 0.17s ease;
+  padding: 0.22rem 0.12rem 0.28rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.flavour-card:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.13);
+}
+
+.flavour-card:active { transform: scale(0.96); }
+
+/* Purchased */
+.flavour-card.purchased {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.flavour-card.purchased .purchased-check { display: flex; }
+
+.purchased-check {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(34,197,94,0.17);
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--success);
+  border-radius: 12px;
+}
+
+/* $10 premium card */
+.flavour-card.premium {
+  background: linear-gradient(145deg, #160c2e, #2e1065);
+  border-color: #7c3aed;
+  animation: premiumPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes premiumPulse {
+  0%,100% { box-shadow: 0 0 16px rgba(124,58,237,0.5), inset 0 0 14px rgba(124,58,237,0.1); }
+  50%      { box-shadow: 0 0 32px rgba(168,85,247,0.75), 0 0 52px rgba(168,85,247,0.2), inset 0 0 18px rgba(168,85,247,0.2); }
+}
+
+.flavour-card.premium .flavour-name  { color: #ddd6fe; }
+.flavour-card.premium .flavour-price {
+  color: #fbbf24;
+  border-color: rgba(251,191,36,0.45);
+  background: rgba(251,191,36,0.13);
+}
+
+.premium-stars {
+  position: absolute;
+  top: 2px; left: 0; right: 0;
+  font-size: 0.4rem;
+  display: flex;
+  justify-content: space-around;
+  padding: 0 3px;
+  opacity: 0.65;
+  color: #fbbf24;
+}
+
+/* Scoop image in menu card */
+.card-scoop-img {
+  width: clamp(36px, 7.5vw, 60px);
+  height: clamp(36px, 7.5vw, 60px);
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.18));
+  /* gentle float on each card */
+  animation: cardFloat 3s ease-in-out infinite;
+}
+
+/* Stagger card floats across the grid */
+.flavour-card:nth-child(1)  .card-scoop-img { animation-delay: 0s;    animation-duration: 3.1s; }
+.flavour-card:nth-child(2)  .card-scoop-img { animation-delay: 0.5s;  animation-duration: 2.9s; }
+.flavour-card:nth-child(3)  .card-scoop-img { animation-delay: 1.0s;  animation-duration: 3.3s; }
+.flavour-card:nth-child(4)  .card-scoop-img { animation-delay: 0.3s;  animation-duration: 2.8s; }
+.flavour-card:nth-child(5)  .card-scoop-img { animation-delay: 0.8s;  animation-duration: 3.0s; }
+.flavour-card:nth-child(6)  .card-scoop-img { animation-delay: 1.3s;  animation-duration: 3.2s; }
+.flavour-card:nth-child(7)  .card-scoop-img { animation-delay: 0.2s;  animation-duration: 2.7s; }
+.flavour-card:nth-child(8)  .card-scoop-img { animation-delay: 0.7s;  animation-duration: 3.4s; }
+.flavour-card:nth-child(9)  .card-scoop-img { animation-delay: 1.1s;  animation-duration: 3.0s; }
+
+@keyframes cardFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-4px); }
+}
+
+.flavour-name {
+  font-size: clamp(0.36rem, 1.02vw, 0.63rem);
+  font-weight: 700;
+  color: var(--text-dark);
+  text-align: center;
+  line-height: 1.2;
+  padding: 0 2px;
+}
+
+.flavour-price {
+  font-size: clamp(0.4rem, 1.15vw, 0.7rem);
+  font-weight: 800;
+  color: var(--pink);
+  background: rgba(255,107,157,0.1);
+  padding: 0.06rem 0.28rem;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255,107,157,0.3);
+}
+
+/* =============================================
+   FALLING SCOOP — simple drop from above
+============================================= */
+.falling-scoop-anim {
+  position: fixed;
+  z-index: 201;
+  pointer-events: none;
+  animation: scoopDrop 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.falling-scoop-anim img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.25));
+}
+
+@keyframes scoopDrop {
+  0%   { transform: translateY(-140px) scale(1.3) rotate(-5deg); opacity: 0; }
+  40%  { opacity: 1; }
+  68%  { transform: translateY(10px) scale(1.05) rotate(1deg); }
+  82%  { transform: translateY(-5px) scale(0.97) rotate(-0.5deg); }
+  100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0; }
+}
+
+/* =============================================
+   PARTICLE — subtle landing ripple/sparkle
+   Only goes sideways & upward (not below scoop)
+   z-index 200 = above cone, below falling clone
+============================================= */
+.particle {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 200;
+  animation: particleBurst var(--dur, 0.55s) ease-out forwards;
+}
+
+@keyframes particleBurst {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.9; }
+  100% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(0); opacity: 0; }
+}
+
+.particle.star {
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+/* =============================================
+   PAYMENT MODAL
+============================================= */
+#modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(7px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+#modal-overlay.active { display: flex; }
+
+#payment-modal {
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: clamp(0.85rem, 2.8vw, 1.75rem);
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.27);
+  animation: modalPop 0.32s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+  border: 3px solid var(--border);
+}
+
+@keyframes modalPop {
+  from { transform: scale(0.72) translateY(28px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+#modal-header { text-align: center; margin-bottom: 0.75rem; }
+
+/* Modal scoop image */
+#modal-scoop-preview {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.35rem;
+}
+
+#modal-scoop-preview img {
+  width: clamp(58px, 13vw, 88px);
+  height: clamp(58px, 13vw, 88px);
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+  animation: modalScoopFloat 2.5s ease-in-out infinite;
+}
+
+@keyframes modalScoopFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+
+#modal-title {
+  font-size: clamp(0.82rem, 2.2vw, 1.15rem);
+  font-weight: 800;
+  color: var(--text-dark);
+}
+
+#modal-subtitle {
+  font-size: clamp(0.62rem, 1.5vw, 0.82rem);
+  color: var(--text-mid);
+  margin-top: 0.12rem;
+}
+
+#modal-price-badge {
+  display: inline-block;
+  font-size: clamp(0.92rem, 2.5vw, 1.25rem);
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, var(--pink), var(--purple));
+  padding: 0.22rem 1.1rem;
+  border-radius: 30px;
+  margin-top: 0.38rem;
+  box-shadow: 0 4px 14px rgba(168,85,247,0.4);
+}
+
+/* 2×2 money grid */
+#money-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(0.42rem, 1.7vw, 0.72rem);
+  margin-top: 0.72rem;
+}
+
+.money-btn {
+  background: #fff;
+  border: 2.5px solid var(--border);
+  border-radius: 14px;
+  padding: 0.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  min-height: 44px;
+  /* Make the button a fixed aspect ratio so image fills it */
+  aspect-ratio: 3 / 2;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+.money-btn:hover {
+  border-color: var(--purple);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(168,85,247,0.22);
+}
+
+.money-btn:active { transform: scale(0.95); }
+
+/* Image fills the button, centered, no label needed */
+.money-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.money-btn .money-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: clamp(1rem, 3vw, 1.4rem);
+  color: #fff;
+}
+
+/* Label hidden — money image speaks for itself */
+.money-btn .money-label { display: none; }
+
+.money-btn.correct {
+  border-color: var(--success);
+  background: rgba(34,197,94,0.1);
+  animation: correctPulse 0.42s ease;
+}
+
+.money-btn.wrong {
+  border-color: var(--fail);
+  background: rgba(239,68,68,0.1);
+  animation: wrongShake 0.42s ease;
+}
+
+@keyframes correctPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wrongShake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-7px); }
+  40%     { transform: translateX(7px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(4px); }
+}
+
+#feedback-msg {
+  text-align: center;
+  font-size: clamp(0.72rem, 1.8vw, 0.92rem);
+  font-weight: 700;
+  margin-top: 0.6rem;
+  min-height: 1.35rem;
+}
+
+#feedback-msg.correct-text { color: var(--success); }
+#feedback-msg.wrong-text   { color: var(--fail); }
+
+/* =============================================
+   WIN SCREEN
+============================================= */
+#win-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #ff6b9d, #a855f7, #60a5fa);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 1.5rem;
+  gap: 0.45rem;
+}
+
+#win-screen.active { display: flex; }
+
+#win-screen h2 {
+  font-size: clamp(1.5rem, 5vw, 2.8rem);
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 4px 18px rgba(0,0,0,0.2);
+}
+
+#win-screen p {
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  color: rgba(255,255,255,0.92);
+  max-width: 360px;
+}
+
+/* Mini cone display on win screen */
+#win-cone-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0.3rem 0;
+  animation: coneBob 3.2s ease-in-out infinite;
+  position: relative;
+}
+
+#win-scoops {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  position: relative;
+  z-index: 2; /* scoops in front of cone */
+}
+
+#win-cone-svg {
+  position: relative;
+  z-index: 1; /* cone behind scoops */
+  margin-top: clamp(-28px, -5vw, -40px); /* tuck cone up into bottom scoop */
+}
+
+.win-scoop-img {
+  display: block;
+  width: clamp(48px, 9vw, 70px);
+  height: clamp(48px, 9vw, 70px);
+  object-fit: contain;
+  margin-bottom: clamp(-22px, -4.5vw, -38px);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.22));
+  animation: scoopSway 2.8s ease-in-out infinite;
+}
+
+.win-scoop-img:nth-child(1) { animation-delay: 0s; }
+.win-scoop-img:nth-child(2) { animation-delay: 0.35s; }
+.win-scoop-img:nth-child(3) { animation-delay: 0.15s; }
+.win-scoop-img:nth-child(4) { animation-delay: 0.5s; }
+.win-scoop-img:nth-child(5) { animation-delay: 0.25s; }
+
+#play-again-btn {
+  background: #fff;
+  color: var(--purple);
+  border: none;
+  border-radius: 50px;
+  padding: clamp(0.65rem, 1.7vw, 0.9rem) clamp(1.7rem, 4vw, 2.6rem);
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(0.85rem, 2vw, 1.05rem);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  min-height: 48px;
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 0.4rem;
+}
+
+#play-again-btn:hover  { transform: translateY(-3px) scale(1.05); box-shadow: 0 12px 34px rgba(0,0,0,0.27); }
+#play-again-btn:active { transform: scale(0.96); }
+
+/* Confetti */
+.confetti-piece {
+  position: fixed;
+  border-radius: 2px;
+  animation: confettiFall linear forwards;
+  pointer-events: none;
+  z-index: 400;
+}
+
+@keyframes confettiFall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* =============================================
+   START SCREEN
+============================================= */
+#start-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(160deg, #ff6b9d 0%, #a855f7 50%, #60a5fa 100%);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  gap: 0;
+}
+
+#start-screen.hidden {
+  animation: startFadeOut 0.5s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes startFadeOut {
+  to { opacity: 0; transform: scale(1.04); }
+}
+
+.start-emoji {
+  font-size: clamp(3rem, 10vw, 5rem);
+  animation: startBounce 2s ease-in-out infinite;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+@keyframes startBounce {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%       { transform: translateY(-12px) rotate(3deg); }
+}
+
+.start-title {
+  font-size: clamp(2rem, 7vw, 4rem);
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.22);
+  letter-spacing: -1px;
+  margin-bottom: 0.15rem;
+}
+
+.start-subtitle {
+  font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+  color: rgba(255,255,255,0.88);
+  margin-bottom: 1.4rem;
+  font-weight: 600;
+}
+
+/* Instruction card */
+.start-instructions {
+  background: rgba(255,255,255,0.18);
+  border: 2px solid rgba(255,255,255,0.35);
+  border-radius: 20px;
+  padding: clamp(0.8rem, 2.5vw, 1.2rem) clamp(1rem, 3vw, 1.8rem);
+  max-width: 420px;
+  width: 100%;
+  margin-bottom: 1.4rem;
+  backdrop-filter: blur(8px);
+}
+
+.start-instructions h3 {
+  font-size: clamp(0.78rem, 2vw, 1rem);
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.6rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.instruction-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.instruction-step:last-child { margin-bottom: 0; }
+
+.step-icon {
+  font-size: clamp(1rem, 2.8vw, 1.3rem);
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+.step-text {
+  font-size: clamp(0.68rem, 1.8vw, 0.88rem);
+  color: rgba(255,255,255,0.92);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+#start-btn {
+  background: #fff;
+  color: var(--purple);
+  border: none;
+  border-radius: 50px;
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(2.5rem, 6vw, 4rem);
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(1rem, 2.8vw, 1.3rem);
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  min-height: 54px;
+  -webkit-tap-highlight-color: transparent;
+  animation: startBtnPulse 2s ease-in-out infinite;
+}
+
+@keyframes startBtnPulse {
+  0%, 100% { box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+  50%       { box-shadow: 0 8px 40px rgba(255,255,255,0.4), 0 0 0 6px rgba(255,255,255,0.15); }
+}
+
+#start-btn:hover  { transform: translateY(-3px) scale(1.06); }
+#start-btn:active { transform: scale(0.96); }
+
+/* =============================================
+   RESPONSIVE
+============================================= */
+@media (max-width: 420px) {
+  #cone-panel { width: 31%; }
+  .flavour-card { border-radius: 10px; }
+}
+
+@media (max-height: 560px) {
+  #header h1 { font-size: 0.82rem; }
+  .prog-dot { width: 11px; height: 11px; }
+  .start-instructions { margin-bottom: 0.8rem; }
+  .start-subtitle { margin-bottom: 0.8rem; }
+}
+
+</style>
+</head>
+<body>
+<!-- START SCREEN -->
+<div id="start-screen">
+  <span class="start-emoji">🍦</span>
+  <div class="start-title">Scoop Shop!</div>
+  <div class="start-subtitle">Pay the right money, build your cone!</div>
+  <div class="start-instructions">
+    <h3>How to Play</h3>
+    <div class="instruction-step">
+      <span class="step-icon">🍨</span>
+      <span class="step-text">Choose any ice cream flavour from the menu on the right.</span>
+    </div>
+    <div class="instruction-step">
+      <span class="step-icon">💰</span>
+      <span class="step-text">Pick the correct coin or note to pay for it.</span>
+    </div>
+    <div class="instruction-step">
+      <span class="step-icon">🍦</span>
+      <span class="step-text">Your scoop lands on the cone! Collect 5 scoops to win.</span>
+    </div>
+    <div class="instruction-step">
+      <span class="step-icon">⭐</span>
+      <span class="step-text">Watch out — prices are all mixed up!</span>
+    </div>
+  </div>
+  <button id="start-btn">🍦 Let's Go!</button>
+</div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <span class="emoji-title">🍦</span>
+    <h1>Scoop Shop</h1>
+    <span class="emoji-title">🍦</span>
+  </div>
+
+  <!-- GAME AREA -->
+  <div id="game-area">
+
+    <!-- LEFT: CONE PANEL -->
+    <div id="cone-panel">
+      <div id="cone-label">
+        <span>Your Cone 🍦</span>
+        <div id="progress-bar">
+          <div class="prog-dot" id="dot-1"></div>
+          <div class="prog-dot" id="dot-2"></div>
+          <div class="prog-dot" id="dot-3"></div>
+          <div class="prog-dot" id="dot-4"></div>
+          <div class="prog-dot" id="dot-5"></div>
+        </div>
+      </div>
+
+      <!-- The whole assembly bobs as one unit -->
+      <div id="cone-assembly">
+        <div id="stacked-scoops"></div>
+
+        <!-- Waffle cone SVG -->
+        <div id="cone-svg-wrap">
+          <svg viewBox="0 0 100 132" xmlns="http://www.w3.org/2000/svg"
+               style="width:100%;height:auto;display:block;">
+            <defs>
+              <linearGradient id="cG" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%"   style="stop-color:#fcd34d"/>
+                <stop offset="100%" style="stop-color:#b45309"/>
+              </linearGradient>
+              <linearGradient id="cS" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   style="stop-color:#7c2d12;stop-opacity:0.32"/>
+                <stop offset="55%"  style="stop-color:transparent"/>
+                <stop offset="100%" style="stop-color:#7c2d12;stop-opacity:0.16"/>
+              </linearGradient>
+            </defs>
+            <polygon points="50,130 4,18 96,18" fill="url(#cG)"/>
+            <polygon points="50,130 4,18 96,18" fill="url(#cS)"/>
+            <!-- vertical waffle lines -->
+            <line x1="50" y1="130" x2="13" y2="26" stroke="#92400e" stroke-width="1"   opacity="0.5"/>
+            <line x1="50" y1="130" x2="31" y2="18" stroke="#92400e" stroke-width="1"   opacity="0.5"/>
+            <line x1="50" y1="130" x2="50" y2="18" stroke="#92400e" stroke-width="1"   opacity="0.5"/>
+            <line x1="50" y1="130" x2="69" y2="18" stroke="#92400e" stroke-width="1"   opacity="0.5"/>
+            <line x1="50" y1="130" x2="87" y2="26" stroke="#92400e" stroke-width="1"   opacity="0.5"/>
+            <!-- horizontal waffle lines -->
+            <line x1="9"  y1="34" x2="91" y2="34" stroke="#92400e" stroke-width="1"   opacity="0.4"/>
+            <line x1="15" y1="50" x2="85" y2="50" stroke="#92400e" stroke-width="1"   opacity="0.4"/>
+            <line x1="22" y1="67" x2="78" y2="67" stroke="#92400e" stroke-width="1"   opacity="0.4"/>
+            <line x1="30" y1="85" x2="70" y2="85" stroke="#92400e" stroke-width="1"   opacity="0.4"/>
+            <line x1="38" y1="104" x2="62" y2="104" stroke="#92400e" stroke-width="1" opacity="0.4"/>
+            <!-- rim highlight -->
+            <rect x="4" y="13" width="92" height="9" rx="4.5" fill="#fde68a" opacity="0.72"/>
+          </svg>
+        </div>
+      </div><!-- /cone-assembly -->
+    </div><!-- /cone-panel -->
+
+    <div id="divider"></div>
+
+    <!-- RIGHT: MENU PANEL -->
+    <div id="menu-panel">
+      <div id="menu-title">🍨 Pick a Scoop!</div>
+      <div id="flavour-grid"></div>
+    </div>
+
+  </div><!-- /game-area -->
+</div><!-- /app -->
+
+<!-- PAYMENT MODAL -->
+<div id="modal-overlay">
+  <div id="payment-modal">
+    <div id="modal-header">
+      <div id="modal-scoop-preview"></div>
+      <div id="modal-title"></div>
+      <div id="modal-subtitle">Which coin or note do you need?</div>
+      <div id="modal-price-badge"></div>
+    </div>
+    <div id="money-options"></div>
+    <div id="feedback-msg"></div>
+  </div>
+</div>
+
+<!-- WIN SCREEN -->
+<div id="win-screen">
+  <div style="font-size:2.6rem;">🎉</div>
+  <h2>Yummy! Well Done!</h2>
+  <p>You bought 5 delicious scoops and paid with the right money every time!</p>
+  <div id="win-cone-display">
+    <div id="win-scoops"></div>
+    <!-- mini cone — rendered after scoops in DOM but sits behind via z-index -->
+    <svg id="win-cone-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+         style="width:clamp(52px,9vw,72px);height:auto;display:block;margin-left:auto;margin-right:auto;">
+      <defs>
+        <linearGradient id="cG2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   style="stop-color:#fcd34d"/>
+          <stop offset="100%" style="stop-color:#b45309"/>
+        </linearGradient>
+      </defs>
+      <polygon points="50,98 4,12 96,12" fill="url(#cG2)"/>
+      <line x1="50" y1="98" x2="50" y2="12" stroke="#92400e" stroke-width="1.2" opacity="0.5"/>
+      <line x1="10" y1="28" x2="90" y2="28" stroke="#92400e" stroke-width="1.2" opacity="0.4"/>
+      <line x1="18" y1="48" x2="82" y2="48" stroke="#92400e" stroke-width="1.2" opacity="0.4"/>
+      <line x1="30" y1="68" x2="70" y2="68" stroke="#92400e" stroke-width="1.2" opacity="0.4"/>
+      <rect x="4" y="8" width="92" height="7" rx="3.5" fill="#fde68a" opacity="0.72"/>
+    </svg>
+  </div>
+  <button id="play-again-btn">🔄 Play Again!</button>
+</div>
+
+<script>
+/* =============================================
+   ASSETS PATH
+============================================= */
+const ASSETS = 'assets/';
+
+/* =============================================
+   FLAVOUR & MONEY DATA
+============================================= */
+const FLAVOURS = [
+  { id:'chocolate',        name:'Chocolate',          price:'5c',  priceDisplay:'5¢'  },
+  { id:'mintchoc',         name:'Mint Choc Chip',     price:'1d',  priceDisplay:'$1'  },
+  { id:'strawberry',       name:'Strawberry',         price:'10c', priceDisplay:'10¢' },
+  { id:'paddlepop',        name:'Paddle Pop',         price:'5d',  priceDisplay:'$5'  },
+  { id:'vanilla',          name:'Vanilla',            price:'20c', priceDisplay:'20¢' },
+  { id:'cookiescream',     name:'Cookies & Cream',    price:'2d',  priceDisplay:'$2'  },
+  { id:'caramel',          name:'Caramel',            price:'50c', priceDisplay:'50¢' },
+  { id:'blueberry',        name:'Rainbow Sprinkles',  price:'2d',  priceDisplay:'$2'  },
+  { id:'galaxy',           name:'Galaxy Swirl',       price:'10d', priceDisplay:'$10' },
+];
+
+const MONEY = {
+  '5c':  { file:'5c.png',   label:'5 cents',   fallbackBg:'#b08830', fallbackText:'5¢'  },
+  '10c': { file:'10c.png',  label:'10 cents',  fallbackBg:'#909090', fallbackText:'10¢' },
+  '20c': { file:'20c.png',  label:'20 cents',  fallbackBg:'#909090', fallbackText:'20¢' },
+  '50c': { file:'50c.png',  label:'50 cents',  fallbackBg:'#909090', fallbackText:'50¢' },
+  '1d':  { file:'1d.png',   label:'$1',        fallbackBg:'#a0a0a0', fallbackText:'$1'  },
+  '2d':  { file:'2d.png',   label:'$2',        fallbackBg:'#a0a0a0', fallbackText:'$2'  },
+  '5d':  { file:'5d.png',   label:'$5',        fallbackBg:'#3aad70', fallbackText:'$5'  },
+  '10d': { file:'10d.png',  label:'$10',       fallbackBg:'#8b3af7', fallbackText:'$10' },
+};
+
+const PARTICLE_COLORS = {
+  chocolate:    ['#6b3a2a','#a05030','#fcd34d','#fff'],
+  mintchoc:     ['#48b888','#2d7a55','#3b1f0a','#a0edd0'],
+  strawberry:   ['#e8526a','#f9a8b4','#fff','#fbbf24'],
+  paddlepop:    ['#f97316','#ef4444','#facc15','#4ade80','#60a5fa'],
+  vanilla:      ['#fde68a','#fbbf24','#fff','#f0b84a'],
+  cookiescream: ['#2a1f1a','#e8e0d8','#fff','#c8beb4'],
+  caramel:      ['#c07828','#f0b84a','#fff','#7a4510'],
+  blueberry:    ['#6366f1','#312e81','#c7d2fe','#a5b4fc'],
+  galaxy:       ['#a855f7','#7c3aed','#fde68a','#bfdbfe','#e9d5ff'],
+};
+
+/* =============================================
+   ASSET PRELOADING
+   All images are loaded as soon as the page
+   opens, so there's no pop-in during gameplay.
+============================================= */
+const imageCache = {};
+
+function preloadAssets() {
+  // Scoop images
+  FLAVOURS.forEach(f => {
+    const img = new Image();
+    img.src = ASSETS + f.id + '.png';
+    imageCache[f.id] = img;
+  });
+  // Money images
+  Object.values(MONEY).forEach(m => {
+    const img = new Image();
+    img.src = ASSETS + m.file;
+    imageCache[m.file] = img;
+  });
+}
+
+/* =============================================
+   AUDIO ENGINE
+   Synthesised entirely with Web Audio API —
+   no external sound files needed.
+============================================= */
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // Resume if suspended (browser autoplay policy)
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+/* Utility: play a simple tone envelope */
+function playTone({ freq = 440, type = 'sine', gain = 0.4,
+                    attack = 0.01, decay = 0.1, sustain = 0.2,
+                    release = 0.15, duration = 0.4 } = {}) {
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const env = ctx.createGain();
+  osc.connect(env);
+  env.connect(ctx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, ctx.currentTime);
+  // ADSR-style envelope
+  env.gain.setValueAtTime(0, ctx.currentTime);
+  env.gain.linearRampToValueAtTime(gain, ctx.currentTime + attack);
+  env.gain.linearRampToValueAtTime(gain * sustain, ctx.currentTime + attack + decay);
+  env.gain.setValueAtTime(gain * sustain, ctx.currentTime + duration - release);
+  env.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + duration);
+}
+
+/* Button press — soft click */
+function sfxButtonPress() {
+  playTone({ freq: 600, type: 'sine', gain: 0.25, attack: 0.005,
+             decay: 0.05, sustain: 0.1, release: 0.08, duration: 0.18 });
+}
+
+/* Wrong answer — low thud */
+function sfxWrong() {
+  playTone({ freq: 180, type: 'sawtooth', gain: 0.3, attack: 0.01,
+             decay: 0.08, sustain: 0.05, release: 0.12, duration: 0.3 });
+}
+
+/* Correct answer — cheerful rising arpeggio */
+function sfxCorrect() {
+  const ctx = getAudioCtx();
+  const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.connect(env);
+    env.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    const t = ctx.currentTime + i * 0.09;
+    env.gain.setValueAtTime(0, t);
+    env.gain.linearRampToValueAtTime(0.35, t + 0.01);
+    env.gain.linearRampToValueAtTime(0, t + 0.18);
+    osc.start(t);
+    osc.stop(t + 0.2);
+  });
+}
+
+/* Scoop landing — satisfying soft plop */
+function sfxScoop() {
+  const ctx = getAudioCtx();
+  // Main plop
+  const osc = ctx.createOscillator();
+  const env = ctx.createGain();
+  osc.connect(env);
+  env.connect(ctx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(300, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.18);
+  env.gain.setValueAtTime(0.45, ctx.currentTime);
+  env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.25);
+  // Soft noise layer
+  const buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.12;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+  const nenv = ctx.createGain();
+  noise.connect(nenv);
+  nenv.connect(ctx.destination);
+  nenv.gain.setValueAtTime(0.3, ctx.currentTime);
+  nenv.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+  noise.start(ctx.currentTime);
+}
+
+/* Win jingle — short fanfare */
+function sfxWin() {
+  const ctx = getAudioCtx();
+  const melody = [523, 659, 784, 659, 1047];
+  const times  = [0, 0.12, 0.24, 0.36, 0.5];
+  melody.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.connect(env);
+    env.connect(ctx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    const t = ctx.currentTime + times[i];
+    env.gain.setValueAtTime(0, t);
+    env.gain.linearRampToValueAtTime(0.4, t + 0.02);
+    env.gain.linearRampToValueAtTime(0, t + 0.22);
+    osc.start(t);
+    osc.stop(t + 0.25);
+  });
+}
+
+/* =============================================
+   GAME STATE
+============================================= */
+let purchased      = [];
+let currentFlavour = null;
+let answering      = false;
+
+/* =============================================
+   START SCREEN
+============================================= */
+function initStartScreen() {
+  const startBtn = document.getElementById('start-btn');
+
+  const dismiss = () => {
+    sfxButtonPress();
+    const screen = document.getElementById('start-screen');
+    screen.classList.add('hidden');
+    screen.addEventListener('animationend', () => {
+      screen.style.display = 'none';
+    }, { once: true });
+  };
+
+  startBtn.addEventListener('click', dismiss);
+  startBtn.addEventListener('touchend', e => {
+    e.preventDefault();
+    dismiss();
+  }, { passive: false });
+}
+
+/* =============================================
+   BUILD MENU
+============================================= */
+function buildMenu() {
+  const grid = document.getElementById('flavour-grid');
+  grid.innerHTML = '';
+
+  FLAVOURS.forEach(f => {
+    const card = document.createElement('div');
+    card.className = 'flavour-card';
+    card.dataset.id = f.id;
+
+    const img = document.createElement('img');
+    img.src = ASSETS + f.id + '.png';
+    img.alt = f.name;
+    img.className = 'card-scoop-img';
+    img.onerror = function() {
+      this.style.display = 'none';
+      const fb = document.createElement('div');
+      fb.style.cssText = `width:clamp(36px,7.5vw,60px);height:clamp(36px,7.5vw,60px);
+        border-radius:50%;background:${getFallbackColor(f.id)};
+        flex-shrink:0;display:flex;align-items:center;justify-content:center;
+        font-size:1.4rem;`;
+      fb.textContent = '🍨';
+      this.parentNode.insertBefore(fb, this.nextSibling);
+    };
+
+    const name = document.createElement('div');
+    name.className = 'flavour-name';
+    name.textContent = f.name;
+
+    const price = document.createElement('div');
+    price.className = 'flavour-price';
+    price.textContent = f.priceDisplay;
+
+    const check = document.createElement('div');
+    check.className = 'purchased-check';
+    check.textContent = '✓';
+
+    card.appendChild(img);
+    card.appendChild(name);
+    card.appendChild(price);
+    card.appendChild(check);
+
+    card.addEventListener('click', () => { sfxButtonPress(); onFlavourClick(f.id); });
+    card.addEventListener('touchend', e => {
+      e.preventDefault();
+      sfxButtonPress();
+      onFlavourClick(f.id);
+    }, { passive: false });
+
+    grid.appendChild(card);
+  });
+}
+
+function getFallbackColor(id) {
+  const map = {
+    chocolate:'#6b3a2a', mintchoc:'#48b888', strawberry:'#e8526a',
+    paddlepop:'#f97316', vanilla:'#fde68a',   cookiescream:'#e8e0d8',
+    caramel:'#c07828',   blueberry:'#6366f1', galaxy:'#312e81'
+  };
+  return map[id] || '#ccc';
+}
+
+/* =============================================
+   FLAVOUR CLICK
+============================================= */
+function onFlavourClick(id) {
+  if (purchased.length >= 5) return;
+  const flavour = FLAVOURS.find(f => f.id === id);
+  if (!flavour) return;
+  currentFlavour = flavour;
+  openModal(flavour);
+}
+
+/* =============================================
+   OPEN MODAL
+============================================= */
+function openModal(flavour) {
+  const preview = document.getElementById('modal-scoop-preview');
+  preview.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = ASSETS + flavour.id + '.png';
+  img.alt = flavour.name;
+  img.onerror = function() { this.style.display = 'none'; };
+  preview.appendChild(img);
+
+  document.getElementById('modal-title').textContent      = flavour.name + ' Ice Cream';
+  document.getElementById('modal-price-badge').textContent = flavour.priceDisplay;
+  document.getElementById('feedback-msg').textContent     = '';
+  document.getElementById('feedback-msg').className       = '';
+
+  renderMoneyOptions(buildMoneyOptions(flavour.price), flavour.price);
+  document.getElementById('modal-overlay').classList.add('active');
+  answering = false;
+}
+
+/* =============================================
+   MONEY OPTIONS
+============================================= */
+function buildMoneyOptions(correctKey) {
+  const wrongs = Object.keys(MONEY).filter(k => k !== correctKey);
+  shuffle(wrongs);
+  const opts = [correctKey, ...wrongs.slice(0, 3)];
+  shuffle(opts);
+  return opts;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function renderMoneyOptions(options, correctKey) {
+  const container = document.getElementById('money-options');
+  container.innerHTML = '';
+  options.forEach(key => {
+    const m = MONEY[key];
+    const btn = document.createElement('button');
+    btn.className = 'money-btn';
+    btn.dataset.key = key;
+    btn.innerHTML = `
+      <img src="${ASSETS}${m.file}" alt="${m.label}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>
+      <div class="money-placeholder" style="background:${m.fallbackBg};display:none;">${m.fallbackText}</div>
+      <div class="money-label">${m.label}</div>
+    `;
+    btn.addEventListener('click', () => { sfxButtonPress(); onMoneyClick(key, correctKey, btn); });
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      sfxButtonPress();
+      onMoneyClick(key, correctKey, btn);
+    }, { passive: false });
+    container.appendChild(btn);
+  });
+}
+
+/* =============================================
+   ANSWER CHECK
+============================================= */
+function onMoneyClick(chosen, correct, btn) {
+  if (answering) return;
+  answering = true;
+  const msg = document.getElementById('feedback-msg');
+
+  if (chosen === correct) {
+    sfxCorrect();
+    btn.classList.add('correct');
+    msg.textContent = '🎉 Correct! Great job!';
+    msg.className = 'correct-text';
+    setTimeout(() => {
+      closeModal();
+      addScoop(currentFlavour);
+      purchased.push(currentFlavour.id);
+      updateProgress();
+      if (purchased.length >= 5) setTimeout(showWinScreen, 950);
+    }, 900);
+  } else {
+    sfxWrong();
+    btn.classList.add('wrong');
+    msg.textContent = '❌ Not quite — try again!';
+    msg.className = 'wrong-text';
+    setTimeout(() => {
+      btn.classList.remove('wrong');
+      msg.textContent = '';
+      msg.className = '';
+      answering = false;
+    }, 1000);
+  }
+}
+
+/* =============================================
+   CLOSE MODAL
+============================================= */
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+/* =============================================
+   ADD SCOOP — fall animation + particle burst
+============================================= */
+function addScoop(flavour) {
+  const coneWrap = document.getElementById('cone-svg-wrap');
+  const stackDiv = document.getElementById('stacked-scoops');
+  const existing = stackDiv.children.length;
+
+  /* ── 1. ADD REAL SCOOP TO STACK IMMEDIATELY ── */
+  const wrap = document.createElement('div');
+  wrap.className = 'stacked-scoop-wrap';
+  const realImg = document.createElement('img');
+  realImg.src = ASSETS + flavour.id + '.png';
+  realImg.alt = flavour.name;
+  realImg.className = 'stacked-scoop-img';
+  wrap.appendChild(realImg);
+  stackDiv.appendChild(wrap);
+
+  /* ── 2. MEASURE and animate ── */
+  requestAnimationFrame(() => {
+    const scoopPx = Math.min(86, Math.max(52, window.innerWidth * 0.095));
+    const coneRect = coneWrap.getBoundingClientRect();
+    const cx = coneRect.left + coneRect.width / 2;
+    const overlapPx = scoopPx * 0.58;
+    const landY = coneRect.top
+      - scoopPx * 0.55
+      - existing * (scoopPx - overlapPx);
+
+    /* ── 3. FALLING CLONE ── */
+    const fly = document.createElement('div');
+    fly.className = 'falling-scoop-anim';
+    fly.style.cssText = `left:${cx - scoopPx/2}px;top:${landY}px;width:${scoopPx}px;height:${scoopPx}px;`;
+    const flyImg = document.createElement('img');
+    flyImg.src = ASSETS + flavour.id + '.png';
+    flyImg.alt = flavour.name;
+    fly.appendChild(flyImg);
+    document.body.appendChild(fly);
+
+    /* ── 4. PARTICLES + SCOOP LAND SOUND at impact point ── */
+    setTimeout(() => {
+      sfxScoop();
+      spawnParticles(cx, landY + scoopPx * 0.5, flavour.id);
+    }, 470);
+
+    fly.addEventListener('animationend', () => fly.remove());
+  });
+}
+
+/* =============================================
+   PARTICLE BURST — gentle landing ripple
+============================================= */
+function spawnParticles(x, y, flavourId) {
+  const colors = PARTICLE_COLORS[flavourId] || ['#ff6b9d','#fbbf24','#a855f7','#fff'];
+  const count  = 14;
+
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    const isStar = i % 5 === 0;
+    p.className = 'particle' + (isStar ? ' star' : '');
+
+    const size = isStar ? 5 + Math.random() * 5 : 4 + Math.random() * 5;
+    const baseAngle = -150 + (i / count) * 300;
+    const angle = baseAngle + (Math.random() - 0.5) * 25;
+    const dist  = 18 + Math.random() * 28;
+    const rad   = angle * Math.PI / 180;
+    const tx    = Math.cos(rad) * dist;
+    const ty    = Math.sin(rad) * dist;
+    const dur   = 0.3 + Math.random() * 0.2;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    p.style.cssText = `
+      left:${x - size/2}px; top:${y - size/2}px;
+      width:${size}px; height:${size}px;
+      background:${color};
+      --tx:${tx}px; --ty:${ty}px; --dur:${dur}s;
+    `;
+    document.body.appendChild(p);
+    p.addEventListener('animationend', () => p.remove());
+  }
+}
+
+/* =============================================
+   MARK PURCHASED
+============================================= */
+function markPurchased(id) {
+  const card = document.querySelector(`.flavour-card[data-id="${id}"]`);
+  if (card) card.classList.add('purchased');
+}
+
+/* =============================================
+   PROGRESS DOTS
+============================================= */
+function updateProgress() {
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById(`dot-${i}`)
+      .classList.toggle('filled', i <= purchased.length);
+  }
+}
+
+/* =============================================
+   WIN SCREEN
+============================================= */
+function showWinScreen() {
+  sfxWin();
+  const winScoops = document.getElementById('win-scoops');
+  winScoops.innerHTML = '';
+  purchased.forEach(id => {
+    const f = FLAVOURS.find(x => x.id === id);
+    if (!f) return;
+    const img = document.createElement('img');
+    img.src = ASSETS + f.id + '.png';
+    img.alt = f.name;
+    img.className = 'win-scoop-img';
+    winScoops.appendChild(img);
+  });
+  document.getElementById('win-screen').classList.add('active');
+  launchConfetti();
+}
+
+/* =============================================
+   CONFETTI
+============================================= */
+function launchConfetti() {
+  const colors = ['#ff6b9d','#a855f7','#fbbf24','#34d399','#60a5fa','#fb7185','#f97316'];
+  for (let i = 0; i < 90; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.cssText = `
+      left:${Math.random()*100}vw; top:-12px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      width:${6+Math.random()*8}px; height:${6+Math.random()*8}px;
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation-duration:${1.4+Math.random()*2.2}s;
+      animation-delay:${Math.random()*0.9}s;
+    `;
+    document.body.appendChild(c);
+    c.addEventListener('animationend', () => c.remove());
+  }
+}
+
+/* =============================================
+   RESET / PLAY AGAIN
+============================================= */
+function resetGame() {
+  sfxButtonPress();
+  purchased      = [];
+  currentFlavour = null;
+  answering      = false;
+  document.getElementById('stacked-scoops').innerHTML = '';
+  updateProgress();
+  buildMenu();
+  document.getElementById('win-screen').classList.remove('active');
+  closeModal();
+}
+
+/* =============================================
+   EVENT WIRING
+============================================= */
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+const playBtn = document.getElementById('play-again-btn');
+playBtn.addEventListener('click', resetGame);
+playBtn.addEventListener('touchend', e => {
+  e.preventDefault();
+  resetGame();
+}, { passive: false });
+
+/* =============================================
+   INIT
+============================================= */
+preloadAssets();
+buildMenu();
+initStartScreen();
+</script>
+
+</body>
+</html>

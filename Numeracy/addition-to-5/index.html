@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Addition Game</title>
+    <style>
+        :root {
+            --red: #FF595E;
+            --blue: #1982C4;
+            --yellow: #FFCA3A;
+            --green: #8AC926;
+            --white: #FFFFFF;
+            --bg: #F0F4F8;
+        }
+
+        body {
+            font-family: 'Roboto', 'Chalkboard SE', cursive, sans-serif;
+            background-color: var(--blue);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #game-card {
+            background: var(--white);
+            width: 420px;
+            padding: 30px;
+            border-radius: 40px;
+            box-shadow: 0 15px 0px rgba(0,0,0,0.1);
+            border: 8px solid var(--yellow);
+            text-align: center;
+        }
+
+        .screen { display: block; }
+        .hidden { display: none !important; }
+
+        h1 { color: var(--red); margin-top: 0; }
+
+        /* Stats & Progress */
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            color: var(--blue);
+            margin-bottom: 5px;
+        }
+
+        .progress-container {
+            width: 100%; height: 18px; background: #eee;
+            border-radius: 10px; margin-bottom: 20px; overflow: hidden;
+            border: 2px solid #ddd;
+        }
+        #progress-bar {
+            height: 100%; width: 0%; background: var(--green);
+            transition: width 0.3s ease;
+        }
+
+        /* Math Display */
+        #math-display {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 15px;
+            margin: 20px 0;
+            min-height: 150px;
+        }
+
+        .number-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 110px;
+        }
+
+        .shape-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
+            min-height: 70px;
+            width: 100%;
+            font-size: 26px;
+        }
+
+        .digit { font-size: 80px; font-weight: bold; color: #333; line-height: 0.9; }
+        .operator { font-size: 60px; font-weight: bold; color: var(--blue); padding-bottom: 10px; }
+
+        /* Buttons */
+        .button-group { display: flex; justify-content: space-between; gap: 8px; }
+        
+        .ans-btn {
+            position: relative;
+            background: var(--red); color: white; border: none;
+            padding: 15px; font-size: 28px; border-radius: 18px;
+            cursor: pointer; flex: 1; box-shadow: 0 6px 0 #b33e42;
+            transition: all 0.1s;
+        }
+
+        .ans-btn:active:not(.wrong) { transform: translateY(4px); box-shadow: 0 2px 0 #b33e42; }
+
+        .ans-btn.wrong {
+            background-color: #cbd5e0 !important;
+            box-shadow: 0 6px 0 #a0aec0 !important;
+            color: transparent;
+            cursor: default;
+        }
+
+        .ans-btn.wrong::after {
+            content: "✕";
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #e53e3e;
+            font-size: 45px;
+            font-weight: bold;
+        }
+
+        /* Animations */
+        .correct-anim { animation: celebrate 0.6s ease; color: var(--green) !important; }
+        @keyframes celebrate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1); }
+        }
+
+        /* Mode Buttons */
+        .mode-btn {
+            display: block; width: 100%; padding: 22px; margin: 15px 0;
+            font-size: 20px; font-weight: bold; border-radius: 25px;
+            border: none; cursor: pointer; color: white; box-shadow: 0 6px 0 rgba(0,0,0,0.1);
+        }
+        .btn-simple { background-color: var(--blue); }
+        .btn-visual { background-color: var(--red); }
+
+        /* Selectors */
+        .selector-label { font-weight: bold; color: #555; margin-bottom: 8px; font-size: 14px; }
+        .selection-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .opt-btn {
+            background: #eee;
+            border: 2px solid #ddd;
+            padding: 8px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #666;
+            transition: 0.2s;
+        }
+        .opt-btn.selected {
+            background: var(--yellow);
+            border-color: #e6b800;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-card">
+    <div id="start-screen" class="screen">
+        <h1>Addition Game</h1>
+        
+        <div class="selector-label">HOW MANY QUESTIONS?</div>
+        <div class="selection-row">
+            <div class="opt-btn" onclick="setCount(3, this)">3</div>
+            <div class="opt-btn" onclick="setCount(5, this)">5</div>
+            <div class="opt-btn selected" onclick="setCount(10, this)">10</div>
+            <div class="opt-btn" onclick="setCount(12, this)">12</div>
+        </div>
+
+        <div class="selector-label">INCLUDE 0?</div>
+        <div class="selection-row">
+            <div id="zero-on" class="opt-btn selected" onclick="setZero(true)">YES</div>
+            <div id="zero-off" class="opt-btn" onclick="setZero(false)">NO</div>
+        </div>
+
+        <button class="mode-btn btn-simple" onclick="initGame(false)">Numbers Only</button>
+        <button class="mode-btn btn-visual" onclick="initGame(true)">Numbers + Shapes 🔺</button>
+    </div>
+
+    <div id="play-area" class="screen hidden">
+        <div class="stats-row">
+            <div id="score-display">Score: 0</div>
+            <div id="count-display">Question: 1/10</div>
+        </div>
+        <div class="progress-container"><div id="progress-bar"></div></div>
+
+        <div id="math-display">
+            <div class="number-stack">
+                <div id="shapes-left" class="shape-container"></div>
+                <div id="num-left" class="digit">0</div>
+            </div>
+            <div class="operator">+</div>
+            <div class="number-stack">
+                <div id="shapes-right" class="shape-container"></div>
+                <div id="num-right" class="digit">0</div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="ans-btn" onclick="handleInput(1, this)">1</button>
+            <button class="ans-btn" onclick="handleInput(2, this)">2</button>
+            <button class="ans-btn" onclick="handleInput(3, this)">3</button>
+            <button class="ans-btn" onclick="handleInput(4, this)">4</button>
+            <button class="ans-btn" onclick="handleInput(5, this)">5</button>
+        </div>
+    </div>
+
+    <div id="end-screen" class="screen hidden">
+        <h1>Great Job!</h1>
+        <div id="final-score" style="font-size: 32px; color: var(--blue); margin: 20px 0;"></div>
+        <button class="mode-btn" style="background: var(--yellow); color: #333;" onclick="resetToMenu()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    let score = 0;
+    let questionsCompleted = 0;
+    let currentAnswer = 0;
+    let useVisuals = false;
+    let isFirstAttempt = true;
+    let questionPool = [];
+    let maxQuestions = 10;
+    let includeZero = true;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSuccessSound() {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(261.63, audioCtx.currentTime); 
+        gain.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.05); 
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6); 
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.6);
+    }
+
+    function setCount(num, el) {
+        maxQuestions = num;
+        el.parentElement.querySelectorAll('.opt-btn').forEach(opt => opt.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+
+    function setZero(val) {
+        includeZero = val;
+        document.getElementById('zero-on').classList.toggle('selected', val);
+        document.getElementById('zero-off').classList.toggle('selected', !val);
+    }
+
+    function generateAllPossibleQuestions() {
+        let pairs = [];
+        // Determine starting point based on "includeZero"
+        const startNum = includeZero ? 0 : 1;
+
+        for (let i = startNum; i <= 5; i++) {
+            for (let j = startNum; j <= 5; j++) {
+                // Ensure sum is between 1 and 5
+                if (i + j >= 1 && i + j <= 5) {
+                    pairs.push({ n1: i, n2: j });
+                }
+            }
+        }
+        
+        // Shuffle
+        for (let i = pairs.length - 1; i > 0; i--) {
+            const k = Math.floor(Math.random() * (i + 1));
+            [pairs[i], pairs[k]] = [pairs[k], pairs[i]];
+        }
+        
+        // If the filtered pool is smaller than requested maxQuestions, 
+        // we'll just use the full pool.
+        return pairs.slice(0, Math.min(maxQuestions, pairs.length));
+    }
+
+    function initGame(visualMode) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        useVisuals = visualMode;
+        score = 0;
+        questionsCompleted = 0;
+        questionPool = generateAllPossibleQuestions();
+        
+        // Adjust maxQuestions if the pool is smaller than selected
+        let actualMax = questionPool.length;
+
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('end-screen').classList.add('hidden');
+        document.getElementById('play-area').classList.remove('hidden');
+        
+        updateUI();
+        nextQuestion();
+    }
+
+    function nextQuestion() {
+        const q = questionPool[questionsCompleted];
+        currentAnswer = q.n1 + q.n2;
+        isFirstAttempt = true;
+
+        document.getElementById('math-display').classList.remove('correct-anim');
+        document.querySelectorAll('.ans-btn').forEach(btn => btn.classList.remove('wrong'));
+
+        document.getElementById('num-left').innerText = q.n1;
+        document.getElementById('num-right').innerText = q.n2;
+        
+        const leftShapes = document.getElementById('shapes-left');
+        const rightShapes = document.getElementById('shapes-right');
+        leftShapes.innerHTML = '';
+        rightShapes.innerHTML = '';
+
+        if (useVisuals) {
+            for(let i=0; i < q.n1; i++) leftShapes.innerHTML += '🔺';
+            for(let i=0; i < q.n2; i++) rightShapes.innerHTML += '🔺';
+        }
+    }
+
+    function handleInput(choice, btnElement) {
+        if (btnElement.classList.contains('wrong')) return;
+
+        if (choice === currentAnswer) {
+            if (isFirstAttempt) score++;
+            playSuccessSound();
+            document.getElementById('math-display').classList.add('correct-anim');
+            questionsCompleted++;
+            updateUI();
+
+            setTimeout(() => {
+                if (questionsCompleted < questionPool.length) {
+                    nextQuestion();
+                } else {
+                    showEndScreen();
+                }
+            }, 700);
+        } else {
+            isFirstAttempt = false;
+            btnElement.classList.add('wrong');
+        }
+    }
+
+    function updateUI() {
+        const total = questionPool.length;
+        document.getElementById('score-display').innerText = `Score: ${score}`;
+        document.getElementById('count-display').innerText = `Question: ${Math.min(questionsCompleted + 1, total)}/${total}`;
+        const progress = (questionsCompleted / total) * 100;
+        document.getElementById('progress-bar').style.width = progress + '%';
+    }
+
+    function showEndScreen() {
+        const total = questionPool.length;
+        document.getElementById('play-area').classList.add('hidden');
+        document.getElementById('end-screen').classList.remove('hidden');
+        document.getElementById('final-score').innerText = `${score} / ${total}`;
+    }
+
+    function resetToMenu() {
+        document.getElementById('end-screen').classList.add('hidden');
+        document.getElementById('start-screen').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>

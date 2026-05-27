@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fraction Fun | Educational Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Ocean Breeze Palette */
+            --bg-color: #e0f7fa;
+            --primary-color: #00acc1;
+            --secondary-color: #007c91;
+            --accent-color: #4dd0e1;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --text-color: #004d40;
+            --white: #ffffff;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 95vw;
+            max-width: 800px;
+            height: 90vh;
+            background: var(--white);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 { font-size: 3rem; color: var(--secondary-color); margin-bottom: 10px; }
+        p { font-size: 1.2rem; margin-bottom: 20px; max-width: 500px; }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: var(--shadow);
+            margin: 10px;
+            min-width: 150px;
+            min-height: 44px;
+        }
+
+        .btn:hover { background: var(--secondary-color); transform: scale(1.05); }
+        .btn:active { transform: scale(0.95); }
+
+        .btn-group { display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+        .btn.selected { background: var(--secondary-color); border: 3px solid var(--bg-color); }
+
+        /* Game HUD */
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px;
+            background: #f0fbfc;
+            border-radius: 15px;
+            margin-bottom: 15px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        /* Game Area */
+        #game-play { justify-content: space-between; }
+        
+        .game-main {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            align-items: center;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .fraction-display {
+            font-size: 6rem;
+            font-weight: bold;
+            padding: 20px;
+            border-right: 4px solid var(--bg-color);
+            min-width: 200px;
+        }
+
+        .fraction-display .line {
+            border-bottom: 8px solid var(--text-color);
+            width: 80px;
+            margin: 5px auto;
+        }
+
+        .visual-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #fraction-circle {
+            width: 280px;
+            height: 280px;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
+            cursor: pointer;
+        }
+
+        .slice {
+            fill: #e0e0e0;
+            stroke: white;
+            stroke-width: 2;
+            transition: fill 0.2s, transform 0.2s;
+        }
+
+        .slice.selected {
+            fill: var(--accent-color);
+        }
+
+        /* Animations */
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .correct-pop { animation: pop 0.5s; }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); color: var(--success-color); }
+            100% { transform: scale(1); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .fraction-display { font-size: 4rem; border-right: none; border-bottom: 4px solid var(--bg-color); margin-bottom: 20px; }
+            #fraction-circle { width: 200px; height: 200px; }
+            .game-main { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="start-screen" class="screen active">
+        <h1>Fraction Fun 🥧</h1>
+        <p>Learn numerators! Look at the fraction and tap the correct number of slices in the circle.</p>
+        
+        <div style="margin-bottom: 10px;">Select Questions:</div>
+        <div class="btn-group">
+            <button class="btn btn-opt" onclick="setQuestions(5)">5</button>
+            <button class="btn btn-opt selected" onclick="setQuestions(10)">10</button>
+            <button class="btn btn-opt" onclick="setQuestions(15)">15</button>
+        </div>
+
+        <button class="btn" onclick="toggleSound()" id="sound-btn">Sound: ON 🔊</button>
+        <button class="btn" style="background: var(--success-color);" onclick="startGame()">PLAY GAME</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="hud">
+            <div id="instr">Select the slices!</div>
+            <div id="score-display">Score: 0</div>
+        </div>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+
+        <div class="game-main">
+            <div class="fraction-display" id="fraction-box">
+                <div id="numerator">2</div>
+                <div class="line"></div>
+                <div id="denominator">3</div>
+            </div>
+
+            <div class="visual-area">
+                <svg id="fraction-circle" viewBox="-110 -110 220 220"></svg>
+                <button class="btn" id="check-btn" onclick="checkAnswer()">CHECK</button>
+                <button class="btn" id="next-btn" style="display:none; background: var(--success-color);" onclick="nextQuestion()">NEXT →</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="end-screen" class="screen">
+        <h1 id="end-title">Awesome! 🎉</h1>
+        <p id="final-score">You got 10 out of 10 correct!</p>
+        <div id="medal" style="font-size: 5rem; margin-bottom: 20px;">🏆</div>
+        <button class="btn" onclick="resetGame()">PLAY AGAIN</button>
+    </div>
+</div>
+
+<script>
+    // Game State
+    let state = {
+        totalQuestions: 10,
+        currentQuestion: 0,
+        score: 0,
+        numerator: 0,
+        denominator: 0,
+        selectedSlices: 0,
+        soundEnabled: true,
+        canInteract: true
+    };
+
+    // Audio Context (Synthesized sounds for no external assets)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTone(freq, type, duration) {
+        if (!state.soundEnabled) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    const sounds = {
+        tap: () => playTone(440, 'sine', 0.1),
+        success: () => { playTone(523, 'sine', 0.1); setTimeout(() => playTone(659, 'sine', 0.2), 100); },
+        error: () => { playTone(150, 'sawtooth', 0.3); }
+    };
+
+    // UI Logic
+    function setQuestions(num) {
+        state.totalQuestions = num;
+        document.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('selected'));
+        event.target.classList.add('selected');
+        sounds.tap();
+    }
+
+    function toggleSound() {
+        state.soundEnabled = !state.soundEnabled;
+        document.getElementById('sound-btn').innerText = state.soundEnabled ? "Sound: ON 🔊" : "Sound: OFF 🔇";
+        if(state.soundEnabled) sounds.tap();
+    }
+
+    function startGame() {
+        state.currentQuestion = 0;
+        state.score = 0;
+        showScreen('game-screen');
+        nextQuestion();
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function nextQuestion() {
+        if (state.currentQuestion >= state.totalQuestions) {
+            endGame();
+            return;
+        }
+
+        state.canInteract = true;
+        state.selectedSlices = 0;
+        state.currentQuestion++;
+        
+        // Generate Fraction (max denominator 6)
+        state.denominator = Math.floor(Math.random() * 5) + 2; // 2 to 6
+        state.numerator = Math.floor(Math.random() * (state.denominator)) + 1; // 1 to denom
+
+        // Update UI
+        document.getElementById('numerator').innerText = state.numerator;
+        document.getElementById('denominator').innerText = state.denominator;
+        document.getElementById('score-display').innerText = `Score: ${state.score}`;
+        document.getElementById('progress-bar').style.width = `${(state.currentQuestion / state.totalQuestions) * 100}%`;
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('check-btn').style.display = 'block';
+        document.getElementById('instr').innerText = "Tap the slices!";
+        document.getElementById('instr').style.color = 'inherit';
+
+        drawCircle(state.denominator);
+    }
+
+    function drawCircle(slices) {
+        const svg = document.getElementById('fraction-circle');
+        svg.innerHTML = '';
+        const radius = 100;
+        const angleStep = (2 * Math.PI) / slices;
+
+        for (let i = 0; i < slices; i++) {
+            const startAngle = i * angleStep - Math.PI / 2;
+            const endAngle = (i + 1) * angleStep - Math.PI / 2;
+
+            const x1 = radius * Math.cos(startAngle);
+            const y1 = radius * Math.sin(startAngle);
+            const x2 = radius * Math.cos(endAngle);
+            const y2 = radius * Math.sin(endAngle);
+
+            const largeArcFlag = angleStep > Math.PI ? 1 : 0;
+
+            const pathData = `
+                M 0 0
+                L ${x1} ${y1}
+                A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}
+                Z
+            `;
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", pathData);
+            path.setAttribute("class", "slice");
+            path.addEventListener('click', () => toggleSlice(path));
+            svg.appendChild(path);
+        }
+    }
+
+    function toggleSlice(el) {
+        if (!state.canInteract) return;
+        
+        if (el.classList.contains('selected')) {
+            el.classList.remove('selected');
+            state.selectedSlices--;
+        } else {
+            el.classList.add('selected');
+            state.selectedSlices++;
+        }
+        sounds.tap();
+    }
+
+    function checkAnswer() {
+        if (!state.canInteract) return;
+
+        const container = document.getElementById('game-container');
+        
+        if (state.selectedSlices === state.numerator) {
+            // Correct
+            state.score++;
+            state.canInteract = false;
+            sounds.success();
+            document.getElementById('instr').innerText = "Correct! Well done!";
+            document.getElementById('instr').style.color = "var(--success-color)";
+            document.getElementById('check-btn').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'block';
+            document.getElementById('fraction-box').classList.add('correct-pop');
+            setTimeout(() => document.getElementById('fraction-box').classList.remove('correct-pop'), 500);
+        } else {
+            // Wrong
+            sounds.error();
+            container.classList.add('shake');
+            document.getElementById('instr').innerText = "Try again!";
+            document.getElementById('instr').style.color = "var(--error-color)";
+            
+            setTimeout(() => {
+                container.classList.remove('shake');
+                // Reset slices
+                document.querySelectorAll('.slice').forEach(s => s.classList.remove('selected'));
+                state.selectedSlices = 0;
+            }, 500);
+        }
+    }
+
+    function endGame() {
+        showScreen('end-screen');
+        const percent = (state.score / state.totalQuestions) * 100;
+        document.getElementById('final-score').innerText = `You got ${state.score} out of ${state.totalQuestions} correct!`;
+        
+        let medal = "🥉";
+        let title = "Good Effort!";
+        if(percent === 100) { medal = "🏆"; title = "Perfect Score!"; }
+        else if(percent >= 70) { medal = "🥈"; title = "Great Job!"; }
+        
+        document.getElementById('medal').innerText = medal;
+        document.getElementById('end-title').innerText = title;
+    }
+
+    function resetGame() {
+        showScreen('start-screen');
+    }
+
+    // Handle audio context resume for mobile
+    document.addEventListener('touchstart', () => {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }, { once: true });
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Self Checkout</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="pos-container">
+        <section class="menu-section">
+            <header class="menu-header">
+                <h1>🍔 Self Checkout</h1>
+                <button id="fullscreen-btn" class="secondary-btn">TOGGLE FULLSCREEN</button>
+            </header>
+            
+            <div class="menu-grid" id="menu-grid">
+                </div>
+        </section>
+
+        <aside class="order-section">
+            <h2>Current Order</h2>
+            <div class="order-list" id="order-list">
+                <div class="empty-msg">Order is empty</div>
+            </div>
+            
+            <div class="order-footer">
+                <div class="total-row">
+                    <span>Total</span>
+                    <span id="total-display">$0.00</span>
+                </div>
+                <div class="action-buttons">
+                    <button id="clear-btn" class="clear-btn">Clear All</button>
+                    <button id="checkout-btn" class="checkout-btn" disabled>Check Out</button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="payment-modal" class="modal">
+        <div class="modal-content">
+            <div id="payment-step-1">
+                <h2>How would you like to pay?</h2>
+                <div class="payment-options">
+                    <button onclick="handlePaymentChoice('cash')" class="pay-choice-btn">💵 Cash</button>
+                    <button onclick="handlePaymentChoice('card')" class="pay-choice-btn">💳 Card</button>
+                </div>
+                <button onclick="closeModal()" class="close-btn">Go Back</button>
+            </div>
+
+            <div id="payment-cash" class="hidden">
+                <h2>INSERT CASH</h2>
+                <p class="due-amount">Total Due: <span id="cash-total-due">$0.00</span></p>
+                <div class="payment-animation-box">
+                    <div id="progress-bar-container" class="hidden">
+                        <div id="progress-bar"></div>
+                    </div>
+                </div>
+                <button id="confirm-pay-btn" class="checkout-btn">PAY</button>
+            </div>
+
+            <div id="payment-card" class="hidden">
+                <h2>Notice</h2>
+                <p>Card transactions are not available at the moment.</p>
+                <button onclick="closeModal()" class="checkout-btn">OK</button>
+            </div>
+
+            <div id="payment-success" class="hidden">
+                <div class="success-icon">✅</div>
+                <h2>Thank you!</h2>
+                <p>Please come again.</p>
+            </div>
+        </div>
+    </div>
+
+    <audio id="cashier-sound" src="https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3"></audio>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Quest</title>
+    <style>
+        :root {
+            --ui-panel: rgba(255, 255, 255, 0.95);
+            --ui-accent: #3498db;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --text: #2c3e50;
+        }
+        body {
+            margin: 0; background: #f0f2f5; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; font-family: 'Segoe UI', Roboto, sans-serif; touch-action: none;
+        }
+        #gameWrapper { position: relative; display: flex; align-items: center; background: #fff; padding: 15px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        #canvasContainer { position: relative; width: 600px; height: 500px; border-radius: 16px; overflow: hidden; background: #eee; line-height: 0; }
+        
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.98); z-index: 200;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--text); text-align: center; padding: 40px; box-sizing: border-box;
+        }
+
+        .star-container { margin-bottom: 20px; position: relative; }
+        .victory-star {
+            font-size: 80px; color: #f1c40f; display: inline-block;
+            animation: starRotate 4s infinite linear, starGlow 2s infinite ease-in-out;
+            text-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
+        }
+        @keyframes starRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes starGlow { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px #f1c40f); } 50% { transform: scale(1.2); filter: drop-shadow(0 0 25px #f1c40f); } }
+
+        #startScreen h1 { margin: 0 0 25px 0; font-size: 48px; }
+        #startScreen p { margin: 0 0 45px 0; font-size: 20px; line-height: 1.6; }
+
+        .primary-btn { padding: 18px 45px; background: var(--ui-accent); color: white; border: none; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); }
+        .primary-btn:hover { transform: scale(1.05); background: #2980b9; }
+
+        #hud { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 10; pointer-events: none; }
+        .stat-badge { background: var(--ui-panel); padding: 10px 20px; border-radius: 50px; font-weight: bold; color: var(--text); box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; border: 1px solid rgba(0,0,0,0.05); pointer-events: auto; }
+
+        #starTracker {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; padding: 12px 25px;
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
+            border-radius: 50px; border: 2px solid rgba(255, 255, 255, 0.2);
+            z-index: 10; pointer-events: none;
+        }
+        .hud-star { font-size: 24px; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .star-locked { filter: grayscale(1) brightness(0.4); transform: scale(0.85); }
+        .star-collected { filter: grayscale(0) brightness(1) drop-shadow(0 0 5px gold); transform: scale(1.2); }
+
+        /* Updated Modal Styling */
+        #quizModal { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: white; border-radius: 32px; padding: 35px 45px; display: none; 
+            flex-direction: column; align-items: center; z-index: 300; 
+            min-width: 340px; border: 1px solid #eee; box-shadow: 0 40px 80px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease;
+        }
+        #quizType { font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 14px; margin-bottom: 30px; height: 20px; display: flex; align-items: center; }
+        .math-question { font-size: 72px; font-weight: 800; margin-bottom: 45px; color: var(--text); }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .opt-btn { padding: 22px; background: rgba(255,255,255,0.7); color: var(--text); border: 2px solid rgba(0,0,0,0.05); border-radius: 20px; font-size: 28px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .opt-btn:hover { background: white; transform: translateY(-2px); }
+        .opt-btn.wrong { background: var(--danger); color: white; border-color: var(--danger); animation: shake 0.3s; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        #controls { display: grid; grid-template-areas: ". u ." "l . r" ". d ."; gap: 15px; margin-left: 25px; }
+        .ctrl-btn { width: 70px; height: 70px; background: #fff; border-radius: 50%; border: 1px solid #ddd; font-size: 32px; cursor: pointer; transition: 0.1s; box-shadow: 0 4px 0 #ccc; display: flex; align-items: center; justify-content: center; }
+        .ctrl-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #ccc; }
+
+        canvas { background: #fff; display: block; }
+    </style>
+</head>
+<body>
+
+<div id="gameWrapper">
+    <div id="canvasContainer">
+        <div id="startScreen" class="overlay" style="display:flex;">
+            <h1 style="color:var(--ui-accent)">Math Quest</h1>
+            <p>Gather the stars by answering math questions.<br>Defeat the final boss to win!</p>
+            <button class="primary-btn" onclick="beginGame()">Start Adventure</button>
+        </div>
+
+        <div id="gameOverScreen" class="overlay">
+            <h1 style="color: var(--danger)">Game Over!</h1>
+            <p>Heroes always try one more time.</p>
+            <button class="primary-btn" onclick="resetFullGame()">Try Again</button>
+        </div>
+
+        <div id="successScreen" class="overlay">
+            <div class="star-container"><span class="victory-star">★</span></div>
+            <h1 id="victoryTitle" style="color: var(--success)">Level Complete!</h1>
+            <p id="victoryText" style="margin-bottom: 25px;"></p>
+            <button class="primary-btn" id="nextBtn" onclick="handleVictoryClick()"></button>
+        </div>
+
+        <div id="hud">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div class="stat-badge" id="heartContainer"></div>
+            </div>
+            <div class="stat-badge">Level <span id="levelVal">1</span></div>
+        </div>
+
+        <div id="starTracker">
+            <span class="hud-star" id="s0">⭐</span>
+            <span class="hud-star" id="s1">⭐</span>
+            <span class="hud-star" id="s2">⭐</span>
+            <span class="hud-star" id="s3">⭐</span>
+            <span class="hud-star" id="s4">⭐</span>
+        </div>
+
+        <div id="quizModal">
+            <div id="quizType"></div>
+            <div class="math-question" id="mathQ"></div>
+            <div class="options-grid" id="mathOptions"></div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="controls">
+        <button class="ctrl-btn" style="grid-area: u" id="up">▲</button>
+        <button class="ctrl-btn" style="grid-area: l" id="left">◀</button>
+        <button class="ctrl-btn" style="grid-area: r" id="right">▶</button>
+        <button class="ctrl-btn" style="grid-area: d" id="down">▼</button>
+    </div>
+</div>
+
+<script>
+let audioCtx; 
+function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playSound(freq, type, duration) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+}
+
+const TILE_SIZE = 64, MAP_SIZE = 25, CANVAS_W = 600, CANVAS_H = 500, PLAYER_SPEED = 4;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = CANVAS_W; canvas.height = CANVAS_H;
+
+const LEVEL_THEMES = {
+    1: { name: "Grasslands", walk: "#27ae60", wall: "#3d2b1f", decor: "grass" },
+    2: { name: "Cave", walk: "#8d6e63", wall: "#3e2723", decor: "rock" },
+    3: { name: "City", walk: "#7f8c8d", wall: "#2c3e50", decor: "city" },
+    4: { name: "The Sea", walk: "#e5d3b3", wall: "#2980b9", decor: "sea" },
+    5: { name: "Volcano", walk: "#1a1a1a", wall: "#c0392b", decor: "lava" }
+};
+
+const Game = {
+    level: 1, stars: 0, lives: 3, 
+    map: [], treasures: [], enemies: [],
+    player: { x: 0, y: 0, isMoving: false },
+    keys: {}, isPaused: true,
+    boss: null,
+    decorations: []
+};
+
+function beginGame() {
+    initAudio();
+    document.getElementById('startScreen').style.display = 'none';
+    resetFullGame();
+    loop();
+}
+
+function handleVictoryClick() {
+    if (Game.level >= 5) resetFullGame();
+    else nextLevel();
+}
+
+function resetFullGame() {
+    document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none');
+    Game.level = 1; Game.stars = 0; Game.lives = 3;
+    Game.isPaused = false;
+    initLevel();
+}
+
+function nextLevel() {
+    document.getElementById('successScreen').style.display = 'none';
+    Game.level++; Game.stars = 0; Game.isPaused = false;
+    initLevel();
+}
+
+function initLevel() {
+    Game.map = Array(MAP_SIZE).fill().map(() => Array(MAP_SIZE).fill(1));
+    Game.decorations = [];
+    let tx = 12, ty = 12, floorCount = 0;
+    while(floorCount < 220) {
+        for(let i=0; i<2; i++) for(let j=0; j<2; j++) {
+            if(tx+i < MAP_SIZE && ty+j < MAP_SIZE && Game.map[tx+i][ty+j] === 1) {
+                Game.map[tx+i][ty+j] = 0; floorCount++;
+            }
+        }
+        let d = Math.floor(Math.random()*4);
+        if(d===0 && tx>2) tx--; else if(d===1 && tx<MAP_SIZE-3) tx++;
+        else if(d===2 && ty>2) ty--; else if(d===3 && ty<MAP_SIZE-3) ty++;
+    }
+
+    Game.player.x = 12 * TILE_SIZE + 32; Game.player.y = 12 * TILE_SIZE + 32;
+    Game.treasures = []; Game.enemies = []; Game.boss = null;
+    
+    for(let x=0; x<MAP_SIZE; x++) {
+        for(let y=0; y<MAP_SIZE; y++) {
+            if(Game.map[x][y] === 0 && Math.random() > 0.85) 
+                Game.decorations.push({x: x*TILE_SIZE + Math.random()*TILE_SIZE, y: y*TILE_SIZE + Math.random()*TILE_SIZE, type: 'floor', seed: Math.random()});
+            if(Game.map[x][y] === 1 && Math.random() > 0.6) 
+                Game.decorations.push({x: x*TILE_SIZE + Math.random()*TILE_SIZE, y: y*TILE_SIZE + Math.random()*TILE_SIZE, type: 'wall', seed: Math.random()});
+        }
+    }
+
+    const enemyCount = 3 + (Game.level * 2);
+    for(let i=0; i < enemyCount; i++) {
+        let rx, ry;
+        do { rx = Math.floor(Math.random()*MAP_SIZE); ry = Math.floor(Math.random()*MAP_SIZE); } while(Game.map[rx][ry] !== 0);
+        Game.enemies.push({ x: rx*TILE_SIZE+32, y: ry*TILE_SIZE+32, homeX: rx*TILE_SIZE+32, homeY: ry*TILE_SIZE+32, angle: Math.random()*Math.PI*2 });
+    }
+
+    while(Game.treasures.length < 5) {
+        let rx = Math.floor(Math.random()*MAP_SIZE), ry = Math.floor(Math.random()*MAP_SIZE);
+        if(Game.map[rx][ry] === 0) Game.treasures.push({ x: rx * TILE_SIZE + 32, y: ry * TILE_SIZE + 32 });
+    }
+
+    if(Game.level === 5) Game.boss = { x: 50, y: 50, radius: 30, freezeTime: 0, speed: 4.5 };
+    updateHUD();
+}
+
+function updateHUD() {
+    document.getElementById('heartContainer').innerHTML = '❤️'.repeat(Math.max(0, Game.lives));
+    document.getElementById('levelVal').innerText = Game.level;
+    for(let i=0; i<5; i++) {
+        const starEl = document.getElementById(`s${i}`);
+        if(i < Game.stars) {
+            starEl.classList.remove('star-locked');
+            starEl.classList.add('star-collected');
+        } else {
+            starEl.classList.remove('star-collected');
+            starEl.classList.add('star-locked');
+        }
+    }
+}
+
+function triggerQuiz(index, type) {
+    if(Game.isPaused) return; 
+    Game.isPaused = true;
+    const isAdd = Math.random() > 0.5;
+    let a, b, question, answer;
+
+    if(isAdd) {
+        answer = Math.floor(Math.random() * 9) + 2; 
+        a = Math.floor(Math.random() * (answer - 1)) + 1; b = answer - a;
+        question = `${a} + ${b} =`;
+    } else {
+        a = Math.floor(Math.random() * 9) + 2; 
+        b = Math.floor(Math.random() * a); answer = a - b;
+        question = `${a} - ${b} =`;
+    }
+
+    const modal = document.getElementById('quizModal');
+    const modalHeader = document.getElementById('quizType');
+    
+    // COLOR CODING LOGIC
+    if(type === 'treasure') {
+        modalHeader.innerText = "Treasure Locked!";
+        modalHeader.style.color = "#d4af37";
+        modal.style.backgroundColor = "#f7e9a1"; // Pale Yellow
+    } else {
+        modalHeader.innerText = type === 'boss' ? "BOSS ATTACK!" : "Enemy Encounter!";
+        modalHeader.style.color = "var(--danger)";
+        modal.style.backgroundColor = "#eb8a8a"; // Pale Red
+    }
+
+    document.getElementById('mathQ').innerText = question;
+    let opts = new Set([answer]);
+    while(opts.size < 4) {
+        let wrong = Math.floor(Math.random() * 11);
+        if(wrong !== answer) opts.add(wrong);
+    }
+    
+    const optContainer = document.getElementById('mathOptions');
+    optContainer.innerHTML = '';
+    Array.from(opts).sort(() => Math.random() - 0.5).forEach(o => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn'; btn.innerText = o;
+        btn.onclick = () => {
+            if(o === answer) {
+                playSound(600, 'sine', 0.15);
+                if(type === 'enemy') Game.enemies.splice(index, 1);
+                else if(type === 'treasure') { Game.treasures.splice(index, 1); Game.stars++; playSound(880, 'sine', 0.1); }
+                else if(type === 'boss') Game.boss.freezeTime = Date.now() + 5000;
+                
+                modal.style.display = 'none';
+                Game.isPaused = false;
+                updateHUD();
+                if(Game.stars >= 5) winLevel();
+            } else {
+                btn.classList.add('wrong');
+                playSound(150, 'sawtooth', 0.3);
+                if(type !== 'treasure') { 
+                    Game.lives--; updateHUD(); 
+                    if(Game.lives <= 0) { 
+                        modal.style.display = 'none';
+                        document.getElementById('gameOverScreen').style.display = 'flex';
+                    }
+                }
+            }
+        };
+        optContainer.appendChild(btn);
+    });
+    modal.style.display = 'flex';
+}
+
+function winLevel() {
+    Game.isPaused = true;
+    playSound(523, 'sine', 0.1); playSound(659, 'sine', 0.2);
+    const screen = document.getElementById('successScreen');
+    if (Game.level === 5) {
+        document.getElementById('victoryTitle').innerText = "Grand Champion!";
+        document.getElementById('victoryText').innerText = "The Volcano has been calmed! You are a Math Legend.";
+        document.getElementById('nextBtn').innerText = "Restart Journey";
+    } else {
+        document.getElementById('victoryTitle').innerText = "Level Complete!";
+        document.getElementById('victoryText').innerText = "You have mastered this world.";
+        document.getElementById('nextBtn').innerText = "Next Level";
+    }
+    screen.style.display = 'flex';
+}
+
+function checkWall(x, y) {
+    const gx = Math.floor(x / TILE_SIZE), gy = Math.floor(y / TILE_SIZE);
+    if(gx < 0 || gx >= MAP_SIZE || gy < 0 || gy >= MAP_SIZE) return true;
+    return Game.map[gx][gy] === 1;
+}
+
+function update() {
+    if(Game.isPaused) return;
+    let nx = Game.player.x, ny = Game.player.y;
+    Game.player.isMoving = false;
+    
+    if(Game.keys['arrowup']) { ny -= PLAYER_SPEED; Game.player.isMoving = true; }
+    if(Game.keys['arrowdown']) { ny += PLAYER_SPEED; Game.player.isMoving = true; }
+    if(Game.keys['arrowleft']) { nx -= PLAYER_SPEED; Game.player.isMoving = true; }
+    if(Game.keys['arrowright']) { nx += PLAYER_SPEED; Game.player.isMoving = true; }
+
+    if(!checkWall(nx - 12, Game.player.y) && !checkWall(nx + 12, Game.player.y)) Game.player.x = nx;
+    if(!checkWall(Game.player.x, ny - 12) && !checkWall(Game.player.x, ny + 12)) Game.player.y = ny;
+
+    Game.treasures.forEach((tr, i) => { if(Math.hypot(tr.x - Game.player.x, tr.y - Game.player.y) < 25) triggerQuiz(i, 'treasure'); });
+    Game.enemies.forEach((en, i) => {
+        en.angle += 0.02;
+        en.x = en.homeX + Math.cos(en.angle) * 45; en.y = en.homeY + Math.sin(en.angle) * 45;
+        if(Math.hypot(en.x - Game.player.x, en.y - Game.player.y) < 25) triggerQuiz(i, 'enemy');
+    });
+
+    if(Game.boss && Date.now() > Game.boss.freezeTime) {
+        const dx = Game.player.x - Game.boss.x, dy = Game.player.y - Game.boss.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist > 5) { Game.boss.x += (dx/dist) * Game.boss.speed; Game.boss.y += (dy/dist) * Game.boss.speed; }
+        if(dist < 35) triggerQuiz(0, 'boss');
+    }
+}
+
+function drawPlayer(x, y, isMoving) {
+    const walk = isMoving ? Math.sin(Date.now() / 100) * 8 : 0;
+    ctx.fillStyle = "#2c3e50"; ctx.fillRect(x - 6, y + 10, 4, 8 + walk); ctx.fillRect(x + 2, y + 10, 4, 8 - walk);
+    ctx.fillStyle = "#3498db"; ctx.fillRect(x - 8, y - 6, 16, 18);
+    ctx.fillStyle = "#ffdbac"; ctx.fillRect(x - 6, y - 16, 12, 12);
+    ctx.fillStyle = "#333"; ctx.fillRect(x - 4, y - 12, 2, 2); ctx.fillRect(x + 2, y - 12, 2, 2);
+}
+
+function drawEnemy(x, y, isBoss = false) {
+    const scale = isBoss ? 1.8 : 1;
+    const wobble = Math.sin(Date.now() / 150) * (2 * scale);
+    ctx.fillStyle = isBoss ? "#960018" : "#e74c3c"; 
+    ctx.beginPath(); ctx.ellipse(x, y + wobble, 18 * scale, (16 - wobble/scale) * scale, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(x-(6*scale), y-(2*scale)+wobble, 5*scale, 0, Math.PI*2); ctx.arc(x+(6*scale), y-(2*scale)+wobble, 5*scale, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(x-(6*scale), y-(2*scale)+wobble, 2*scale, 0, Math.PI*2); ctx.arc(x+(6*scale), y-(2*scale)+wobble, 2*scale, 0, Math.PI*2); ctx.fill();
+    if(isBoss && Date.now() < Game.boss.freezeTime) { ctx.strokeStyle = "cyan"; ctx.lineWidth = 4; ctx.stroke(); }
+}
+
+function render() {
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    const theme = LEVEL_THEMES[Game.level];
+    const camX = Game.player.x - CANVAS_W/2, camY = Game.player.y - CANVAS_H/2;
+    ctx.save(); ctx.translate(-camX, -camY);
+
+    for(let x=0; x<MAP_SIZE; x++) {
+        for(let y=0; y<MAP_SIZE; y++) {
+            const isWall = Game.map[x][y] === 1;
+            ctx.fillStyle = isWall ? theme.wall : theme.walk;
+            ctx.fillRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+    }
+
+    Game.decorations.forEach(d => {
+        if (theme.decor === "grass" && d.type === 'floor') {
+            ctx.fillStyle = "#2ecc71"; ctx.fillRect(d.x, d.y, 4, 10);
+        }
+        if (theme.decor === "rock" && d.type === 'wall') {
+            ctx.fillStyle = "#2c1b18"; ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + 18, d.y + 6); ctx.lineTo(d.x + 12, d.y + 18); ctx.fill();
+        }
+        if (theme.decor === "sea" && d.type === 'wall') {
+            ctx.fillStyle = "rgba(255,255,255,0.15)";
+            const offset = Math.sin(Date.now()/500 + d.x) * 10;
+            ctx.fillRect(d.x + offset, d.y, 20, 2);
+        }
+        if (theme.decor === "city" && d.type === 'wall') {
+            ctx.fillStyle = Math.random() > 0.5 ? "#f1c40f" : "#00d2ff";
+            ctx.globalAlpha = Math.sin(Date.now()/300 + d.x) * 0.5 + 0.5;
+            ctx.fillRect(d.x, d.y, 6, 6); ctx.globalAlpha = 1.0;
+        }
+        if (theme.decor === "lava" && d.type === 'wall') {
+            const sparkleIntensity = Math.sin(Date.now()/250 + d.seed * 50);
+            if(sparkleIntensity > 0.65) {
+                ctx.fillStyle = sparkleIntensity > 0.9 ? "#ffffff" : "#ffcc00"; 
+                ctx.fillRect(d.x, d.y, 4, 4);
+                ctx.fillStyle = "rgba(255, 165, 0, 0.3)"; ctx.fillRect(d.x - 2, d.y - 2, 8, 8);
+            } else {
+                ctx.fillStyle = "#e67e22"; ctx.fillRect(d.x, d.y, 2, 2);
+            }
+        }
+    });
+
+    Game.treasures.forEach(tr => {
+        const pulse = 10 + Math.sin(Date.now()/200) * 3;
+        ctx.save(); ctx.shadowBlur = 25; ctx.shadowColor = "#f1c40f";
+        ctx.fillStyle = "#f1c40f"; ctx.beginPath(); ctx.arc(tr.x, tr.y, pulse, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+    });
+
+    Game.enemies.forEach(en => drawEnemy(en.x, en.y));
+    if(Game.boss) drawEnemy(Game.boss.x, Game.boss.y, true);
+    drawPlayer(Game.player.x, Game.player.y, Game.player.isMoving);
+    ctx.restore();
+}
+
+window.onkeydown = e => Game.keys[e.key.toLowerCase()] = true;
+window.onkeyup = e => Game.keys[e.key.toLowerCase()] = false;
+function bind(id, k) {
+    const el = document.getElementById(id);
+    el.onmousedown = el.ontouchstart = (e) => { e.preventDefault(); Game.keys[k] = true; };
+    el.onmouseup = el.ontouchend = () => Game.keys[k] = false;
+}
+bind('up','arrowup'); bind('down','arrowdown'); bind('left','arrowleft'); bind('right','arrowright');
+function loop() { update(); render(); requestAnimationFrame(loop); }
+</script>
+</body>
+</html>

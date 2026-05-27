@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Days of the Week</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #0055FF;
+            --primary-red: #FF3B30;
+            --primary-yellow: #FFCC00;
+            --bg-gray: #F2F2F7;
+            --font-main: 'Montserrat', sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: var(--font-main);
+            background: var(--bg-gray);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .screen {
+            position: fixed;
+            inset: 0;
+            background: var(--primary-blue);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 { font-weight: 900; letter-spacing: -1px; margin-bottom: 20px; text-transform: uppercase; }
+
+        .setting-section { margin-bottom: 25px; width: 100%; max-width: 350px; }
+        .ref-label { margin-bottom: 12px; font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        .btn-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 10px; 
+            margin-bottom: 10px;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* Base Button Styles */
+        button {
+            font-family: var(--font-main);
+            padding: 18px 24px;
+            font-weight: 900;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.1s;
+            font-size: 1rem;
+        }
+
+        button:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.2) !important; }
+
+        /* Small Setting Buttons */
+        .ref-btn, .opt-btn {
+            padding: 12px 5px;
+            font-size: 0.85rem;
+            background: white;
+            color: var(--primary-blue);
+            box-shadow: 0 4px 0 #DDD;
+            flex: 1;
+        }
+
+        .ref-btn.active, .opt-btn.active {
+            background: var(--primary-yellow);
+            color: #000;
+            box-shadow: 0 4px 0 #CCA300;
+        }
+
+        /* Large Action Buttons */
+        .main-action-btn {
+            width: 100%;
+            max-width: 350px;
+            font-size: 1.4rem;
+            background: var(--primary-yellow);
+            color: #000;
+            box-shadow: 0 8px 0 #CCA300;
+            margin-top: 10px;
+        }
+
+        #success-screen button {
+            background: white;
+            color: #34C759;
+            font-size: 1.4rem;
+            padding: 25px 50px;
+            box-shadow: 0 8px 0 #28a745;
+        }
+
+        /* Game Elements */
+        #game-container {
+            width: 95vw;
+            max-width: 1000px;
+            height: 90vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 10px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            border: 5px solid var(--primary-blue);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+        }
+
+        #source-panel { display: flex; flex-direction: column; justify-content: space-around; }
+        .slot { flex: 1; display: flex; align-items: center; justify-content: center; }
+
+        .day-card {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: clamp(16px, 2.8vh, 26px);
+            font-weight: 900;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: grab;
+            touch-action: none;
+            border: 3px solid #f0f0f0;
+            width: 85%;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .red { color: var(--primary-red); }
+        .black { color: #000; }
+
+        .drop-zone {
+            flex: 1;
+            border: 3px dashed #D1D1D6;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: clamp(14px, 2.2vh, 20px);
+            color: #C7C7CC;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .drop-active { border-color: var(--primary-yellow); background: rgba(255, 204, 0, 0.1); }
+        .drop-correct { background: var(--primary-yellow); color: #000; border: 3px solid var(--primary-yellow); }
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            #game-container { grid-template-columns: 1fr; height: 95vh; gap: 10px; }
+            .panel { padding: 10px; border-width: 3px; }
+            .main-action-btn { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="screen">
+        <h1 style="font-size: clamp(2rem, 6vw, 3rem);">Days of the Week</h1>
+        
+        <div class="setting-section">
+            <p class="ref-label">Include reference words for:</p>
+            <div class="btn-grid" id="reference-toggles"></div>
+        </div>
+
+        <div class="setting-section">
+            <p class="ref-label">Initial Letter:</p>
+            <div class="toggle-group">
+                <button id="opt-highlight" class="opt-btn active" onclick="setHighlight(true)">Highlight</button>
+                <button id="opt-no-highlight" class="opt-btn" onclick="setHighlight(false)">No Highlight</button>
+            </div>
+        </div>
+
+        <button class="main-action-btn" onclick="initGame()">Start Game</button>
+    </div>
+
+    <div id="success-screen" class="screen hidden" style="background: #34C759;">
+        <h1 style="font-size: 4rem; margin-bottom: 30px;">PERFECT!</h1>
+        <button onclick="resetToMenu()">PLAY AGAIN</button>
+    </div>
+
+    <div id="game-container" class="hidden">
+        <div class="panel" id="source-panel"></div>
+        <div class="panel" id="target-panel">
+            <div class="drop-zone" data-day="Sunday" data-index="0"></div>
+            <div class="drop-zone" data-day="Monday" data-index="1"></div>
+            <div class="drop-zone" data-day="Tuesday" data-index="2"></div>
+            <div class="drop-zone" data-day="Wednesday" data-index="3"></div>
+            <div class="drop-zone" data-day="Thursday" data-index="4"></div>
+            <div class="drop-zone" data-day="Friday" data-index="5"></div>
+            <div class="drop-zone" data-day="Saturday" data-index="6"></div>
+        </div>
+    </div>
+
+<script>
+    const daysData = [
+        { name: "Sunday", red: 2 }, { name: "Monday", red: 1 }, 
+        { name: "Tuesday", red: 2 }, { name: "Wednesday", red: 1 },
+        { name: "Thursday", red: 2 }, { name: "Friday", red: 1 }, 
+        { name: "Saturday", red: 2 }
+    ];
+
+    let solved = 0;
+    let audioUnlocked = false;
+    let preferredVoice = null;
+    let referenceSelections = {};
+    let isHighlightEnabled = true;
+
+    function setHighlight(val) {
+        isHighlightEnabled = val;
+        document.getElementById('opt-highlight').classList.toggle('active', val);
+        document.getElementById('opt-no-highlight').classList.toggle('active', !val);
+    }
+
+    function setupStartScreen() {
+        const grid = document.getElementById('reference-toggles');
+        daysData.forEach(day => {
+            const shortName = day.name.substring(0, 3);
+            referenceSelections[day.name] = false;
+            const btn = document.createElement('button');
+            btn.className = 'ref-btn';
+            btn.innerText = shortName;
+            btn.onclick = () => {
+                referenceSelections[day.name] = !referenceSelections[day.name];
+                btn.classList.toggle('active');
+            };
+            grid.appendChild(btn);
+        });
+    }
+
+    function loadVoices() {
+        const voices = window.speechSynthesis.getVoices();
+        preferredVoice = voices.find(v => v.name.includes('Google US English')) || 
+                         voices.find(v => v.name.includes('Samantha')) || 
+                         voices.find(v => v.lang.startsWith('en-US')) ||
+                         voices[0];
+    }
+
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+    setupStartScreen();
+
+    function resetToMenu() {
+        solved = 0;
+        document.getElementById('success-screen').classList.add('hidden');
+        document.getElementById('game-container').classList.add('hidden');
+        document.getElementById('start-screen').classList.remove('hidden');
+        document.getElementById('source-panel').innerHTML = "";
+        document.querySelectorAll('.drop-zone').forEach(z => {
+            z.innerText = "";
+            z.classList.remove('drop-correct');
+        });
+        interact('.day-card').unset();
+        interact('.drop-zone').unset();
+    }
+
+    function initGame() {
+        if (!audioUnlocked) {
+            const silent = new SpeechSynthesisUtterance("");
+            window.speechSynthesis.speak(silent);
+            audioUnlocked = true;
+        }
+
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-container').classList.remove('hidden');
+        
+        document.querySelectorAll('.drop-zone').forEach(z => {
+            const dayName = z.getAttribute('data-day');
+            z.innerText = referenceSelections[dayName] ? dayName : "";
+        });
+
+        const source = document.getElementById('source-panel');
+        const shuffled = [...daysData].sort(() => Math.random() - 0.5);
+
+        shuffled.forEach(day => {
+            const slot = document.createElement('div');
+            slot.className = 'slot';
+            const card = document.createElement('div');
+            card.className = 'day-card';
+            card.setAttribute('data-day', day.name);
+
+            if (isHighlightEnabled) {
+                const r = day.name.substring(0, day.red);
+                const b = day.name.substring(day.red);
+                card.innerHTML = `<span class="red">${r}</span><span class="black">${b}</span>`;
+            } else {
+                card.innerHTML = `<span class="black">${day.name}</span>`;
+            }
+
+            slot.appendChild(card);
+            source.appendChild(slot);
+            setupDraggable(card);
+        });
+        setupDropZones();
+    }
+
+    function setupDraggable(target) {
+        let pos = { x: 0, y: 0 };
+        interact(target).draggable({
+            listeners: {
+                start(e) { e.target.style.zIndex = 1000; },
+                move(e) {
+                    pos.x += e.dx; pos.y += e.dy;
+                    e.target.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+                },
+                end(e) {
+                    if (!e.relatedTarget) {
+                        pos = { x: 0, y: 0 };
+                        e.target.style.transform = `translate(0px, 0px)`;
+                        e.target.style.zIndex = 10;
+                    }
+                }
+            }
+        });
+    }
+
+    function setupDropZones() {
+        interact('.drop-zone').dropzone({
+            accept: '.day-card',
+            overlap: 0.5,
+            ondropactivate: (e) => e.target.classList.add('drop-active'),
+            ondropdeactivate: (e) => e.target.classList.remove('drop-active'),
+            ondrop: function (e) {
+                const day = e.relatedTarget.getAttribute('data-day');
+                const zone = e.target;
+                if (day === zone.getAttribute('data-day')) {
+                    e.relatedTarget.classList.add('hidden');
+                    zone.innerText = day;
+                    zone.classList.add('drop-correct');
+                    speak(day);
+                    solved++;
+                    if (solved === 7) {
+                        setTimeout(() => {
+                            document.getElementById('success-screen').classList.remove('hidden');
+                        }, 500);
+                    }
+                } else {
+                    e.relatedTarget.style.transform = `translate(0px, 0px)`;
+                }
+            }
+        });
+    }
+
+    function speak(t) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(t);
+            if (preferredVoice) msg.voice = preferredVoice;
+            msg.pitch = 1.0; msg.rate = 0.9; msg.volume = 1.0; 
+            window.speechSynthesis.speak(msg);
+        }
+    }
+</script>
+</body>
+</html>

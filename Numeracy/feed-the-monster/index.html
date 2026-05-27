@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MORE! — The Monster Snack Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --coral:#FF6B6B; --coral-d:#E84040;
+  --mint:#4ECDC4;  --mint-d:#38B2AA;
+  --sunny:#FFE66D; --sunny-d:#F5C842;
+  --purple:#A78BFA;--purple-d:#7C3AED;
+  --bg:#FFF9F0;    --bg2:#FFF0DC;
+  --text:#2D1B4E;  --text-s:#6B5B8A;
+  --white:#FFFFFF;
+  --shadow:0 8px 32px rgba(45,27,78,.12);
+  --shadow-lg:0 16px 48px rgba(45,27,78,.18);
+  --radius:24px;   --radius-lg:36px;
+}
+
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:'Poppins',sans-serif;color:var(--text);
+  -webkit-tap-highlight-color:transparent;user-select:none}
+
+/* ===== SCREEN SYSTEM ===== */
+#app{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+.screen{display:none;width:100%;height:100%;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:clamp(10px,2.5vw,28px);
+  position:absolute;top:0;left:0;gap:clamp(5px,1.2vh,14px)}
+.screen.active{display:flex}
+
+/* ===== BG BLOBS ===== */
+.bg-blob{position:fixed;border-radius:50%;opacity:.15;pointer-events:none;z-index:0;
+  animation:blobFloat 8s ease-in-out infinite}
+.bg-blob:nth-child(1){width:40vw;height:40vw;background:var(--coral);top:-10%;left:-10%}
+.bg-blob:nth-child(2){width:30vw;height:30vw;background:var(--mint);bottom:-5%;right:-5%;animation-delay:-3s}
+.bg-blob:nth-child(3){width:20vw;height:20vw;background:var(--sunny);top:50%;left:60%;animation-delay:-5s}
+@keyframes blobFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(2%,3%) scale(1.04)}}
+
+/* ===== START SCREEN ===== */
+#start-screen{z-index:1}
+.game-title{font-size:clamp(2.2rem,7vw,4.5rem);font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:.1em}
+.game-title span{color:var(--coral)}
+.title-sub{font-size:clamp(.8rem,2.2vw,1rem);font-weight:600;color:var(--text-s);letter-spacing:.5px}
+.round-label{font-size:clamp(.8rem,2vw,.95rem);font-weight:700;color:var(--text-s);
+  text-transform:uppercase;letter-spacing:2px;margin-top:clamp(10px,2vh,24px)}
+.round-buttons{display:flex;gap:clamp(10px,2.5vw,20px)}
+.round-btn{min-width:110px;min-height:54px;padding:12px 28px;border-radius:var(--radius);
+  border:3px solid transparent;font-family:'Poppins',sans-serif;
+  font-size:clamp(1rem,3vw,1.2rem);font-weight:800;cursor:pointer;
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);background:var(--white);
+  color:var(--text);box-shadow:var(--shadow);outline:none}
+.round-btn:hover{transform:translateY(-2px) scale(1.04);box-shadow:var(--shadow-lg)}
+.round-btn:active{transform:scale(.96)}
+.round-btn.selected{background:var(--purple);color:#fff;border-color:var(--purple-d);transform:translateY(-2px) scale(1.06)}
+/* Shuffle buttons re-use round-btn styles but with coral accent when selected */
+.shuffle-btn.selected{background:var(--coral);color:#fff;border-color:var(--coral-d);transform:translateY(-2px) scale(1.06)}
+.shuffle-btn-sub{font-size:clamp(.6rem,1.5vw,.7rem);font-weight:600;opacity:.8;display:block;margin-top:2px;letter-spacing:0}
+.start-btn{min-width:180px;min-height:58px;padding:14px 40px;border-radius:var(--radius-lg);
+  border:none;font-family:'Poppins',sans-serif;font-size:clamp(1.1rem,3.5vw,1.4rem);
+  font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--coral),#FF8E53);
+  color:#fff;box-shadow:0 8px 24px rgba(255,107,107,.4);letter-spacing:1px;
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);outline:none;margin-top:clamp(8px,2vh,20px)}
+.start-btn:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 12px 32px rgba(255,107,107,.5)}
+.start-btn:active{transform:scale(.97)}
+.start-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* ===== HUD ===== */
+.hud{display:flex;align-items:center;justify-content:space-between;
+  width:100%;max-width:680px;padding:0 4px}
+.hud-score{display:flex;align-items:center;gap:8px;background:var(--white);
+  border-radius:50px;padding:8px 18px;box-shadow:var(--shadow);
+  font-size:clamp(.8rem,2.2vw,.95rem);font-weight:700;color:var(--text)}
+.hud-round{background:var(--white);border-radius:50px;padding:8px 18px;
+  box-shadow:var(--shadow);font-size:clamp(.8rem,2.2vw,.95rem);font-weight:700;color:var(--text-s)}
+
+/* ===== INSTRUCTION CUE ===== */
+.instruction-cue{
+  display:flex;align-items:center;justify-content:center;
+  gap:clamp(6px,1.5vw,12px);
+  height:clamp(40px,7vh,64px);
+}
+.instruction-text{
+  font-size:clamp(1.1rem,3.2vw,1.6rem);font-weight:900;
+  color:var(--text);letter-spacing:-0.5px;white-space:nowrap;
+}
+.instruction-more-img{
+  height:clamp(36px,6vh,56px);max-height:56px;
+  object-fit:contain;
+  filter:drop-shadow(0 3px 6px rgba(255,107,107,.3));
+  animation:morePulse 1.8s ease-in-out infinite;
+}
+.instruction-more-fallback{
+  font-size:clamp(1.1rem,3.2vw,1.6rem);font-weight:900;letter-spacing:-1px;
+  background:linear-gradient(135deg,var(--coral),#FF8E53);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:morePulse 1.8s ease-in-out infinite;
+}
+@keyframes morePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+/* ===== BOTTOM PROGRESS BAR ===== */
+.bottom-bar{
+  width:100%;max-width:680px;
+  display:flex;align-items:center;gap:12px;
+  padding:0 4px;
+}
+.progress-bar-wrap{flex:1;height:10px;background:rgba(45,27,78,.1);
+  border-radius:99px;overflow:hidden}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--mint),var(--purple));
+  border-radius:99px;transition:width .5s ease}
+.bottom-round-label{
+  font-size:clamp(.75rem,2vw,.9rem);font-weight:700;color:var(--text-s);
+  white-space:nowrap;
+}
+
+/* ===== MONSTER AREA ===== */
+.monster-area{
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+  height:clamp(160px,36vh,300px);
+  width:clamp(160px,36vh,300px);
+}
+
+/* The SVG monster scales to fill its container */
+#monster-svg{
+  width:100%;height:100%;
+  overflow:visible;
+  filter:drop-shadow(0 8px 20px rgba(167,139,250,.35));
+  animation:monsterBob 2.6s ease-in-out infinite;
+}
+@keyframes monsterBob{
+  0%,100%{transform:translateY(0) rotate(-2deg)}
+  50%{transform:translateY(-7px) rotate(2deg)}
+}
+#monster-svg.eating{animation:monsterChew .55s cubic-bezier(.36,.07,.19,.97) forwards}
+@keyframes monsterChew{
+  0%{transform:scale(1) rotate(0)}
+  20%{transform:scale(1.18) rotate(-5deg)}
+  45%{transform:scale(.92) rotate(4deg)}
+  70%{transform:scale(1.1) rotate(-3deg)}
+  100%{transform:scale(1) rotate(0)}
+}
+
+/* Jaw drops straight down to open mouth */
+#jaw{
+  transform:translateY(0px);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+#monster-svg.mouth-open #jaw{transform:translateY(22px)}
+
+/* Eye blink */
+#eye-l-lid,#eye-r-lid{
+  transform-origin:50% 0%;
+  transform:scaleY(0);
+  transition:transform .12s ease;
+}
+#monster-svg.blink #eye-l-lid,
+#monster-svg.blink #eye-r-lid{transform:scaleY(1)}
+
+/* Throat clip — food disappears behind this */
+#throat-clip rect{} /* defined in SVG */
+
+/* Speech bubble */
+.speech-bubble{
+  position:absolute;top:-6px;right:-16px;
+  background:var(--white);border-radius:16px 16px 16px 4px;
+  padding:5px 13px;font-size:clamp(.7rem,1.8vw,.85rem);font-weight:700;
+  color:var(--coral);box-shadow:var(--shadow);pointer-events:none;
+  opacity:0;transform:scale(.7);
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;z-index:10}
+.speech-bubble.show{opacity:1;transform:scale(1)}
+
+/* ===== PLATES ROW ===== */
+.plates-row{display:flex;align-items:stretch;justify-content:center;
+  gap:clamp(12px,3.5vw,44px);width:100%;max-width:680px}
+.plate-card{flex:1;max-width:clamp(120px,40vw,250px);background:var(--white);
+  border-radius:var(--radius-lg);padding:clamp(10px,2vw,20px) clamp(8px,1.8vw,16px) clamp(12px,2vw,20px);
+  box-shadow:var(--shadow);cursor:pointer;border:4px solid transparent;
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);
+  display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1.2vh,12px);
+  position:relative;outline:none;-webkit-tap-highlight-color:transparent;}
+.plate-card:hover:not(.disabled){transform:translateY(-6px) scale(1.03);box-shadow:var(--shadow-lg)}
+.plate-card:active:not(.disabled){transform:scale(.97)}
+.plate-card.correct{border-color:var(--mint);background:#F0FFFD;
+  transform:translateY(-6px) scale(1.04);box-shadow:0 12px 40px rgba(78,205,196,.35)}
+.plate-card.wrong{border-color:var(--coral);background:#FFF4F4;animation:wrongShake .5s ease}
+.plate-card.disabled{cursor:default}
+@keyframes wrongShake{
+  0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}
+  40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+/* Fixed-height snack area — same size on both plates always */
+.snack-grid{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:clamp(2px,.7vw,6px);
+  flex:1;          /* fill available vertical space equally */
+  width:100%;
+  align-content:center; /* centre the wrapped rows vertically */
+  overflow:hidden}
+.snack-item{font-size:clamp(1.3rem,3.8vw,2.2rem);line-height:1;display:inline-block}
+.plate-dish{width:85%;height:clamp(7px,1.3vh,12px);
+  background:linear-gradient(180deg,#E8E0F8,#D0C4F0);border-radius:50%;
+  box-shadow:0 3px 8px rgba(167,139,250,.2)}
+.plate-count{font-size:clamp(1rem,3.2vw,1.5rem);font-weight:900;color:var(--text);
+  background:var(--bg2);border-radius:50px;padding:2px 14px;line-height:1.4}
+
+/* ===== RESULT SCREEN ===== */
+#result-screen{z-index:1}
+.result-card{background:var(--white);border-radius:var(--radius-lg);
+  padding:clamp(20px,4.5vw,44px) clamp(22px,5.5vw,52px);
+  box-shadow:var(--shadow-lg);text-align:center;max-width:420px;width:90%;
+  position:relative;overflow:hidden}
+.result-card::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;
+  background:linear-gradient(90deg,var(--coral),var(--purple),var(--mint))}
+.result-monster-svg{width:clamp(70px,18vw,120px);height:clamp(70px,18vw,120px);
+  margin-bottom:6px;animation:resultBounce .8s cubic-bezier(.34,1.56,.64,1)}
+@keyframes resultBounce{0%{transform:scale(0) rotate(-20deg)}60%{transform:scale(1.15) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+.result-title{font-size:clamp(1.4rem,4.5vw,2rem);font-weight:900;letter-spacing:-1px;margin-bottom:4px}
+.result-score-big{font-size:clamp(2.2rem,8vw,3.5rem);font-weight:900;color:var(--purple);line-height:1.1;margin:4px 0}
+.result-score-label{font-size:clamp(.8rem,2.2vw,.95rem);color:var(--text-s);font-weight:600;margin-bottom:clamp(12px,2.5vh,24px)}
+.play-again-btn{min-width:190px;min-height:52px;padding:12px 40px;border-radius:var(--radius-lg);
+  border:none;font-family:'Poppins',sans-serif;font-size:clamp(1rem,3vw,1.15rem);font-weight:800;
+  cursor:pointer;background:linear-gradient(135deg,var(--purple),#7C3AED);color:#fff;
+  box-shadow:0 8px 24px rgba(167,139,250,.4);letter-spacing:.5px;
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);outline:none;display:block;margin:0 auto}
+.play-again-btn:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 12px 32px rgba(167,139,250,.5)}
+.play-again-btn:active{transform:scale(.97)}
+
+/* ===== OVERLAYS ===== */
+#confetti-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999}
+.next-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);
+  z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+.next-overlay.fade{opacity:1;pointer-events:all}
+
+/* snack appear */
+@keyframes snackAppear{
+  0%{transform:scale(0) rotate(-20deg);opacity:0}
+  70%{transform:scale(1.15) rotate(5deg)}
+  100%{transform:scale(1) rotate(0);opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="bg-blob"></div>
+<div class="bg-blob"></div>
+<div class="bg-blob"></div>
+
+<div id="app">
+
+  <!-- ===== START SCREEN ===== -->
+  <div id="start-screen" class="screen active">
+    <!-- Mini monster on start screen -->
+    <svg id="start-monster-svg" viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg"
+      style="width:clamp(90px,20vw,150px);height:auto;
+             filter:drop-shadow(0 8px 16px rgba(167,139,250,.3));
+             animation:monsterBob 2s ease-in-out infinite">
+      <defs>
+        <radialGradient id="sg-body" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#C4B5FD"/>
+          <stop offset="100%" stop-color="#7C3AED"/>
+        </radialGradient>
+        <radialGradient id="sg-belly" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#EDE9FE"/>
+          <stop offset="100%" stop-color="#C4B5FD"/>
+        </radialGradient>
+      </defs>
+      <!-- Body -->
+      <ellipse cx="60" cy="72" rx="46" ry="50" fill="url(#sg-body)"/>
+      <!-- Belly -->
+      <ellipse cx="60" cy="80" rx="28" ry="32" fill="url(#sg-belly)" opacity=".7"/>
+      <!-- Left horn -->
+      <polygon points="28,34 18,4 40,28" fill="#6D28D9"/>
+      <!-- Centre horn -->
+      <polygon points="60,22 50,0 70,0" fill="#6D28D9"/>
+      <!-- Right horn -->
+      <polygon points="92,34 102,4 80,28" fill="#6D28D9"/>
+      <!-- Left eye white -->
+      <circle cx="44" cy="58" r="11" fill="white"/>
+      <!-- Right eye white -->
+      <circle cx="76" cy="58" r="11" fill="white"/>
+      <!-- Left pupil -->
+      <circle cx="46" cy="59" r="6" fill="#1E1B4B"/>
+      <circle cx="48" cy="57" r="2" fill="white"/>
+      <!-- Right pupil -->
+      <circle cx="78" cy="59" r="6" fill="#1E1B4B"/>
+      <circle cx="80" cy="57" r="2" fill="white"/>
+      <!-- Smile -->
+      <path d="M44 80 Q60 94 76 80" stroke="#5B21B6" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- Teeth top -->
+      <rect x="51" y="80" width="7" height="7" rx="2" fill="white"/>
+      <rect x="62" y="80" width="7" height="7" rx="2" fill="white"/>
+      <!-- Spots -->
+      <circle cx="30" cy="85" r="5" fill="#6D28D9" opacity=".4"/>
+      <circle cx="90" cy="90" r="4" fill="#6D28D9" opacity=".4"/>
+      <circle cx="60" cy="108" r="4" fill="#6D28D9" opacity=".3"/>
+    </svg>
+
+    <h1 class="game-title">Feed the <span>Monster!</span></h1>
+    <p class="title-sub">Tap the plate with MORE snacks 🍕</p>
+    <p class="round-label">How many rounds?</p>
+    <div class="round-buttons">
+      <button class="round-btn" id="btn5" onclick="selectRounds(5)">5 Rounds</button>
+      <button class="round-btn" id="btn10" onclick="selectRounds(10)">10 Rounds</button>
+    </div>
+
+    <p class="round-label">Shuffle</p>
+    <div class="round-buttons">
+      <button class="round-btn shuffle-btn" id="btnRandom" onclick="selectShuffle('random')">
+        🎲 Random
+        <span class="shuffle-btn-sub">Any numbers</span>
+      </button>
+      <button class="round-btn shuffle-btn" id="btnBig" onclick="selectShuffle('big')">
+        📊 Big Difference
+        <span class="shuffle-btn-sub">Far apart numbers</span>
+      </button>
+    </div>
+    <button class="start-btn" id="startBtn" onclick="startGame()" disabled>Let's Play! 🎉</button>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="game-screen" class="screen">
+
+    <!-- Instruction: "Feed it MORE!" with image -->
+    <div class="instruction-cue">
+      <span class="instruction-text">Feed it MORE!</span>
+      <img class="instruction-more-img" src="assets/more.png" alt="MORE!"
+        onerror="this.style.display='none';document.getElementById('moreFallback').style.display='inline-block'">
+      <span class="instruction-more-fallback" id="moreFallback" style="display:none">!</span>
+    </div>
+
+    <!-- ===== SVG MONSTER ===== -->
+    <div class="monster-area" id="monsterArea">
+      <!--
+        Monster anatomy (bottom-up in SVG coords, y=0 top):
+        - Body ellipse
+        - Belly patch
+        - Horns
+        - UPPER JAW (fixed) — contains upper teeth row + throat
+        - JAW group (rotates) — lower jaw + lower teeth
+        - Eyes + lids (for blink)
+        Mouth opens by rotating #jaw downward around its top edge.
+        A clipPath masks the throat so food vanishes inside.
+      -->
+      <svg id="monster-svg" viewBox="0 0 160 170" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="g-body" cx="50%" cy="38%" r="62%">
+            <stop offset="0%" stop-color="#C4B5FD"/>
+            <stop offset="100%" stop-color="#7C3AED"/>
+          </radialGradient>
+          <radialGradient id="g-belly" cx="50%" cy="50%" r="52%">
+            <stop offset="0%" stop-color="#EDE9FE"/>
+            <stop offset="100%" stop-color="#C4B5FD"/>
+          </radialGradient>
+          <radialGradient id="g-jaw" cx="50%" cy="80%" r="70%">
+            <stop offset="0%" stop-color="#A78BFA"/>
+            <stop offset="100%" stop-color="#6D28D9"/>
+          </radialGradient>
+          <!-- Throat clip: hides anything that enters the mouth -->
+          <clipPath id="throat-clip">
+            <rect id="throat-rect" x="47" y="88" width="66" height="40" rx="4"/>
+          </clipPath>
+        </defs>
+
+        <!-- === BODY === -->
+        <ellipse cx="80" cy="96" rx="60" ry="65" fill="url(#g-body)"/>
+        <!-- Belly -->
+        <ellipse cx="80" cy="108" rx="36" ry="42" fill="url(#g-belly)" opacity=".65"/>
+        <!-- Spots -->
+        <circle cx="38" cy="112" r="7" fill="#6D28D9" opacity=".35"/>
+        <circle cx="122" cy="118" r="5.5" fill="#6D28D9" opacity=".35"/>
+        <circle cx="80" cy="148" r="5" fill="#6D28D9" opacity=".28"/>
+
+        <!-- === HORNS (behind head visually, drawn first) === -->
+        <!-- Left horn -->
+        <polygon points="44,44 30,6 58,36" fill="#5B21B6"/>
+        <polygon points="44,44 30,6 58,36" fill="#6D28D9" opacity=".5"/>
+        <!-- Centre horn (tallest) -->
+        <polygon points="80,32 68,0 92,0 " fill="#5B21B6"/>
+        <polygon points="80,32 68,0 92,0" fill="#6D28D9" opacity=".5"/>
+        <!-- Right horn -->
+        <polygon points="116,44 130,6 102,36" fill="#5B21B6"/>
+        <polygon points="116,44 130,6 102,36" fill="#6D28D9" opacity=".5"/>
+
+        <!-- === UPPER FACE (fixed) === -->
+        <!-- Upper jaw / lip area -->
+        <path d="M42 98 Q80 88 118 98 L118 108 Q80 100 42 108 Z" fill="#6D28D9"/>
+        <!-- Upper teeth (sit on upper lip, clip to throat) -->
+        <g clip-path="url(#throat-clip)">
+          <rect x="52" y="96" width="10" height="12" rx="3" fill="white"/>
+          <rect x="66" y="94" width="10" height="14" rx="3" fill="white"/>
+          <rect x="80" y="94" width="10" height="14" rx="3" fill="white"/>
+          <rect x="94" y="96" width="10" height="12" rx="3" fill="white"/>
+          <!-- Throat / gullet — dark inside -->
+          <ellipse cx="80" cy="115" rx="28" ry="18" fill="#1E1B4B"/>
+          <ellipse cx="80" cy="118" rx="18" ry="12" fill="#0F0A2E"/>
+          <!-- Uvula -->
+          <ellipse cx="80" cy="116" rx="5" ry="7" fill="#EF4444"/>
+        </g>
+
+        <!-- === LOWER JAW (rotates open) === -->
+        <g id="jaw">
+          <!-- Lower jaw shape -->
+          <path d="M42 108 Q80 120 118 108 L114 128 Q80 142 46 128 Z" fill="url(#g-jaw)"/>
+          <!-- Lower teeth -->
+          <rect x="54" y="108" width="9" height="11" rx="3" fill="white"/>
+          <rect x="67" y="109" width="9" height="12" rx="3" fill="white"/>
+          <rect x="80" y="109" width="9" height="12" rx="3" fill="white"/>
+          <rect x="93" y="108" width="9" height="11" rx="3" fill="white"/>
+          <!-- Chin bump -->
+          <ellipse cx="80" cy="133" rx="22" ry="8" fill="#6D28D9"/>
+        </g>
+
+        <!-- === EYES (drawn on top of body) === -->
+        <!-- Left eye -->
+        <g id="eye-left">
+          <circle cx="56" cy="72" r="14" fill="white"/>
+          <circle cx="58" cy="73" r="8" fill="#1E1B4B"/>
+          <circle cx="61" cy="70" r="3" fill="white"/>
+          <!-- Lid for blinking -->
+          <rect id="eye-l-lid" x="42" y="58" width="28" height="14" rx="7" fill="#A78BFA"/>
+        </g>
+        <!-- Right eye -->
+        <g id="eye-right">
+          <circle cx="104" cy="72" r="14" fill="white"/>
+          <circle cx="106" cy="73" r="8" fill="#1E1B4B"/>
+          <circle cx="109" cy="70" r="3" fill="white"/>
+          <!-- Lid -->
+          <rect id="eye-r-lid" x="90" y="58" width="28" height="14" rx="7" fill="#A78BFA"/>
+        </g>
+
+        <!-- Eyebrows -->
+        <path d="M44 56 Q56 50 68 56" stroke="#5B21B6" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <path d="M92 56 Q104 50 116 56" stroke="#5B21B6" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+        <!-- Cheek blush -->
+        <ellipse cx="36" cy="84" rx="10" ry="7" fill="#F9A8D4" opacity=".45"/>
+        <ellipse cx="124" cy="84" rx="10" ry="7" fill="#F9A8D4" opacity=".45"/>
+      </svg>
+
+      <!-- Speech bubble -->
+      <div class="speech-bubble" id="speechBubble">Yummy! 😋</div>
+    </div>
+
+    <!-- Plates -->
+    <div class="plates-row" id="platesRow">
+      <div class="plate-card" id="plateA" onclick="choosePlate('A')" role="button" tabindex="0" aria-label="Plate A">
+        <div class="snack-grid" id="snacksA"></div>
+        <div class="plate-dish"></div>
+        <div class="plate-count" id="countA">0</div>
+      </div>
+      <div class="plate-card" id="plateB" onclick="choosePlate('B')" role="button" tabindex="0" aria-label="Plate B">
+        <div class="snack-grid" id="snacksB"></div>
+        <div class="plate-dish"></div>
+        <div class="plate-count" id="countB">0</div>
+      </div>
+    </div>
+
+    <!-- Bottom progress bar -->
+    <div class="bottom-bar">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="bottom-round-label" id="roundDisplay2"></div>
+    </div>
+
+  </div><!-- end game-screen -->
+
+  <!-- ===== RESULT SCREEN ===== -->
+  <div id="result-screen" class="screen">
+    <div class="result-card">
+      <!-- Small happy monster for result -->
+      <svg class="result-monster-svg" id="resultMonsterSvg" viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="rg-body" cx="50%" cy="38%" r="62%">
+            <stop offset="0%" stop-color="#C4B5FD"/><stop offset="100%" stop-color="#7C3AED"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="60" cy="72" rx="46" ry="50" fill="url(#rg-body)"/>
+        <ellipse cx="60" cy="80" rx="28" ry="32" fill="#EDE9FE" opacity=".65"/>
+        <polygon points="28,34 18,4 40,28" fill="#5B21B6"/>
+        <!-- Centre horn -->
+        <polygon points="60,22 50,0 70,0" fill="#5B21B6"/>
+        <polygon points="92,34 102,4 80,28" fill="#5B21B6"/>
+        <circle cx="44" cy="58" r="11" fill="white"/>
+        <circle cx="76" cy="58" r="11" fill="white"/>
+        <circle cx="46" cy="59" r="6" fill="#1E1B4B"/>
+        <circle cx="48" cy="57" r="2" fill="white"/>
+        <circle cx="78" cy="59" r="6" fill="#1E1B4B"/>
+        <circle cx="80" cy="57" r="2" fill="white"/>
+        <!-- Big happy smile -->
+        <path id="resultMouthPath" d="M38 78 Q60 98 82 78" stroke="#5B21B6" stroke-width="3.5" fill="#EF4444" stroke-linecap="round"/>
+        <circle cx="38" cy="78" r="4" fill="#5B21B6"/>
+        <circle cx="82" cy="78" r="4" fill="#5B21B6"/>
+        <ellipse cx="28" cy="82" rx="8" ry="6" fill="#F9A8D4" opacity=".5"/>
+        <ellipse cx="92" cy="82" rx="8" ry="6" fill="#F9A8D4" opacity=".5"/>
+      </svg>
+      <div class="result-title" id="resultTitle">Amazing!</div>
+      <div class="result-score-big" id="resultScore">0 / 5</div>
+      <div class="result-score-label">Correct Answers</div>
+      <button class="play-again-btn" onclick="goToStart()">Play Again! 🔄</button>
+    </div>
+  </div>
+
+</div><!-- end app -->
+
+<canvas id="confetti-canvas"></canvas>
+<div class="next-overlay" id="nextOverlay"></div>
+
+<script>
+// =============================================
+// GAME STATE
+// =============================================
+let totalRounds = 5;
+let currentRound = 0;
+let score = 0;
+let canClick = true;
+let correctPlate = '';
+let shuffleMode = ''; // 'random' or 'big'
+let firstTry = true;  // tracks whether this round has had a wrong guess yet
+
+// =============================================
+// EATING SOUND (Web Audio API — no file needed)
+// Generates a crunchy "nom" sound procedurally.
+// =============================================
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playEatSound() {
+  try {
+    const ctx = getAudioCtx();
+    // Layer 1: short noise burst (crunch texture)
+    const bufLen = ctx.sampleRate * 0.08;
+    const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.35, ctx.currentTime);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass'; bpf.frequency.value = 1200; bpf.Q.value = 0.8;
+    noise.connect(bpf); bpf.connect(noiseGain); noiseGain.connect(ctx.destination);
+    noise.start(); noise.stop(ctx.currentTime + 0.12);
+
+    // Layer 2: low "gulp" tone
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(220, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.15);
+    oscGain.gain.setValueAtTime(0.3, ctx.currentTime);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.connect(oscGain); oscGain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.18);
+  } catch(e) { /* audio blocked — silently ignore */ }
+}
+
+// =============================================
+// MONSTER HELPERS
+// =============================================
+const monsterSvg = document.getElementById('monster-svg');
+
+function openMouth() {
+  monsterSvg.classList.add('mouth-open');
+}
+function closeMouth() {
+  monsterSvg.classList.remove('mouth-open');
+}
+function chompMonster() {
+  monsterSvg.classList.remove('eating');
+  void monsterSvg.offsetWidth;
+  monsterSvg.classList.add('eating');
+  playEatSound(); // 🔊 nom!
+  monsterSvg.addEventListener('animationend', () => {
+    monsterSvg.classList.remove('eating');
+  }, { once: true });
+}
+
+// Periodic blink
+function scheduleBlink() {
+  const delay = 2500 + Math.random() * 3000;
+  setTimeout(() => {
+    monsterSvg.classList.add('blink');
+    setTimeout(() => { monsterSvg.classList.remove('blink'); scheduleBlink(); }, 150);
+  }, delay);
+}
+scheduleBlink();
+
+// =============================================
+// SNACKS
+// =============================================
+const SNACKS = ['🍕','🍎','🍪','🍩','🍓','🍫','🧁','🍭','🍇','🥐','🌮','🍦','🍉','🍋','🥨'];
+
+function getQuantities() {
+  let a, b;
+  if (shuffleMode === 'big') {
+    // One small (1-3), one large (7-10), randomly assigned to a/b
+    const small = 1 + Math.floor(Math.random() * 3);       // 1, 2, or 3
+    const large = 7 + Math.floor(Math.random() * 4);       // 7, 8, 9, or 10
+    [a, b] = Math.random() < 0.5 ? [small, large] : [large, small];
+  } else {
+    // Random: any two different numbers 1–10
+    do {
+      a = 1 + Math.floor(Math.random() * 10);
+      b = 1 + Math.floor(Math.random() * 10);
+    } while (a === b);
+  }
+  return [a, b];
+}
+function randomSnack() {
+  return SNACKS[Math.floor(Math.random() * SNACKS.length)];
+}
+
+// =============================================
+// ROUND SELECTION
+// =============================================
+function checkStartReady() {
+  document.getElementById('startBtn').disabled = !(totalRounds && shuffleMode);
+}
+function selectRounds(n) {
+  totalRounds = n;
+  document.getElementById('btn5').classList.toggle('selected', n === 5);
+  document.getElementById('btn10').classList.toggle('selected', n === 10);
+  checkStartReady();
+}
+function selectShuffle(mode) {
+  shuffleMode = mode;
+  document.getElementById('btnRandom').classList.toggle('selected', mode === 'random');
+  document.getElementById('btnBig').classList.toggle('selected', mode === 'big');
+  checkStartReady();
+}
+
+// =============================================
+// START / NEXT ROUND
+// =============================================
+function startGame() {
+  currentRound = 0; score = 0;
+  showScreen('game-screen');
+  nextRound();
+}
+
+function nextRound() {
+  currentRound++;
+  canClick = true;
+  closeMouth();
+  hideSpeech();
+  firstTry = true; // reset for each new round
+
+  document.getElementById('roundDisplay2').textContent = currentRound + ' / ' + totalRounds;
+  document.getElementById('progressFill').style.width = ((currentRound-1)/totalRounds*100) + '%';
+
+  document.getElementById('plateA').className = 'plate-card';
+  document.getElementById('plateB').className = 'plate-card';
+
+  const [qA, qB] = getQuantities();
+  correctPlate = qA > qB ? 'A' : 'B';
+  const snack = randomSnack();
+
+  renderSnacks('snacksA', snack, qA);
+  renderSnacks('snacksB', snack, qB);
+  document.getElementById('countA').textContent = qA;
+  document.getElementById('countB').textContent = qB;
+}
+
+function renderSnacks(containerId, emoji, count) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const span = document.createElement('span');
+    span.className = 'snack-item';
+    span.textContent = emoji;
+    span.style.animation = `snackAppear .3s ease ${i * .04}s both`;
+    el.appendChild(span);
+  }
+}
+
+// =============================================
+// CHOOSE PLATE
+// =============================================
+function choosePlate(choice) {
+  if (!canClick) return;
+
+  const isCorrect = choice === correctPlate;
+
+  if (!isCorrect) {
+    // Wrong: mark that this round is no longer first-try, shake the plate
+    firstTry = false;
+    const wrongEl = document.getElementById('plate' + choice);
+    wrongEl.classList.add('wrong');
+    wrongEl.addEventListener('animationend', () => {
+      wrongEl.classList.remove('wrong');
+    }, { once: true });
+    return;
+  }
+
+  // Correct answer — only score if no wrong guess was made this round
+  canClick = false;
+  if (firstTry) score++;
+  document.getElementById('plateA').classList.add('disabled');
+  document.getElementById('plateB').classList.add('disabled');
+  document.getElementById('plate' + correctPlate).classList.add('correct');
+
+  // Open mouth, fly food in, then advance
+  openMouth();
+  setTimeout(() => {
+    flyFoodToMonster('snacks' + correctPlate, () => {
+      closeMouth();
+      showSpeech(getYummyPhrase());
+      setTimeout(() => {
+        hideSpeech();
+        if (currentRound >= totalRounds) {
+          // Fill the progress bar to 100% and wait for its CSS transition (500ms) before showing results
+          document.getElementById('progressFill').style.width = '100%';
+          setTimeout(showResults, 550);
+        } else {
+          const overlay = document.getElementById('nextOverlay');
+          overlay.classList.add('fade');
+          setTimeout(() => { nextRound(); overlay.classList.remove('fade'); }, 260);
+        }
+      }, 800);
+    });
+  }, 220);
+}
+
+// =============================================
+// FLY FOOD INTO MONSTER'S MOUTH
+// Measures real DOM positions of each snack
+// and the monster's throat opening, then
+// animates each piece in a parabolic arc.
+// Food shrinks & fades as it enters the mouth.
+// =============================================
+function flyFoodToMonster(snackContainerId, onDone) {
+  const monsterSvgEl = document.getElementById('monster-svg');
+  const snackContainer = document.getElementById(snackContainerId);
+  const snackItems = Array.from(snackContainer.querySelectorAll('.snack-item'));
+
+  // Find the throat rect in screen coords
+  // The throat-rect is at SVG coords (47,88,66,40) inside a viewBox of 160x170
+  const svgRect = monsterSvgEl.getBoundingClientRect();
+  const scaleX  = svgRect.width  / 160;
+  const scaleY  = svgRect.height / 170;
+
+  // Target = center of throat opening (SVG y≈108 = top of open mouth gap)
+  const mouthSvgX = 80;            // center x in viewBox
+  const mouthSvgY = 108;           // y of upper jaw bottom = mouth center
+  const destX = svgRect.left + mouthSvgX * scaleX;
+  const destY = svgRect.top  + mouthSvgY * scaleY;
+
+  // Hide originals — clones fly
+  snackItems.forEach(s => { s.style.opacity = '0'; });
+
+  const total = snackItems.length;
+  let landed = 0;
+
+  snackItems.forEach((snack, i) => {
+    setTimeout(() => {
+      const rect  = snack.getBoundingClientRect();
+      const startX = rect.left + rect.width  / 2;
+      const startY = rect.top  + rect.height / 2;
+      launchSnack(snack.textContent, startX, startY, destX, destY, i, () => {
+        landed++;
+        chompMonster(); // chomp on each bite
+        if (landed === total) setTimeout(onDone, 180);
+      });
+    }, i * 70);
+  });
+}
+
+// =============================================
+// LAUNCH ONE SNACK IN A BEZIER ARC
+// Shrinks to zero as it reaches the mouth so
+// it looks like it's swallowed.
+// =============================================
+function launchSnack(emoji, x0, y0, x1, y1, idx, onLand) {
+  const el = document.createElement('span');
+  el.textContent = emoji;
+  el.style.cssText =
+    `position:fixed;left:${x0}px;top:${y0}px;` +
+    `transform:translate(-50%,-50%);` +
+    `font-size:clamp(1.2rem,3.5vw,2rem);line-height:1;` +
+    `pointer-events:none;z-index:500;will-change:transform,left,top,opacity`;
+  document.body.appendChild(el);
+
+  // Control point: arc peaks above the midpoint
+  const midX = (x0 + x1) / 2 + (Math.random() - .5) * 50;
+  const arcH  = Math.min(Math.abs(y1 - y0) * .65 + 55, 200);
+  const midY  = Math.min(y0, y1) - arcH;
+
+  const dist = Math.hypot(x1 - x0, y1 - y0);
+  const dur  = Math.max(350, Math.min(dist * 1.05, 650));
+
+  let start = null;
+  function step(ts) {
+    if (!start) start = ts;
+    const raw = Math.min((ts - start) / dur, 1);
+    // ease in-out
+    const t = raw < .5 ? 2*raw*raw : -1+(4-2*raw)*raw;
+
+    const u  = 1 - t;
+    const cx = u*u*x0 + 2*u*t*midX + t*t*x1;
+    const cy = u*u*y0 + 2*u*t*midY + t*t*y1;
+
+    const spin = t * 300 * (idx % 2 ? 1 : -1);
+    // Shrink to zero as it approaches mouth (last 30% of journey)
+    const sc   = raw < .7 ? 1 + raw * .25 : Math.max(0, 1.175 - (raw - .7) / .3 * 1.175);
+    const alpha = raw < .65 ? 1 : Math.max(0, 1 - (raw - .65) / .35);
+
+    el.style.left      = cx + 'px';
+    el.style.top       = cy + 'px';
+    el.style.transform = `translate(-50%,-50%) scale(${sc}) rotate(${spin}deg)`;
+    el.style.opacity   = alpha;
+
+    if (raw < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.remove();
+      onLand();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+// =============================================
+// SPEECH BUBBLE
+// =============================================
+const yummyPhrases = ['Yummy! 😋','So good!','DELICIOUS!','Nom nom! 🤤','MORE MORE! 🎉','Tasty! 😍','OMNOMNOM!'];
+function getYummyPhrase() { return yummyPhrases[Math.floor(Math.random() * yummyPhrases.length)]; }
+function showSpeech(text) {
+  const el = document.getElementById('speechBubble');
+  el.textContent = text; el.classList.add('show');
+}
+function hideSpeech() {
+  document.getElementById('speechBubble').classList.remove('show');
+}
+
+// =============================================
+// RESULTS
+// =============================================
+function showResults() {
+  showScreen('result-screen');
+  const pct = score / totalRounds;
+  let title;
+  if (pct === 1)      title = 'PERFECT! Amazing!';
+  else if (pct >= .7) title = 'Great Job!';
+  else if (pct >= .4) title = 'Good Try!';
+  else                title = 'Keep Practising!';
+
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultScore').textContent  = score + ' / ' + totalRounds;
+
+  // Update result mouth to reflect score
+  const mouthPath = document.getElementById('resultMouthPath');
+  if (pct >= .7) {
+    mouthPath.setAttribute('d','M34 76 Q60 102 86 76');
+  } else if (pct >= .4) {
+    mouthPath.setAttribute('d','M38 78 Q60 94 82 78');
+  } else {
+    mouthPath.setAttribute('d','M38 84 Q60 74 82 84');
+  }
+
+  if (pct >= .4) startConfetti(pct === 1 ? 3 : pct >= .7 ? 2 : 1);
+}
+
+// =============================================
+// NAVIGATION
+// =============================================
+function goToStart() {
+  stopConfetti();
+  document.getElementById('btn5').classList.remove('selected');
+  document.getElementById('btn10').classList.remove('selected');
+  document.getElementById('btnRandom').classList.remove('selected');
+  document.getElementById('btnBig').classList.remove('selected');
+  shuffleMode = '';
+  totalRounds = 5;
+  document.getElementById('startBtn').disabled = true;
+  showScreen('start-screen');
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// =============================================
+// CONFETTI
+// =============================================
+let confettiAnim = null, confettiParticles = [];
+function startConfetti(stars) {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors = ['#FF6B6B','#4ECDC4','#FFE66D','#A78BFA','#FF8E53','#5EE7DF'];
+  const count  = stars === 3 ? 120 : stars === 2 ? 80 : 40;
+  confettiParticles = [];
+  for (let i = 0; i < count; i++) {
+    confettiParticles.push({
+      x:Math.random()*canvas.width, y:-20-Math.random()*100,
+      w:8+Math.random()*8, h:5+Math.random()*5,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      vx:(Math.random()-.5)*3, vy:2+Math.random()*3,
+      rot:Math.random()*Math.PI*2, rotV:(Math.random()-.5)*.15, alpha:1
+    });
+  }
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive = false;
+    confettiParticles.forEach(p => {
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.rotV;
+      if (p.y > canvas.height*.85) p.alpha -= .025;
+      if (p.alpha > 0) alive = true;
+      ctx.save(); ctx.globalAlpha=Math.max(0,p.alpha);
+      ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    if (alive) confettiAnim = requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  if (confettiAnim) cancelAnimationFrame(confettiAnim);
+  confettiAnim = requestAnimationFrame(draw);
+}
+function stopConfetti() {
+  if (confettiAnim) { cancelAnimationFrame(confettiAnim); confettiAnim = null; }
+  const c = document.getElementById('confetti-canvas');
+  c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+
+// =============================================
+// KEYBOARD
+// =============================================
+document.addEventListener('keydown', e => {
+  if (document.getElementById('game-screen').classList.contains('active')) {
+    if (e.key==='ArrowLeft'||e.key==='a'||e.key==='A') choosePlate('A');
+    if (e.key==='ArrowRight'||e.key==='d'||e.key==='D') choosePlate('B');
+  }
+});
+window.addEventListener('resize', () => {
+  const c = document.getElementById('confetti-canvas');
+  c.width = window.innerWidth; c.height = window.innerHeight;
+});
+</script>
+</body>
+</html>

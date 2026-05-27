@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subtraction Fun</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sky-blue: #87CEEB;
+            --soft-mint: #98FF98;
+            --bright-orange: #FFA500;
+            --dark-gray: #333;
+            --white: #ffffff;
+            --success-glow: rgba(152, 255, 152, 0.6);
+        }
+
+        * { box-sizing: border-box; font-family: 'Quicksand', sans-serif; }
+
+        body {
+            margin: 0;
+            background-color: var(--sky-blue);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* Settings Gear Button */
+        #settings-trigger {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: transform 0.3s;
+        }
+        #settings-trigger:hover { transform: rotate(45deg); }
+
+        /* Settings Overlay */
+        #settings-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+
+        .settings-card {
+            background: white;
+            padding: 30px;
+            border-radius: 25px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Toggle Switch UI */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--bright-orange); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* Game UI */
+        #game-container {
+            background: var(--white);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            padding: 40px;
+            text-align: center;
+            min-height: 520px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            /* CRITICAL FIX: Ensures overlay doesn't leak out of rounded corners */
+            overflow: hidden; 
+        }
+
+        /* Animations */
+        @keyframes soft-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 0 40px var(--success-glow); }
+        }
+        @keyframes gentle-slide {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(5px); }
+        }
+        @keyframes star-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animate-correct { animation: soft-pulse 0.6s ease-in-out; border: 4px solid var(--soft-mint); }
+        .animate-wrong { animation: gentle-slide 0.3s ease-in-out; }
+
+        .screen { display: none; }
+        .active { display: flex; flex-direction: column; gap: 15px; }
+
+        h1 { color: var(--dark-gray); font-size: 2.2rem; margin: 0; }
+        h2 { font-size: 3.5rem; margin: 20px 0; color: var(--dark-gray); min-height: 1.2em;}
+        
+        .answer-slot {
+            display: inline-block;
+            min-width: 60px;
+            border-bottom: 5px solid var(--sky-blue);
+            margin-left: 12px;
+            vertical-align: bottom;
+            color: #2e7d32;
+        }
+
+        .btn {
+            background: var(--bright-orange);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #cc8400;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #cc8400; }
+
+        .settings-group {
+            background: #fdfdfd;
+            padding: 15px;
+            border-radius: 20px;
+            border: 2px solid #f0f0f0;
+        }
+
+        .toggle-group { display: flex; justify-content: center; gap: 8px; }
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + span {
+            background: var(--soft-mint);
+            border: 2px solid #76e076;
+            font-weight: bold;
+        }
+        .toggle-group span {
+            background: #eee;
+            padding: 10px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        #visual-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            min-height: 130px;
+        }
+
+        .icon-wrapper { position: relative; width: 65px; height: 65px; transition: 0.5s; }
+        .apple-icon { width: 100%; height: 100%; fill: #ff4d4d; }
+        .strike-line {
+            position: absolute;
+            top: 50%; left: -5%; width: 110%; height: 6px;
+            background-color: #d32f2f;
+            transform: translateY(-50%);
+            display: none;
+            border-radius: 3px;
+        }
+        .active-cross .strike-line { display: block; }
+        .crossed-out { opacity: 0.4; }
+
+        .number-rail {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+        }
+
+        .num-btn {
+            background: #f8f8f8;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 1.6rem;
+            padding: 12px 0;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .num-btn:hover { background: var(--sky-blue); color: white; }
+
+        /* FEEDBACK SCREEN UPDATES */
+        .feedback-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.98);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            /* Match parent rounding */
+            border-radius: 30px; 
+        }
+
+        .checkmark { 
+            font-size: 4.5rem; 
+            color: #4CAF50; 
+            margin-bottom: 30px; 
+            font-weight: 900;
+            line-height: 1.1;
+        }
+        
+        .celebration-emoji {
+            display: block;
+            font-size: 6rem;
+            margin-bottom: 10px;
+            animation: star-bounce 1s infinite ease-in-out;
+        }
+
+        #progress-container {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%; height: 15px;
+            background: rgba(0,0,0,0.1);
+            display: none;
+        }
+        #progress-fill {
+            height: 100%; width: 0%;
+            background: var(--soft-mint);
+            transition: 0.4s;
+        }
+    </style>
+</head>
+<body>
+
+<button id="settings-trigger" title="Teacher Settings" onclick="game.toggleSettings(true)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+</button>
+
+<div id="settings-overlay" onclick="game.toggleSettings(false)">
+    <div class="settings-card" onclick="event.stopPropagation()">
+        <h3 style="margin-top:0">Teacher Settings</h3>
+        <div class="setting-row">
+            <span>Full Screen</span>
+            <label class="switch"><input type="checkbox" onchange="game.toggleFullscreen()"> <span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+            <span>Progress Bar</span>
+            <label class="switch"><input type="checkbox" id="progress-toggle" onchange="game.toggleProgressBar()"> <span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+            <span>Sound Effects</span>
+            <label class="switch"><input type="checkbox" id="sound-toggle" checked> <span class="slider"></span></label>
+        </div>
+        <button class="btn" style="width:100%" onclick="game.toggleSettings(false)">Close Settings</button>
+    </div>
+</div>
+
+<div id="game-container">
+    <div id="start-screen" class="screen active">
+        <h1>🍎 Subtraction Fun</h1>
+        <div class="settings-group">
+            <span style="font-weight:700">Trials:</span>
+            <div class="toggle-group">
+                <label><input type="radio" name="trials" value="5" checked><span>5</span></label>
+                <label><input type="radio" name="trials" value="7"><span>7</span></label>
+                <label><input type="radio" name="trials" value="10"><span>10</span></label>
+            </div>
+        </div>
+        <div class="settings-group">
+            <span style="font-weight:700">Difficulty:</span>
+            <div class="toggle-group">
+                <label><input type="radio" name="diff" value="5" checked><span>Up to 5</span></label>
+                <label><input type="radio" name="diff" value="10"><span>Up to 10</span></label>
+            </div>
+        </div>
+        <div class="settings-group">
+            <span style="font-weight:700">Mode:</span>
+            <div class="toggle-group">
+                <label><input type="radio" name="mode" value="guided" checked><span>Guided</span></label>
+                <label><input type="radio" name="mode" value="easy"><span>Easy</span></label>
+                <label><input type="radio" name="mode" value="hard"><span>Hard</span></label>
+            </div>
+        </div>
+        <button class="btn" onclick="game.start()">START GAME</button>
+    </div>
+
+    <div id="game-arena" class="screen">
+        <div id="visual-area"></div>
+        <h2 id="equation-container">
+            <span id="equation-left">0 - 0 =</span><span class="answer-slot" id="answer-display"></span>
+        </h2>
+        <button id="subtract-btn" class="btn" onclick="game.visualizeSubtraction()">Subtract!</button>
+        <div class="number-rail" id="number-rail"></div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <h1>Round Complete!</h1>
+        <h2 id="final-score" style="color:var(--bright-orange); font-size: 4rem;">0 / 5</h2>
+        <button class="btn" onclick="game.reset()">Play Again</button>
+    </div>
+
+    <div id="feedback" class="feedback-overlay">
+        <span class="celebration-emoji">🌟</span>
+        <div class="checkmark">Great Job!</div>
+        <button class="btn" onclick="game.nextQuestion()">Next Question</button>
+    </div>
+</div>
+
+<div id="progress-container">
+    <div id="progress-fill"></div>
+</div>
+
+<script>
+    const APPLE_ICON = `<svg class="apple-icon" viewBox="0 0 24 24"><path d="M20,10C22,13 17,22 15,22C13,22 13,21 12,21C11,21 11,22 9,22C7,22 2,13 4,10C6,7 9,7 11,8C12,8 12,8 12,8C12,8 12,8 13,8C15,7 18,7 20,10Z"/><path d="M12,8C12,8 11,3 15,2" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round"/><path d="M12,8L13,6" fill="none" stroke="#5d4037" stroke-width="2"/></svg><div class="strike-line"></div>`;
+
+    const game = {
+        score: 0, questionCount: 0, maxQuestions: 5,
+        minuend: 0, subtrahend: 0, difficulty: 5, mode: 'guided',
+        isSubtracted: false, isAnswered: false,
+        audioCtx: null,
+
+        toggleSettings(show) {
+            document.getElementById('settings-overlay').style.display = show ? 'flex' : 'none';
+        },
+
+        toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen();
+            }
+        },
+
+        toggleProgressBar() {
+            const show = document.getElementById('progress-toggle').checked;
+            document.getElementById('progress-container').style.display = show ? 'block' : 'none';
+        },
+
+        playSound() {
+            if (!document.getElementById('sound-toggle').checked) return;
+            if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.connect(gain); gain.connect(this.audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, this.audioCtx.currentTime); // C5
+            osc.frequency.exponentialRampToValueAtTime(880, this.audioCtx.currentTime + 0.1); // A5
+            
+            gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.5);
+            
+            osc.start();
+            osc.stop(this.audioCtx.currentTime + 0.5);
+        },
+
+        updateProgressBar() {
+            const percent = (this.questionCount / this.maxQuestions) * 100;
+            document.getElementById('progress-fill').style.width = percent + '%';
+        },
+
+        start() {
+            this.difficulty = parseInt(document.querySelector('input[name="diff"]:checked').value);
+            this.maxQuestions = parseInt(document.querySelector('input[name="trials"]:checked').value);
+            this.mode = document.querySelector('input[name="mode"]:checked').value;
+            this.score = 0; this.questionCount = 0;
+            this.updateProgressBar();
+            this.showScreen('game-arena');
+            this.generateQuestion();
+            this.renderNumberRail();
+        },
+
+        renderNumberRail() {
+            const rail = document.getElementById('number-rail');
+            rail.innerHTML = '';
+            for(let i=0; i<=10; i++) {
+                const b = document.createElement('button');
+                b.className = 'num-btn';
+                b.innerText = i;
+                b.onclick = () => this.checkAnswer(i);
+                rail.appendChild(b);
+            }
+        },
+
+        generateQuestion() {
+            this.isSubtracted = false; this.isAnswered = false;
+            this.minuend = Math.floor(Math.random() * this.difficulty) + 1;
+            this.subtrahend = Math.floor(Math.random() * (this.minuend + 1));
+            
+            document.getElementById('equation-left').innerText = `${this.minuend} - ${this.subtrahend} = `;
+            document.getElementById('answer-display').innerText = '';
+            
+            const visualArea = document.getElementById('visual-area');
+            const subBtn = document.getElementById('subtract-btn');
+            visualArea.innerHTML = '';
+
+            if (this.mode === 'hard') {
+                visualArea.style.display = 'none';
+                subBtn.style.display = 'none';
+            } else {
+                visualArea.style.display = 'flex';
+                subBtn.style.display = this.mode === 'guided' ? 'inline-block' : 'none';
+                for(let i=0; i < this.minuend; i++) {
+                    const div = document.createElement('div');
+                    div.className = 'icon-wrapper';
+                    div.innerHTML = APPLE_ICON;
+                    if (this.mode === 'easy' && i >= (this.minuend - this.subtrahend)) {
+                        div.classList.add('crossed-out', 'active-cross');
+                    }
+                    visualArea.appendChild(div);
+                }
+            }
+        },
+
+        visualizeSubtraction() {
+            if (this.mode !== 'guided' || this.isSubtracted) return;
+            const icons = document.querySelectorAll('.icon-wrapper');
+            let count = 0;
+            for(let i = this.minuend - 1; count < this.subtrahend; i--) {
+                setTimeout(() => icons[i].classList.add('crossed-out', 'active-cross'), count * 150);
+                count++;
+            }
+            this.isSubtracted = true;
+        },
+
+        checkAnswer(val) {
+            if (this.isAnswered) return;
+            const container = document.getElementById('game-container');
+            const correct = (this.minuend - this.subtrahend);
+            container.classList.remove('animate-correct', 'animate-wrong');
+
+            if (val === correct) {
+                this.isAnswered = true; this.score++;
+                document.getElementById('answer-display').innerText = val;
+                container.classList.add('animate-correct');
+                this.playSound();
+                // Delay showing feedback so they see the completed equation
+                setTimeout(() => document.getElementById('feedback').style.display = 'flex', 1100);
+            } else {
+                void container.offsetWidth; container.classList.add('animate-wrong');
+            }
+        },
+
+        nextQuestion() {
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('game-container').classList.remove('animate-correct', 'animate-wrong');
+            this.questionCount++;
+            this.updateProgressBar();
+            if (this.questionCount >= this.maxQuestions) this.endGame();
+            else this.generateQuestion();
+        },
+
+        endGame() { 
+            this.showScreen('result-screen'); 
+            document.getElementById('final-score').innerText = `${this.score} / ${this.maxQuestions}`; 
+        },
+
+        reset() { 
+            this.showScreen('start-screen'); 
+            document.getElementById('progress-fill').style.width = '0%'; 
+        },
+
+        showScreen(id) { 
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+            document.getElementById(id).classList.add('active'); 
+        }
+    };
+</script>
+</body>
+</html>

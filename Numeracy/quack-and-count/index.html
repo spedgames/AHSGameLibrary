@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Quack & Count!</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ===== CSS VARIABLES ===== */
+  :root {
+    --sky: #e0f4ff;
+    --pond: #4db8e8;
+    --pond-deep: #2196c4;
+    --pond-light: #a8ddf5;
+    --water-shimmer: #79cff5;
+    --grass: #6dbf5a;
+    --grass-dark: #4a9c38;
+    --duck-body: #f5c842;
+    --duck-accent: #e8a020;
+    --duck-beak: #ff8c00;
+    --duck-wing: #e0b030;
+    --correct: #4caf50;
+    --wrong: #f44336;
+    --btn-primary: #2196c4;
+    --btn-hover: #1565c0;
+    --white: #ffffff;
+    --text-dark: #1a2a3a;
+    --text-mid: #3a5a7a;
+    --highlight-ring: #fff176;
+    --highlight-glow: rgba(255,235,59,0.7);
+    --shadow: 0 4px 20px rgba(0,0,0,0.15);
+    --radius: 18px;
+  }
+
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    background: var(--sky);
+    color: var(--text-dark);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 0.4s, transform 0.4s;
+    padding: 16px;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; transform: scale(0.97); }
+
+  /* ===== BACKGROUND SCENE ===== */
+  .bg-scene {
+    position: fixed; inset: 0;
+    background: linear-gradient(180deg, #c8ebff 0%, #e8f7ff 40%, var(--grass) 75%, var(--grass-dark) 100%);
+    z-index: 0;
+    overflow: hidden;
+  }
+  .cloud {
+    position: absolute;
+    background: white;
+    border-radius: 50px;
+    opacity: 0.85;
+  }
+  .cloud::before, .cloud::after {
+    content: '';
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+  }
+  .cloud-1 { width: 90px; height: 28px; top: 8%; left: 10%; animation: cloudDrift 22s linear infinite; }
+  .cloud-1::before { width: 45px; height: 45px; top: -20px; left: 12px; }
+  .cloud-1::after  { width: 32px; height: 32px; top: -14px; left: 40px; }
+  .cloud-2 { width: 60px; height: 20px; top: 14%; left: 65%; animation: cloudDrift 30s linear infinite 5s; }
+  .cloud-2::before { width: 30px; height: 30px; top: -14px; left: 8px; }
+  .cloud-2::after  { width: 22px; height: 22px; top: -10px; left: 28px; }
+  .cloud-3 { width: 75px; height: 24px; top: 5%; left: 40%; animation: cloudDrift 26s linear infinite 10s; }
+  .cloud-3::before { width: 38px; height: 38px; top: -17px; left: 10px; }
+  .cloud-3::after  { width: 28px; height: 28px; top: -12px; left: 36px; }
+
+  @keyframes cloudDrift {
+    from { transform: translateX(-120px); }
+    to   { transform: translateX(110vw); }
+  }
+
+  /* ===== START SCREEN ===== */
+  #start-screen { z-index: 10; }
+
+  .game-card {
+    background: rgba(255,255,255,0.92);
+    border-radius: 28px;
+    padding: clamp(20px, 5vw, 36px) clamp(24px, 6vw, 48px);
+    box-shadow: 0 8px 40px rgba(33,150,196,0.18), 0 2px 8px rgba(0,0,0,0.08);
+    width: min(440px, 94vw);
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px;
+    max-height: 96vh;
+    overflow-y: auto;
+  }
+
+  .title-emoji { font-size: clamp(3rem, 12vw, 5rem); line-height: 1; animation: bobTitle 2.5s ease-in-out infinite; }
+  @keyframes bobTitle { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+  .game-title {
+    font-size: clamp(1.8rem, 7vw, 2.8rem);
+    font-weight: 900;
+    color: var(--pond-deep);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    text-align: center;
+  }
+  .game-subtitle {
+    font-size: clamp(0.8rem, 3vw, 1rem);
+    color: var(--text-mid);
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .section-label {
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--pond-deep); align-self: flex-start;
+  }
+
+  .mode-toggle {
+    display: flex; gap: 10px; width: 100%;
+  }
+  .mode-btn {
+    flex: 1; padding: 14px 10px;
+    border: 2.5px solid #c8e8f8; border-radius: 14px;
+    background: #f0f9ff; cursor: pointer;
+    transition: all 0.2s; font-family: 'Poppins', sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    min-height: 80px; justify-content: center;
+  }
+  .mode-btn .mode-icon { font-size: 1.8rem; }
+  .mode-btn .mode-name { font-size: 0.78rem; font-weight: 700; color: var(--text-mid); }
+  .mode-btn .mode-desc { font-size: 0.65rem; color: #8ab; text-align: center; line-height: 1.3; }
+  .mode-btn.active {
+    border-color: var(--pond);
+    background: linear-gradient(135deg, #e0f4ff, #cdeeff);
+    box-shadow: 0 0 0 3px rgba(77,184,232,0.2);
+  }
+  .mode-btn.active .mode-name { color: var(--pond-deep); }
+
+  .start-btn {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--pond), var(--pond-deep));
+    color: white; border: none; border-radius: 16px;
+    font-family: 'Poppins', sans-serif; font-size: 1.1rem; font-weight: 700;
+    cursor: pointer; box-shadow: 0 4px 16px rgba(33,150,196,0.35);
+    transition: transform 0.15s, box-shadow 0.15s; min-height: 54px;
+  }
+  .start-btn:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(33,150,196,0.2); }
+
+  /* ===== GAME SCREEN ===== */
+  #game-screen {
+    z-index: 10;
+    justify-content: flex-start;
+    padding: 0;
+    gap: 0;
+  }
+
+  /* HUD */
+  .hud {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: clamp(8px,2vw,14px) clamp(12px,4vw,24px);
+    background: rgba(255,255,255,0.88);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    z-index: 5; flex-shrink: 0;
+  }
+  .hud-pill {
+    background: var(--sky); border-radius: 50px;
+    padding: 6px 14px; font-size: clamp(0.7rem,2.5vw,0.85rem); font-weight: 700; color: var(--pond-deep);
+  }
+  .hud-round { font-size: clamp(0.85rem,3vw,1.05rem); font-weight: 800; color: var(--text-dark); }
+
+  /* Pond Area */
+  .pond-container {
+    flex: 1; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    min-height: 0;
+  }
+
+  .pond {
+    position: relative;
+    /* CHANGE 1: bigger pond to hold bigger ducks */
+    width: min(580px, 96vw);
+    height: min(300px, 44vw, 42vh);
+    background: radial-gradient(ellipse 90% 80% at 50% 55%, var(--pond-light) 0%, var(--pond) 50%, var(--pond-deep) 100%);
+    border-radius: 50%;
+    box-shadow: 0 6px 30px rgba(33,150,196,0.3), inset 0 -4px 12px rgba(0,80,120,0.15);
+    overflow: visible;
+  }
+
+  /* Ripple animation on pond */
+  .pond::before {
+    content: '';
+    position: absolute; inset: 8px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25);
+    animation: pondRipple 3s ease-in-out infinite;
+  }
+  @keyframes pondRipple { 0%,100%{opacity:0.4; transform:scale(1)} 50%{opacity:0.1; transform:scale(1.03)} }
+
+  /* Reeds */
+  .reed {
+    position: absolute;
+    width: 5px; border-radius: 3px;
+    background: linear-gradient(180deg, #7cb342, #558b2f);
+    transform-origin: bottom center;
+  }
+  .reed::after {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 10px; height: 18px; border-radius: 50% 50% 40% 40%;
+    background: #8d6e63;
+  }
+
+  /* Duck */
+  .duck {
+    position: absolute;
+    cursor: pointer;
+    transform-origin: center bottom;
+    /* Negative delay = start mid-cycle so ducks bob immediately with no entry drift */
+    animation: duckBob 2.5s ease-in-out infinite;
+    animation-delay: -0.8s;
+  }
+  .duck:nth-child(odd)  { animation-duration: 2.2s; animation-delay: -0.4s; }
+  .duck:nth-child(even) { animation-duration: 2.8s; animation-delay: -1.1s; }
+
+  @keyframes duckBob {
+    0%,100% { transform: translateY(0) rotate(-1deg); }
+    50%      { transform: translateY(-6px) rotate(1deg); }
+  }
+
+  /* Both modes: stop bobbing when tapped */
+  .duck.tapped { animation: none; }
+
+  /* Guided mode: warm golden glow + lighter body */
+  .duck.tapped .duck-body { fill: #ffe566; }
+  .duck.tapped {
+    filter: drop-shadow(0 0 8px rgba(255,220,50,0.75))
+            drop-shadow(0 0 16px rgba(255,180,0,0.45));
+  }
+
+  /* Challenge mode: vivid orange-red body + strong bright glow, very hard to miss */
+  .duck.tapped.highlight-strong .duck-body { fill: #ff6600 !important; }
+  .duck.tapped.highlight-strong {
+    filter:
+      drop-shadow(0 0 6px rgba(255,100,0,1))
+      drop-shadow(0 0 18px rgba(255,60,0,0.85))
+      drop-shadow(0 0 32px rgba(255,120,0,0.55)) !important;
+  }
+
+  /* CHANGE 1: bigger duck SVG */
+  .duck-svg { width: clamp(70px, 14vw, 100px); height: auto; }
+
+  .duck-count-badge {
+    position: absolute;
+    top: -32px; left: 50%; transform: translateX(-50%);
+    background: var(--pond-deep);
+    color: white; font-weight: 800; font-size: clamp(0.85rem, 2.8vw, 1.1rem);
+    width: clamp(30px,5.5vw,38px); height: clamp(30px,5.5vw,38px);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    opacity: 0;
+    transform: translateX(-50%) scale(0.5) translateY(6px);
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+  }
+  .duck.tapped .duck-count-badge.visible {
+    opacity: 1; transform: translateX(-50%) scale(1) translateY(0);
+  }
+
+  /* Tap hint */
+  .tap-hint {
+    text-align: center; font-size: clamp(0.8rem,2.8vw,1rem);
+    font-weight: 600; color: var(--pond-deep);
+    padding: 6px 0; flex-shrink: 0;
+    transition: opacity 0.3s;
+  }
+
+  /* Answer Section */
+  .answer-section {
+    width: 100%; padding: clamp(8px,2vw,14px) clamp(12px,4vw,24px);
+    background: rgba(255,255,255,0.88);
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    flex-shrink: 0;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+  }
+
+  .answer-prompt {
+    font-size: clamp(0.78rem,2.5vw,0.95rem); font-weight: 700; color: var(--text-mid);
+    text-align: center; opacity: 0; transition: opacity 0.3s;
+  }
+  .answer-prompt.visible { opacity: 1; }
+
+  .number-btns {
+    display: flex; gap: clamp(6px,2vw,12px);
+    justify-content: center;
+    flex-wrap: nowrap;
+  }
+  .num-btn {
+    width: clamp(48px,11vw,66px); height: clamp(48px,11vw,66px);
+    border-radius: 16px;
+    border: 3px solid transparent;
+    background: linear-gradient(135deg, var(--pond-light), #b8e4f8);
+    color: var(--pond-deep); font-family: 'Poppins', sans-serif;
+    font-size: clamp(1.2rem,4vw,1.6rem); font-weight: 800;
+    cursor: pointer; box-shadow: 0 3px 10px rgba(33,150,196,0.15);
+    opacity: 0; pointer-events: none;
+    transform: translateY(16px) scale(0.85);
+    transition: opacity 0.25s, transform 0.25s, background 0.15s, box-shadow 0.15s;
+  }
+  .num-btn.show {
+    opacity: 1; pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+  .num-btn:active { transform: scale(0.93); }
+  .num-btn.correct { background: linear-gradient(135deg,#a5d6a7,#66bb6a); color: white; border-color: #43a047; }
+  .num-btn.wrong   { background: linear-gradient(135deg,#ef9a9a,#e57373); color: white; border-color: #e53935; animation: shake 0.4s; }
+
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)}
+  }
+
+  /* Progress dots */
+  .progress-row {
+    display: flex; gap: 5px; justify-content: center; flex-shrink: 0;
+    padding: 4px 0 2px;
+  }
+  .prog-dot {
+    width: clamp(8px,2vw,11px); height: clamp(8px,2vw,11px);
+    border-radius: 50%;
+    background: #c8e8f8; transition: background 0.3s, transform 0.3s;
+  }
+  .prog-dot.correct { background: var(--correct); transform: scale(1.15); }
+  .prog-dot.wrong   { background: var(--wrong); }
+  .prog-dot.current { background: var(--pond); box-shadow: 0 0 0 2px rgba(33,150,196,0.3); }
+
+  /* Feedback flash */
+  .feedback-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .feedback-overlay.show { opacity: 1; }
+  .feedback-emoji { font-size: clamp(4rem,18vw,7rem); animation: popIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275); }
+  .feedback-text  { font-size: clamp(1.4rem,6vw,2.2rem); font-weight: 900; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+  @keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
+
+  /* ===== RESULT SCREEN ===== */
+  #result-screen { z-index: 10; }
+  .result-card {
+    background: rgba(255,255,255,0.94);
+    border-radius: 28px;
+    padding: clamp(24px,5vw,40px) clamp(24px,6vw,48px);
+    box-shadow: 0 8px 40px rgba(33,150,196,0.18);
+    width: min(420px, 94vw);
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px; text-align: center;
+  }
+  .result-emoji { font-size: clamp(3.5rem,14vw,5.5rem); animation: bobTitle 2.5s ease-in-out infinite; }
+  .result-title { font-size: clamp(1.6rem,6vw,2.4rem); font-weight: 900; color: var(--pond-deep); }
+  .result-score { font-size: clamp(2.5rem,10vw,4rem); font-weight: 900; color: var(--pond-deep); }
+  .result-score span { font-size: 0.5em; color: var(--text-mid); }
+  .result-msg { font-size: clamp(0.85rem,3vw,1rem); color: var(--text-mid); }
+  .result-dots { display:flex; gap:6px; flex-wrap: wrap; justify-content: center; }
+  .result-dot { width:13px; height:13px; border-radius:50%; background:#c8e8f8; }
+  .result-dot.c { background:var(--correct); }
+  .result-dot.w { background:var(--wrong); }
+
+  .btn-row { display:flex; gap:12px; width:100%; }
+  .btn-secondary {
+    flex:1; padding:14px; border-radius:14px;
+    border:2.5px solid var(--pond); background:transparent;
+    color:var(--pond-deep); font-family:'Poppins',sans-serif; font-size:0.9rem; font-weight:700;
+    cursor:pointer; transition:background 0.15s; min-height:50px;
+  }
+  .btn-secondary:active { background:#e0f4ff; }
+  .btn-primary {
+    flex:2; padding:14px; border-radius:14px; border:none;
+    background:linear-gradient(135deg, var(--pond), var(--pond-deep));
+    color:white; font-family:'Poppins',sans-serif; font-size:0.95rem; font-weight:700;
+    cursor:pointer; box-shadow:0 4px 16px rgba(33,150,196,0.3);
+    transition:transform 0.15s; min-height:50px;
+  }
+  .btn-primary:active { transform:scale(0.97); }
+
+  /* Confetti */
+  .confetti-piece {
+    position: fixed;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    pointer-events: none; z-index: 100;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(-20px) rotate(0deg); opacity:1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Background Scene -->
+<div class="bg-scene">
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+  <div class="cloud cloud-3"></div>
+</div>
+
+<!-- ===== START SCREEN ===== -->
+<div class="screen" id="start-screen">
+  <div class="game-card">
+    <div class="title-emoji">🦆</div>
+    <div class="game-title">Quack &amp; Count!</div>
+    <div class="game-subtitle">Tap all the ducks on the pond,<br>then tell us how many you found!</div>
+
+    <div class="section-label">Choose Mode</div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-guided" onclick="selectMode('guided')">
+        <span class="mode-icon">🔢</span>
+        <span class="mode-name">Guided</span>
+        <span class="mode-desc">Numbers appear on each duck</span>
+      </button>
+      <button class="mode-btn" id="mode-free" onclick="selectMode('free')">
+        <span class="mode-icon">🧠</span>
+        <span class="mode-name">Challenge</span>
+        <span class="mode-desc">Count on your own!</span>
+      </button>
+    </div>
+
+    <div class="section-label">How to Play</div>
+    <div class="game-subtitle" style="font-size:0.82rem; text-align:left; background:#f0f9ff; border-radius:12px; padding:12px 14px; width:100%;">
+      🦆 &nbsp;Tap each duck to count it<br>
+      ✨ &nbsp;Tapped ducks will glow<br>
+      🔢 &nbsp;When done, pick the total<br>
+      🏆 &nbsp;10 rounds — how many can you get?
+    </div>
+
+    <button class="start-btn" onclick="startGame()">Let's Play! 🎉</button>
+  </div>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div class="screen hidden" id="game-screen">
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-pill" id="hud-mode">🔢 Guided</div>
+    <div class="hud-round" id="hud-round">Round 1 / 10</div>
+    <div class="hud-pill" id="hud-score">⭐ 0</div>
+  </div>
+
+  <!-- Progress dots -->
+  <div class="progress-row" id="progress-row"></div>
+
+  <!-- Pond -->
+  <div class="pond-container">
+    <div class="pond" id="pond"></div>
+  </div>
+
+  <!-- Tap hint -->
+  <div class="tap-hint" id="tap-hint">Tap each duck! 🦆</div>
+
+  <!-- Answer section -->
+  <div class="answer-section">
+    <div class="answer-prompt" id="answer-prompt">How many ducks did you count?</div>
+    <div class="number-btns" id="number-btns">
+      <button class="num-btn" data-val="1" onclick="submitAnswer(1)">1</button>
+      <button class="num-btn" data-val="2" onclick="submitAnswer(2)">2</button>
+      <button class="num-btn" data-val="3" onclick="submitAnswer(3)">3</button>
+      <button class="num-btn" data-val="4" onclick="submitAnswer(4)">4</button>
+      <button class="num-btn" data-val="5" onclick="submitAnswer(5)">5</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback overlay -->
+<div class="feedback-overlay" id="feedback-overlay">
+  <div class="feedback-emoji" id="feedback-emoji">✅</div>
+  <div class="feedback-text"  id="feedback-text">Correct!</div>
+</div>
+
+<!-- ===== RESULT SCREEN ===== -->
+<div class="screen hidden" id="result-screen">
+  <div class="result-card">
+    <div class="result-emoji" id="result-emoji">🏆</div>
+    <div class="result-title" id="result-title">Amazing!</div>
+    <div class="result-score"><span>Score: </span><span id="result-num">0</span><span> / 10</span></div>
+    <div class="result-msg"  id="result-msg">Great job counting those ducks!</div>
+    <div class="result-dots" id="result-dots"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="goHome()">🏠 Menu</button>
+      <button class="btn-primary"   onclick="startGame()">Play Again 🔄</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================================================
+   QUACK & COUNT — GAME LOGIC
+   =================================================== */
+
+// ---------- AUDIO (Web Audio API — no external files needed) ----------
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+/**
+ * Gentle soft UI tap — a short, warm sine tone that fades in and out quickly.
+ * Sounds like a soft marimba/xylophone hit. Pitch varies slightly per tap.
+ */
+function playQuack() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+
+    // Slight pitch variation so repeated taps feel lively but not harsh
+    const freq = 520 + Math.random() * 120; // ~C5–E5 range
+
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    // Very slight pitch drop for a "pluck" feel
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.92, t + 0.12);
+
+    // Short soft envelope: quick attack, smooth decay
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.22, t + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.2);
+  } catch(e) { /* silently skip if audio unavailable */ }
+}
+
+/**
+ * Success sound: rapid ascending sine triad C5 → E5 → G5.
+ * Clean, bright, no extra sparkle — each note fires 80ms apart.
+ */
+function playCorrect() {
+  try {
+    const ctx = getAudioCtx();
+    const t = ctx.currentTime;
+
+    // C5, E5, G5 — pure sine, rapid stagger
+    const notes  = [523.25, 659.25, 783.99];
+    const gap    = 0.08; // 80ms between each note
+    const decay  = 0.28; // each note rings for ~280ms
+
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const s = t + i * gap;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, s);
+
+      gain.gain.setValueAtTime(0.0001, s);
+      gain.gain.exponentialRampToValueAtTime(0.28, s + 0.015); // fast attack
+      gain.gain.exponentialRampToValueAtTime(0.0001, s + decay); // smooth decay
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(s);
+      osc.stop(s + decay + 0.02);
+    });
+  } catch(e) { /* silently skip */ }
+}
+
+// ---------- STATE ----------
+let mode = 'guided';
+let round = 0;
+let score = 0;
+let totalRounds = 10;
+let duckCount = 0;
+let tappedCount = 0;
+let answering = false;
+let roundResults = [];
+let canTap = true;
+
+// ---------- MODE SELECT ----------
+function selectMode(m) {
+  mode = m;
+  document.getElementById('mode-guided').classList.toggle('active', m === 'guided');
+  document.getElementById('mode-free').classList.toggle('active', m === 'free');
+}
+
+// ---------- START GAME ----------
+function startGame() {
+  round = 0; score = 0; roundResults = [];
+  showScreen('game-screen');
+  document.getElementById('hud-mode').textContent = mode === 'guided' ? '🔢 Guided' : '🧠 Challenge';
+  buildProgressDots();
+  nextRound();
+}
+
+function buildProgressDots() {
+  const row = document.getElementById('progress-row');
+  row.innerHTML = '';
+  for (let i = 0; i < totalRounds; i++) {
+    const d = document.createElement('div');
+    d.className = 'prog-dot' + (i === 0 ? ' current' : '');
+    d.id = 'dot-' + i;
+    row.appendChild(d);
+  }
+}
+
+// ---------- NEXT ROUND ----------
+function nextRound() {
+  round++;
+  tappedCount = 0;
+  answering = false;
+  canTap = true;
+
+  duckCount = Math.floor(Math.random() * 5) + 1;
+
+  document.getElementById('hud-round').textContent = `Round ${round} / ${totalRounds}`;
+  document.getElementById('hud-score').textContent = `⭐ ${score}`;
+
+  for (let i = 0; i < totalRounds; i++) {
+    const d = document.getElementById('dot-' + i);
+    if (d) {
+      d.className = 'prog-dot'
+        + (roundResults[i] === true  ? ' correct'
+         : roundResults[i] === false ? ' wrong'
+         : i === round - 1           ? ' current' : '');
+    }
+  }
+
+  // CHANGE 3: hint always just says "Tap each duck!"
+  const hint = document.getElementById('tap-hint');
+  hint.textContent = 'Tap each duck! 🦆';
+  hint.style.opacity = '1';
+
+  document.getElementById('answer-prompt').classList.remove('visible');
+  const btns = document.querySelectorAll('.num-btn');
+  btns.forEach(b => {
+    b.classList.remove('show', 'correct', 'wrong');
+    b.disabled = false;
+  });
+
+  buildPond();
+}
+
+// ---------- BUILD POND ----------
+function buildPond() {
+  const pond = document.getElementById('pond');
+  pond.innerHTML = '';
+
+  const reedsData = [
+    {left:'8%',  bottom:'12%', height:'52px', rot:'-8deg'},
+    {left:'13%', bottom:'6%',  height:'40px', rot:'6deg'},
+    {left:'85%', bottom:'14%', height:'48px', rot:'7deg'},
+    {left:'89%', bottom:'8%',  height:'36px', rot:'-5deg'},
+  ];
+  reedsData.forEach(r => {
+    const reed = document.createElement('div');
+    reed.className = 'reed';
+    reed.style.cssText = `left:${r.left};bottom:${r.bottom};height:${r.height};transform:rotate(${r.rot});`;
+    pond.appendChild(reed);
+  });
+
+  const positions = getDuckPositions(duckCount);
+  for (let i = 0; i < duckCount; i++) {
+    pond.appendChild(createDuck(i + 1, positions[i]));
+  }
+}
+
+// Spread ducks without overlap — adjusted x ranges for bigger ducks
+function getDuckPositions(n) {
+  const presets = [
+    [{x:50, y:42}],
+    [{x:30, y:38},{x:67, y:46}],
+    [{x:20, y:40},{x:50, y:33},{x:76, y:44}],
+    [{x:18, y:44},{x:39, y:33},{x:61, y:37},{x:80, y:46}],
+    [{x:16, y:42},{x:34, y:31},{x:52, y:46},{x:69, y:31},{x:84, y:45}],
+  ];
+  return presets[n - 1].map(p => ({
+    x: p.x + (Math.random() * 4 - 2),
+    y: p.y + (Math.random() * 4 - 2)
+  }));
+}
+
+function createDuck(index, pos) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'duck';
+  wrapper.dataset.index = index;
+  wrapper.style.cssText = `left:${pos.x}%;top:${pos.y}%;transform:translate(-50%,-50%);`;
+  /* Use a random negative delay so each duck starts at a different point in its bob cycle,
+     appearing already mid-motion rather than sliding in from position 0 */
+  const offset = -(Math.random() * 2.5);
+  wrapper.style.animationDelay = offset + 's';
+
+  const flip = Math.random() > 0.5 ? 'scaleX(-1)' : '';
+
+  wrapper.innerHTML = `
+    <div class="duck-count-badge" id="badge-${index}">${index}</div>
+    <svg class="duck-svg" viewBox="0 0 80 70" xmlns="http://www.w3.org/2000/svg" style="transform:${flip}">
+      <!-- Shadow/reflection -->
+      <ellipse cx="40" cy="66" rx="22" ry="5" fill="rgba(0,80,120,0.12)"/>
+      <!-- Body -->
+      <ellipse class="duck-body" cx="40" cy="48" rx="26" ry="18" fill="#f5c842"/>
+      <!-- Wing detail -->
+      <ellipse cx="38" cy="50" rx="14" ry="9" fill="#e8a020" opacity="0.6"/>
+      <!-- Tail -->
+      <ellipse cx="61" cy="44" rx="8" ry="6" fill="#e0b030" transform="rotate(-20,61,44)"/>
+      <!-- Neck -->
+      <rect x="27" y="30" width="14" height="16" rx="7" fill="#f5c842"/>
+      <!-- Head -->
+      <circle cx="34" cy="25" r="15" fill="#f5c842"/>
+      <!-- Eye -->
+      <circle cx="39" cy="21" r="3.5" fill="#1a2a3a"/>
+      <circle cx="40.2" cy="20" r="1.2" fill="white"/>
+      <!-- Beak -->
+      <path d="M47 25 L57 23 L57 28 L47 27 Z" fill="#ff8c00" rx="2"/>
+      <!-- Beak highlight -->
+      <line x1="47" y1="26" x2="57" y2="25.5" stroke="rgba(255,200,100,0.5)" stroke-width="1.5"/>
+    </svg>
+  `;
+
+  wrapper.addEventListener('click', () => tapDuck(wrapper, index));
+  wrapper.addEventListener('touchend', (e) => { e.preventDefault(); tapDuck(wrapper, index); }, {passive:false});
+
+  return wrapper;
+}
+
+// ---------- TAP DUCK ----------
+function tapDuck(el, index) {
+  if (!canTap) return;
+  if (el.classList.contains('tapped')) return;
+  if (answering) return;
+
+  el.classList.add('tapped');
+  tappedCount++;
+
+  // CHANGE 4: play quack sound on every duck tap
+  playQuack();
+
+  // Guided mode: show numbered badge
+  if (mode === 'guided') {
+    const badge = document.getElementById('badge-' + index);
+    badge.textContent = tappedCount;
+    if (badge) badge.classList.add('visible');
+  }
+
+  // CHANGE 2: Challenge mode gets a bold pulsing ring highlight
+  if (mode === 'free') {
+    el.classList.add('highlight-strong');
+  }
+
+  // CHANGE 3: hint stays the same until all ducks tapped
+  if (tappedCount >= duckCount) {
+    const hint = document.getElementById('tap-hint');
+    hint.textContent = 'All ducks tapped! Now pick the number ✅';
+    canTap = false;
+    answering = true;
+    setTimeout(showAnswerButtons, 500);
+  }
+}
+
+// ---------- SHOW ANSWER BUTTONS ----------
+function showAnswerButtons() {
+  document.getElementById('answer-prompt').classList.add('visible');
+  const btns = document.querySelectorAll('.num-btn');
+  btns.forEach((b, i) => {
+    setTimeout(() => b.classList.add('show'), i * 60);
+  });
+}
+
+// ---------- SUBMIT ANSWER ----------
+function submitAnswer(val) {
+  if (!answering) return;
+
+  const isCorrect = val === duckCount;
+
+  if (!isCorrect) {
+    // Wrong: shake only the tapped button, then let them try again
+    const btn = document.querySelector(`.num-btn[data-val="${val}"]`);
+    if (btn) {
+      btn.classList.add('wrong');
+      // Remove wrong class after animation so it can be tapped again
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.classList.remove('wrong');
+        btn.disabled = false;
+      }, 500);
+    }
+    return; // do NOT advance — player must find the right answer
+  }
+
+  // Correct: lock in, play sound, show feedback, advance
+  answering = false;
+  roundResults.push(true);
+  score++;
+
+  const btns = document.querySelectorAll('.num-btn');
+  btns.forEach(b => {
+    b.disabled = true;
+    if (parseInt(b.dataset.val) === duckCount) b.classList.add('correct');
+  });
+
+  playCorrect();
+  showFeedback(true);
+
+  setTimeout(() => {
+    hideFeedback();
+    if (round >= totalRounds) {
+      setTimeout(showResults, 300);
+    } else {
+      setTimeout(nextRound, 300);
+    }
+  }, 1100);
+}
+
+// ---------- FEEDBACK (correct only) ----------
+function showFeedback(correct) {
+  const overlay = document.getElementById('feedback-overlay');
+  const emoji   = document.getElementById('feedback-emoji');
+  const text    = document.getElementById('feedback-text');
+  const messages = [['🎉','Correct!'],['⭐','Nice one!'],['🌟','Awesome!'],['✅','You got it!']];
+  const [e, t] = messages[Math.floor(Math.random() * messages.length)];
+  emoji.textContent = e;
+  text.textContent  = t;
+  overlay.style.background = 'rgba(76,175,80,0.35)';
+  overlay.classList.add('show');
+}
+function hideFeedback() {
+  document.getElementById('feedback-overlay').classList.remove('show');
+}
+
+// ---------- RESULTS ----------
+function showResults() {
+  showScreen('result-screen');
+  document.getElementById('result-num').textContent = score;
+
+  let emoji, title, msg;
+  const pct = score / totalRounds;
+  if (pct === 1)        { emoji='🏆'; title='Perfect!';    msg='A perfect score! You\'re a counting champion! 🦆'; }
+  else if (pct >= 0.8)  { emoji='⭐'; title='Excellent!';  msg='Almost perfect — amazing duck counting skills!'; }
+  else if (pct >= 0.6)  { emoji='😊'; title='Good job!';   msg='Nice work! Keep practising to get even better!'; }
+  else if (pct >= 0.4)  { emoji='💪'; title='Keep going!'; msg='You\'re getting there — the ducks believe in you!'; }
+  else                  { emoji='🦆'; title='Keep trying!';msg='Practice makes perfect! Try again?'; }
+
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-msg').textContent   = msg;
+
+  const dotsEl = document.getElementById('result-dots');
+  dotsEl.innerHTML = '';
+  roundResults.forEach(r => {
+    const d = document.createElement('div');
+    d.className = 'result-dot ' + (r ? 'c' : 'w');
+    dotsEl.appendChild(d);
+  });
+
+  if (pct >= 0.7) spawnConfetti();
+}
+
+// ---------- CONFETTI ----------
+function spawnConfetti() {
+  const colours = ['#f5c842','#4db8e8','#ff8c00','#4caf50','#e91e63','#9c27b0'];
+  for (let i = 0; i < 55; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.cssText = `
+      left: ${Math.random() * 100}vw;
+      background: ${colours[Math.floor(Math.random() * colours.length)]};
+      animation-duration: ${1.8 + Math.random() * 2}s;
+      animation-delay: ${Math.random() * 0.8}s;
+      width: ${6 + Math.random() * 8}px;
+      height: ${6 + Math.random() * 8}px;
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      opacity: 1;
+    `;
+    document.body.appendChild(piece);
+    piece.addEventListener('animationend', () => piece.remove());
+  }
+}
+
+// ---------- NAVIGATION ----------
+function showScreen(id) {
+  ['start-screen','game-screen','result-screen'].forEach(s => {
+    const el = document.getElementById(s);
+    el.classList.toggle('hidden', s !== id);
+  });
+}
+
+function goHome() {
+  showScreen('start-screen');
+}
+</script>
+</body>
+</html>

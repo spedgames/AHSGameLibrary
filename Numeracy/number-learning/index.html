@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Numbers 1–10 | Learn & Count</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F0F4FF;
+    --surface: #FFFFFF;
+    --surface2: #EEF2FF;
+    --accent1: #6C63FF;
+    --accent2: #FF6584;
+    --accent3: #43C6AC;
+    --text-primary: #1A1A2E;
+    --text-secondary: #555577;
+    --text-muted: #9999BB;
+    --border: rgba(108,99,255,0.15);
+    --shadow: 0 8px 32px rgba(108,99,255,0.12);
+    --shadow-sm: 0 2px 12px rgba(108,99,255,0.08);
+    --radius-sm: 12px;
+    --radius-md: 20px;
+    --radius-lg: 28px;
+    --radius-xl: 36px;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    overflow: hidden;
+  }
+
+  /* ── Screen System ────────────────────────────────────────── */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(16px, 3vw, 32px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+
+  /* ── Start Screen ────────────────────────────────────────── */
+  #start-screen {
+    gap: clamp(12px, 2.5vh, 24px);
+  }
+
+  .app-title {
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    font-weight: 800;
+    color: var(--accent1);
+    letter-spacing: -0.5px;
+    text-align: center;
+  }
+  .app-title span { color: var(--accent2); }
+
+  .app-subtitle {
+    font-size: clamp(0.85rem, 2vw, 1rem);
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-align: center;
+    margin-top: -8px;
+  }
+
+  .number-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: clamp(8px, 1.5vw, 14px);
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .num-btn {
+    aspect-ratio: 1;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--accent1);
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(1.3rem, 3.5vw, 2rem);
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    border: 2px solid transparent;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .num-btn:hover {
+    transform: translateY(-3px) scale(1.04);
+    box-shadow: var(--shadow);
+    background: var(--accent1);
+    color: #fff;
+    border-color: var(--accent1);
+  }
+  .num-btn:active { transform: scale(0.96); }
+
+  /* Color accents cycling for number buttons */
+  .num-btn:nth-child(1)  { --c: #FF6584; }
+  .num-btn:nth-child(2)  { --c: #6C63FF; }
+  .num-btn:nth-child(3)  { --c: #43C6AC; }
+  .num-btn:nth-child(4)  { --c: #FF9F43; }
+  .num-btn:nth-child(5)  { --c: #A855F7; }
+  .num-btn:nth-child(6)  { --c: #EC4899; }
+  .num-btn:nth-child(7)  { --c: #3B82F6; }
+  .num-btn:nth-child(8)  { --c: #10B981; }
+  .num-btn:nth-child(9)  { --c: #F97316; }
+  .num-btn:nth-child(10) { --c: #8B5CF6; }
+
+  .num-btn { color: var(--c); }
+  .num-btn:hover { background: var(--c); color: #fff; border-color: var(--c); }
+
+  /* ── Learn Screen ────────────────────────────────────────── */
+  #learn-screen {
+    gap: 0;
+  }
+
+  .learn-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 720px;
+    margin-bottom: clamp(8px, 1.5vh, 18px);
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
+    min-height: 44px;
+  }
+  .back-btn:hover { background: var(--accent1); color: #fff; transform: translateX(-2px); }
+
+  .progress-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s ease, transform 0.3s ease;
+  }
+  .dot.active { background: var(--accent1); transform: scale(1.3); }
+
+  /* ── Learn Content ─────────────────────────────────────────*/
+  .learn-content {
+    display: flex;
+    align-items: stretch;
+    gap: clamp(10px, 2vw, 20px);
+    width: 100%;
+    max-width: 720px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Left Panel */
+  .number-panel {
+    flex: 1;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(6px, 1.5vh, 14px);
+    padding: clamp(14px, 2.5vh, 28px) clamp(12px, 2vw, 24px);
+    min-height: 0;
+  }
+
+  .big-number {
+    font-size: clamp(4rem, 14vw, 8rem);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--accent1);
+    transition: color 0.3s ease;
+  }
+
+  .number-word {
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
+  }
+
+  .speak-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent1);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: clamp(8px, 1.5vh, 12px) clamp(16px, 3vw, 24px);
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(0.8rem, 2vw, 0.95rem);
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(108,99,255,0.3);
+    transition: all 0.2s ease;
+    min-height: 44px;
+  }
+  .speak-btn:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(108,99,255,0.4); }
+  .speak-btn:active { transform: scale(0.97); }
+  .speak-btn.speaking { background: var(--accent2); box-shadow: 0 4px 16px rgba(255,101,132,0.35); }
+  .speak-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* Right Panel */
+  .emoji-panel {
+    flex: 1;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(14px, 2.5vh, 28px) clamp(12px, 2vw, 24px);
+    min-height: 0;
+  }
+
+  .emoji-label {
+    font-size: clamp(0.72rem, 1.8vw, 0.85rem);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    align-self: flex-start;
+  }
+
+  .emoji-display {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+  }
+
+  .emoji-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(4px, 1vw, 10px);
+    padding: 4px;
+    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .emoji-item {
+    font-size: clamp(1.4rem, 5vw, 2.8rem);
+    line-height: 1.1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: bounceIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .emoji-item:nth-child(1) { animation-delay: 0.00s; }
+  .emoji-item:nth-child(2) { animation-delay: 0.04s; }
+  .emoji-item:nth-child(3) { animation-delay: 0.08s; }
+  .emoji-item:nth-child(4) { animation-delay: 0.12s; }
+  .emoji-item:nth-child(5) { animation-delay: 0.16s; }
+  .emoji-item:nth-child(6) { animation-delay: 0.20s; }
+  .emoji-item:nth-child(7) { animation-delay: 0.24s; }
+  .emoji-item:nth-child(8) { animation-delay: 0.28s; }
+  .emoji-item:nth-child(9) { animation-delay: 0.32s; }
+  .emoji-item:nth-child(10){ animation-delay: 0.36s; }
+
+  @keyframes bounceIn {
+    from { opacity: 0; transform: scale(0.3) rotate(-10deg); }
+    to   { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+
+  .emoji-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .food-name {
+    font-size: clamp(0.75rem, 2vw, 0.9rem);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    flex: 1;
+  }
+
+  .arrow-btn {
+    width: clamp(44px, 8vw, 56px);
+    height: clamp(44px, 8vw, 56px);
+    border-radius: 50%;
+    border: none;
+    background: var(--surface2);
+    color: var(--accent1);
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+  }
+  .arrow-btn:hover { background: var(--accent1); color: #fff; transform: scale(1.1); }
+  .arrow-btn:active { transform: scale(0.93); }
+  .arrow-btn svg { width: 22px; height: 22px; }
+
+  /* ── Responsive: stack panels on narrow screens ─────────── */
+  @media (max-width: 540px) or (max-height: 560px) {
+    .learn-content {
+      flex-direction: column;
+    }
+    .number-panel {
+      flex-direction: row;
+      flex: 0 0 auto;
+      gap: 14px;
+      padding: 12px 20px;
+    }
+    .big-number { font-size: clamp(2.8rem, 10vw, 4rem); }
+    .number-word { font-size: clamp(1rem, 3vw, 1.3rem); }
+    .emoji-panel { flex: 1; }
+  }
+
+  /* ── Decorative background blobs ────────────────────────── */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::before {
+    width: 40vw; height: 40vw;
+    background: radial-gradient(circle, rgba(108,99,255,0.08) 0%, transparent 70%);
+    top: -10vw; left: -10vw;
+  }
+  body::after {
+    width: 35vw; height: 35vw;
+    background: radial-gradient(circle, rgba(255,101,132,0.07) 0%, transparent 70%);
+    bottom: -8vw; right: -8vw;
+  }
+  .screen { z-index: 1; }
+
+  /* ── Count It button ────────────────────────────────────── */
+  .count-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent1);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: clamp(8px, 1.5vh, 12px) clamp(16px, 3vw, 24px);
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(0.8rem, 2vw, 0.95rem);
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(108,99,255,0.3);
+    transition: all 0.2s ease;
+    min-height: 44px;
+    flex-shrink: 0;
+  }
+  .count-btn:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(108,99,255,0.4); }
+  .count-btn:active { transform: scale(0.97); }
+  .count-btn.counting { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .count-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* ── Counting number labels under each emoji ────────────── */
+  .emoji-item {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .count-label {
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(0.65rem, 1.8vw, 0.85rem);
+    font-weight: 700;
+    color: var(--accent1);
+    line-height: 1;
+    opacity: 0;
+    transform: translateY(4px) scale(0.6);
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    min-height: 1em;
+  }
+  .count-label.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     START SCREEN
+════════════════════════════════════════════════════════════ -->
+<div id="start-screen" class="screen active" role="main" aria-label="Number selection screen">
+  <h1 class="app-title">Numbers <span>1–10</span></h1>
+  <p class="app-subtitle">Tap a number to start learning!</p>
+
+  <div class="number-grid" role="grid" aria-label="Choose a number from 1 to 10">
+    <!-- Buttons generated by JS -->
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     LEARN SCREEN
+════════════════════════════════════════════════════════════ -->
+<div id="learn-screen" class="screen" role="main" aria-label="Number learning screen">
+
+  <div class="learn-header">
+    <button class="back-btn" id="back-btn" aria-label="Back to number selection">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      All Numbers
+    </button>
+    <div class="progress-dots" aria-label="Numbers 1 to 10" role="list">
+      <!-- Dots generated by JS -->
+    </div>
+  </div>
+
+  <div class="learn-content">
+
+    <!-- Left: Number + word + speak -->
+    <div class="number-panel" aria-label="Number display">
+      <div class="big-number" id="big-number" aria-live="polite">1</div>
+      <div class="number-word" id="number-word" aria-live="polite">one</div>
+      <button class="speak-btn" id="speak-btn" aria-label="Hear the number spoken aloud">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+        Say it!
+      </button>
+    </div>
+
+    <!-- Right: Emoji quantity + navigation -->
+    <div class="emoji-panel" aria-label="Food emoji quantity display">
+      <span class="emoji-label">Count them!</span>
+
+      <div class="emoji-display">
+        <div class="emoji-grid" id="emoji-grid" aria-live="polite" aria-label="Food items showing the quantity">
+          <!-- Emojis generated by JS -->
+        </div>
+      </div>
+
+      <button class="count-btn" id="count-btn" aria-label="Count the items one by one">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        Count it!
+      </button>
+
+      <div class="emoji-nav">
+        <button class="arrow-btn" id="prev-btn" aria-label="Previous food">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="arrow-btn" id="next-btn" aria-label="Next food">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+  /* ── Data ──────────────────────────────────────────────── */
+
+  // Number words
+  const NUMBER_WORDS = [
+    '', 'one','two','three','four','five',
+    'six','seven','eight','nine','ten'
+  ];
+
+  // Food emoji sets — each entry is [emoji, name]
+  const FOODS = [
+    ['🍎', 'Apple'],
+    ['🍌', 'Banana'],
+    ['🍇', 'Grape'],
+    ['🍓', 'Strawberry'],
+    ['🍕', 'Pizza'],
+    ['🍩', 'Doughnut'],
+    ['🌽', 'Corn'],
+    ['🥕', 'Carrot'],
+    ['🍉', 'Watermelon'],
+    ['🧁', 'Cupcake'],
+    ['🍦', 'Ice Cream'],
+    ['🥑', 'Avocado'],
+    ['🍋', 'Lemon'],
+    ['🍒', 'Cherry'],
+    ['🫐', 'Blueberry'],
+    ['🍔', 'Burger'],
+    ['🌮', 'Taco'],
+    ['🍰', 'Cake'],
+    ['🥝', 'Kiwi'],
+    ['🍑', 'Peach'],
+  ];
+
+  // Accent colors matching number buttons
+  const COLORS = [
+    '#FF6584','#6C63FF','#43C6AC','#FF9F43','#A855F7',
+    '#EC4899','#3B82F6','#10B981','#F97316','#8B5CF6'
+  ];
+
+  /* ── State ─────────────────────────────────────────────── */
+  let currentNumber = 1;
+  let foodIndex     = 0;
+  let speaking      = false;
+
+  /* ── DOM refs ──────────────────────────────────────────── */
+  const startScreen  = document.getElementById('start-screen');
+  const learnScreen  = document.getElementById('learn-screen');
+  const numberGrid   = document.querySelector('.number-grid');
+  const progressDots = document.querySelector('.progress-dots');
+  const bigNumber    = document.getElementById('big-number');
+  const numberWord   = document.getElementById('number-word');
+  const speakBtn     = document.getElementById('speak-btn');
+  const emojiGrid    = document.getElementById('emoji-grid');
+  const nextBtn      = document.getElementById('next-btn');
+  const prevBtn      = document.getElementById('prev-btn');
+  const backBtn      = document.getElementById('back-btn');
+  const countBtn     = document.getElementById('count-btn');
+
+  /* ── Counting state ─────────────────────────────────────── */
+  let countingTimer = null;
+
+  /* ── Build start screen buttons ────────────────────────── */
+  for (let n = 1; n <= 10; n++) {
+    const btn = document.createElement('button');
+    btn.className = 'num-btn';
+    btn.textContent = n;
+    btn.setAttribute('aria-label', `Learn the number ${n}, ${NUMBER_WORDS[n]}`);
+    btn.addEventListener('click', () => showLearnScreen(n));
+    numberGrid.appendChild(btn);
+  }
+
+  /* ── Build progress dots ───────────────────────────────── */
+  for (let n = 1; n <= 10; n++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.setAttribute('role', 'listitem');
+    d.setAttribute('aria-label', `Number ${n}`);
+    progressDots.appendChild(d);
+  }
+
+  /* ── Screen transitions ─────────────────────────────────── */
+  function showLearnScreen(n) {
+    currentNumber = n;
+    foodIndex     = 0;
+    renderLearnScreen();
+    startScreen.classList.remove('active');
+    learnScreen.classList.add('active');
+    // Speak on entry
+    setTimeout(() => speak(n), 400);
+  }
+
+  function showStartScreen() {
+    cancelSpeak();
+    if (countingTimer) { clearTimeout(countingTimer); countingTimer = null; }
+    countBtn.classList.remove('counting');
+    learnScreen.classList.remove('active');
+    startScreen.classList.add('active');
+  }
+
+  /* ── Render learn screen ────────────────────────────────── */
+  function renderLearnScreen() {
+    const n     = currentNumber;
+    const color = COLORS[n - 1];
+
+    // Update number & word
+    bigNumber.textContent = n;
+    bigNumber.style.color  = color;
+    numberWord.textContent = NUMBER_WORDS[n];
+
+    // Update speak + count button colours
+    speakBtn.style.background  = color;
+    speakBtn.style.boxShadow   = `0 4px 16px ${color}55`;
+    countBtn.style.background  = color;
+    countBtn.style.boxShadow   = `0 4px 16px ${color}55`;
+
+    // Update progress dots
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i + 1 === n);
+      d.style.background = i + 1 === n ? color : '';
+    });
+
+    // Render emojis
+    renderEmojis();
+  }
+
+  function renderEmojis() {
+    const n = currentNumber;
+    const color = COLORS[n - 1];
+    const [emoji, name] = FOODS[foodIndex % FOODS.length];
+
+    // Cancel any in-progress counting
+    stopCounting();
+
+    // Animate out old, then swap
+    emojiGrid.style.opacity = '0';
+    emojiGrid.style.transform = 'scale(0.85)';
+
+    setTimeout(() => {
+      emojiGrid.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const span = document.createElement('span');
+        span.className = 'emoji-item';
+        span.setAttribute('aria-hidden', 'true');
+
+        const emojiSpan = document.createElement('span');
+        emojiSpan.textContent = emoji;
+
+        const label = document.createElement('span');
+        label.className = 'count-label';
+        label.textContent = i + 1;
+        label.style.color = color;
+
+        span.appendChild(emojiSpan);
+        span.appendChild(label);
+        emojiGrid.appendChild(span);
+      }
+      emojiGrid.setAttribute('aria-label', `${n} ${name}${n > 1 ? 's' : ''}`);
+
+      // Update count button colour
+      countBtn.style.background = color;
+      countBtn.style.boxShadow  = `0 4px 16px ${color}55`;
+
+      emojiGrid.style.transition = 'none';
+      emojiGrid.style.opacity   = '1';
+      emojiGrid.style.transform = 'scale(1)';
+
+      // Re-trigger animation
+      emojiGrid.classList.remove('emoji-grid');
+      void emojiGrid.offsetWidth;
+      emojiGrid.classList.add('emoji-grid');
+    }, 150);
+  }
+
+  /* ── Navigation ─────────────────────────────────────────── */
+  nextBtn.addEventListener('click', () => {
+    foodIndex++;
+    renderEmojis();
+    speak(currentNumber);
+  });
+
+  prevBtn.addEventListener('click', () => {
+    foodIndex = (foodIndex - 1 + FOODS.length) % FOODS.length;
+    renderEmojis();
+    speak(currentNumber);
+  });
+
+  backBtn.addEventListener('click', showStartScreen);
+
+  /* ── Count it! button ───────────────────────────────────── */
+  countBtn.addEventListener('click', () => {
+    if (countBtn.classList.contains('counting')) return;
+    startCounting();
+  });
+
+  function startCounting() {
+    stopCounting();
+    const labels = emojiGrid.querySelectorAll('.count-label');
+    // Hide all labels first
+    labels.forEach(l => l.classList.remove('visible'));
+
+    countBtn.classList.add('counting');
+    let i = 0;
+
+    function revealNext() {
+      if (i >= labels.length) {
+        countBtn.classList.remove('counting');
+        countingTimer = null;
+        return;
+      }
+      labels[i].classList.add('visible');
+      // Speak the number
+      speakCount(i + 1);
+      i++;
+      countingTimer = setTimeout(revealNext, 750);
+    }
+
+    // Small delay before starting so the button press feels responsive
+    countingTimer = setTimeout(revealNext, 200);
+  }
+
+  function stopCounting() {
+    if (countingTimer) { clearTimeout(countingTimer); countingTimer = null; }
+    countBtn.classList.remove('counting');
+    // Hide all labels
+    emojiGrid.querySelectorAll('.count-label').forEach(l => l.classList.remove('visible'));
+  }
+
+  /* ── Speak a single count number (lighter, no cancel) ───── */
+  function speakCount(n) {
+    if (!('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(String(n));
+    u.rate   = 1.0;
+    u.pitch  = 1.2;
+    u.volume = 1;
+    const voices = speechSynthesis.getVoices();
+    const preferred = voices.find(v =>
+      /en/i.test(v.lang) && /(samantha|karen|victoria|google us|daniel)/i.test(v.name)
+    ) || voices.find(v => /en[-_]US/i.test(v.lang)) || voices[0];
+    if (preferred) u.voice = preferred;
+    speechSynthesis.speak(u);
+  }
+
+  /* ── Speak button ───────────────────────────────────────── */
+  speakBtn.addEventListener('click', () => {
+    speak(currentNumber);
+  });
+
+  /* ── Speech Synthesis ───────────────────────────────────── */
+  function speak(number) {
+    cancelSpeak();
+    if (!('speechSynthesis' in window)) return;
+
+    const utterance = new SpeechSynthesisUtterance(NUMBER_WORDS[number]);
+    utterance.rate   = 0.85;
+    utterance.pitch  = 1.15;
+    utterance.volume = 1;
+    // Try to pick a child-friendly, clear voice
+    const voices = speechSynthesis.getVoices();
+    const preferred = voices.find(v =>
+      /en/i.test(v.lang) && /(samantha|karen|victoria|google us|daniel)/i.test(v.name)
+    ) || voices.find(v => /en[-_]US/i.test(v.lang)) || voices[0];
+    if (preferred) utterance.voice = preferred;
+
+    utterance.onstart = () => {
+      speakBtn.classList.add('speaking');
+      speaking = true;
+    };
+    utterance.onend = utterance.onerror = () => {
+      speakBtn.classList.remove('speaking');
+      speaking = false;
+    };
+
+    speechSynthesis.speak(utterance);
+  }
+
+  function cancelSpeak() {
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    speakBtn.classList.remove('speaking');
+    speaking = false;
+  }
+
+  // Voices may load async
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = () => {};
+  }
+
+  /* ── Keyboard support ───────────────────────────────────── */
+  document.addEventListener('keydown', (e) => {
+    if (!learnScreen.classList.contains('active')) return;
+    if (e.key === 'ArrowRight') { nextBtn.click(); nextBtn.classList.add('active'); }
+    if (e.key === 'ArrowLeft')  { prevBtn.click(); prevBtn.classList.add('active'); }
+    if (e.key === ' ' || e.key === 'Enter') { speakBtn.click(); }
+    if (e.key === 'Escape') showStartScreen();
+  });
+  document.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowRight') nextBtn.classList.remove('active');
+    if (e.key === 'ArrowLeft')  prevBtn.classList.remove('active');
+  });
+
+</script>
+</body>
+</html>

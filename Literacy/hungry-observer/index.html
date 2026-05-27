@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Hungry Observer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FFD700;
+            --secondary: #FF4500;
+            --accent: #008000;
+            --comic-border: 4px solid #000;
+            --shadow: 6px 6px 0px #000;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+            font-family: 'Open Sans', sans-serif;
+            background-color: #55acee;
+            background-image: radial-gradient(#fff 20%, transparent 20%), radial-gradient(#fff 20%, transparent 20%);
+            background-size: 40px 40px; background-position: 0 0, 20px 20px;
+        }
+
+        #game-container {
+            position: relative; width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .screen {
+            position: absolute; width: 95%; max-width: 900px; height: 90%;
+            background: white; border: var(--comic-border); box-shadow: var(--shadow);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 1.5rem; text-align: center; border-radius: 25px;
+        }
+
+        .active { display: flex; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        h1 { font-family: 'Bangers', cursive; font-size: 4.5rem; color: var(--secondary); margin: 0; -webkit-text-stroke: 2px black; }
+
+        /* UPGRADED TEXT SIZE SECTION */
+        #sentence-display {
+            font-size: 4rem; /* Increased from 2rem */
+            font-weight: 800;
+            margin: 1.5rem 0;
+            letter-spacing: 4px;
+            min-height: 5rem;
+            line-height: 1.2;
+            word-spacing: 10px;
+            text-transform: uppercase; /* Comic books usually use caps! */
+            font-family: 'Bangers', cursive; /* Using the comic font for typing too */
+            color: #333;
+        }
+
+        .char-correct { color: var(--accent); }
+        .char-hint { color: #e0e0e0; } /* Subtle but readable ghost text */
+        .char-wrong { color: #ff0000; text-decoration: underline; }
+
+        #food-display { font-size: 10rem; margin: 0.5rem; transition: all 0.5s; }
+        .eaten { transform: scale(0) rotate(360deg); opacity: 0; }
+
+        .btn {
+            font-family: 'Bangers', cursive; padding: 1.2rem 3rem; font-size: 2rem;
+            cursor: pointer; border: var(--comic-border); border-radius: 50px;
+            background: var(--primary); box-shadow: 4px 4px 0px #000; transition: 0.1s;
+        }
+
+        .btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+
+        #hidden-input { position: absolute; opacity: 0; pointer-events: none; }
+
+        .progress-container {
+            width: 90%; height: 35px; background: #eee; border: 3px solid #000;
+            border-radius: 20px; overflow: hidden; margin-top: 1rem;
+        }
+
+        #progress-fill { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2.8rem; }
+            #sentence-display { font-size: 2.2rem; min-height: 3.5rem; }
+            #food-display { font-size: 6rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="start-screen" class="screen active">
+            <h1>The Hungry Observer</h1>
+            <div style="font-size: 6rem; margin: 10px;">🍽️</div>
+            <div style="margin: 1rem; font-weight: bold; font-size: 1.2rem;">
+                HINT MODE: <input type="checkbox" id="hint-toggle" style="width:25px; height:25px; vertical-align: middle;">
+            </div>
+            <button class="btn" onclick="startGame()">FEED THE OBSERVER</button>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div id="food-display">🍎</div>
+            <div id="sentence-display"></div>
+            <input type="text" id="hidden-input" autocomplete="off" autofocus>
+            <div class="progress-container"><div id="progress-fill"></div></div>
+        </div>
+
+        <div id="end-screen" class="screen">
+    <h1>FULL BELLY!</h1>
+    <div style="font-size: 6rem; margin: 1rem;">🌟</div>
+    <p id="stats-display" style="font-size: 2rem; font-weight: bold;"></p>
+    <button class="btn" onclick="resetGameEngine()">PLAY AGAIN</button>
+</div>
+
+    </div>
+
+    <script>
+        const foods = [
+            { name: "an apple", icon: "🍎" },
+            { name: "a burger", icon: "🍔" },
+            { name: "a pizza", icon: "🍕" },
+            { name: "a taco", icon: "🌮" },
+            { name: "a donut", icon: "🍩" }
+        ];
+
+        let currentLevel = 0, targetSentence = "", userInput = "", hintMode = false, errors = 0, totalKeys = 0;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(f, d, t) {
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.type = t; osc.frequency.setValueAtTime(f, audioCtx.currentTime);
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + d);
+        }
+
+        function startGame() {
+            hintMode = document.getElementById('hint-toggle').checked;
+            document.getElementById('start-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            loadLevel();
+            document.getElementById('hidden-input').focus();
+        }
+
+        function loadLevel() {
+            if (currentLevel >= foods.length) {
+                document.getElementById('game-screen').classList.remove('active');
+                document.getElementById('end-screen').classList.add('active');
+                document.getElementById('stats-display').innerText = `Accuracy: ${Math.round(((totalKeys-errors)/totalKeys)*100)}%`;
+                return;
+            }
+            targetSentence = `I EAT ${foods[currentLevel].name.toUpperCase()}`;
+            userInput = "";
+            document.getElementById('food-display').innerText = foods[currentLevel].icon;
+            document.getElementById('food-display').classList.remove('eaten');
+            document.getElementById('progress-fill').style.width = `${(currentLevel/foods.length)*100}%`;
+            renderDisplay();
+        }
+      
+      // Add this specific reset function to your <script> section
+function resetGameEngine() {
+    // 1. Reset all game variables
+    currentLevel = 0;
+    errors = 0;
+    totalKeys = 0;
+    userInput = "";
+    
+    // 2. Clear the input field
+    const inputField = document.getElementById('hidden-input');
+    inputField.value = "";
+    
+    // 3. Reset the Progress Bar
+    document.getElementById('progress-fill').style.width = "0%";
+    
+    // 4. Reset UI visibility
+    document.getElementById('end-screen').classList.remove('active');
+    document.getElementById('start-screen').classList.add('active');
+    
+    // 5. Ensure Hint Mode checkbox is still accessible
+    document.getElementById('hint-toggle').checked = hintMode;
+}
+
+// Add this to ensure the input field refocuses correctly on all devices
+function startGame() {
+    hintMode = document.getElementById('hint-toggle').checked;
+    document.getElementById('start-screen').classList.remove('active');
+    document.getElementById('game-screen').classList.add('active');
+    
+    loadLevel();
+    
+    // Crucial for iPad/Tablet: 
+    // Wait for the transition to finish before forcing focus
+    setTimeout(() => {
+        const input = document.getElementById('hidden-input');
+        input.focus();
+        input.click(); // Some mobile browsers need a 'click' to trigger the OS keyboard
+    }, 300);
+}
+
+        function renderDisplay() {
+            let html = "";
+            for (let i = 0; i < targetSentence.length; i++) {
+                if (i < userInput.length) {
+                    html += `<span class="${userInput[i] === targetSentence[i] ? 'char-correct' : 'char-wrong'}">${targetSentence[i] === " " ? "&nbsp;" : targetSentence[i]}</span>`;
+                } else {
+                    html += `<span class="char-hint">${hintMode ? targetSentence[i] : (targetSentence[i] === " " ? "&nbsp;" : "_")}</span>`;
+                }
+            }
+            document.getElementById('sentence-display').innerHTML = html;
+        }
+
+        document.getElementById('hidden-input').addEventListener('input', (e) => {
+            userInput = e.target.value.toUpperCase();
+            totalKeys++;
+            if (userInput[userInput.length-1] !== targetSentence[userInput.length-1]) errors++;
+            playSound(150, 0.05, 'square');
+            renderDisplay();
+            if (userInput === targetSentence) {
+                playSound(100, 0.2, 'triangle');
+                document.getElementById('food-display').classList.add('eaten');
+                setTimeout(() => { currentLevel++; e.target.value = ""; loadLevel(); }, 800);
+            }
+        });
+
+        // Ensure focus stays on mobile
+        document.body.addEventListener('click', () => document.getElementById('hidden-input').focus());
+    </script>
+</body>
+</html>

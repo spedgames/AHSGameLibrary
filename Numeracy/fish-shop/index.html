@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fish Market Frenzy – Aquarium Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     CSS VARIABLES & RESET
+  ============================================================ */
+  :root {
+    --ocean-deep:    #0a1628;
+    --ocean-mid:     #0d2547;
+    --ocean-light:   #0e3a6e;
+    --water-blue:    #1a6fa0;
+    --water-teal:    #17a0a0;
+    --water-glow:    #22d3ee;
+    --sand:          #f5d87a;
+    --sand-dark:     #e0b84a;
+    --coral:         #ff6b6b;
+    --coral-dark:    #e84545;
+    --mint:          #4ade80;
+    --mint-dark:     #22c55e;
+    --gold:          #fbbf24;
+    --gold-dark:     #f59e0b;
+    --white:         #ffffff;
+    --text-light:    #e0f2fe;
+    --text-muted:    #7dd3fc;
+    --card-bg:       rgba(13,37,71,0.85);
+    --glass:         rgba(255,255,255,0.08);
+    --glass-border:  rgba(255,255,255,0.15);
+    --shadow:        0 8px 32px rgba(0,0,0,0.4);
+    --radius-sm:     8px;
+    --radius-md:     14px;
+    --radius-lg:     20px;
+    --radius-xl:     28px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    background: var(--ocean-deep);
+    color: var(--white);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  /* ============================================================
+     ANIMATED OCEAN BACKGROUND
+  ============================================================ */
+  .ocean-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: linear-gradient(180deg,
+      #060d1f 0%,
+      #0a1a3a 30%,
+      #0d2a5a 65%,
+      #0a3060 100%);
+    overflow: hidden;
+  }
+  .ocean-bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 30%, rgba(26,111,160,0.25) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 70%, rgba(23,160,160,0.18) 0%, transparent 55%);
+  }
+
+  /* Bubbles */
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    animation: rise linear infinite;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(100vh) scale(1);   opacity: 0.7; }
+    100% { transform: translateY(-10vh) scale(1.3); opacity: 0;   }
+  }
+
+  /* ============================================================
+     SCREENS
+  ============================================================ */
+  .screen {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .screen.hidden {
+    opacity: 0; pointer-events: none;
+    transform: scale(0.97);
+  }
+
+  /* ============================================================
+     START SCREEN
+  ============================================================ */
+  #startScreen {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px;
+    /* Allow the screen itself to scroll only if truly needed on tiny screens */
+    overflow-y: auto;
+    align-items: center;
+    justify-content: center;
+  }
+  .start-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    /* Use vh-aware padding so card never overflows the viewport */
+    padding: clamp(14px, 2.5vh, 32px) clamp(20px, 4vw, 48px);
+    max-width: 500px; width: 100%;
+    /* Prevent card from being taller than viewport */
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    box-shadow: var(--shadow), 0 0 60px rgba(34,211,238,0.1);
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .start-card::-webkit-scrollbar { width: 0; }
+  .game-title {
+    font-size: clamp(1.5rem, 4vw, 2.6rem);
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--water-glow), var(--sand), var(--mint));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+  .game-subtitle {
+    font-size: clamp(0.78rem, 2vw, 0.92rem);
+    color: var(--text-muted);
+    margin-bottom: clamp(10px, 1.5vh, 18px);
+    font-weight: 500;
+  }
+  .fish-preview {
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    margin-bottom: clamp(8px, 1.2vh, 16px);
+    animation: swim-preview 3s ease-in-out infinite;
+  }
+  @keyframes swim-preview {
+    0%, 100% { transform: translateX(-8px) rotate(-5deg); }
+    50%       { transform: translateX(8px)  rotate(5deg);  }
+  }
+  .instructions {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: clamp(10px, 1.5vh, 16px) clamp(14px, 2vw, 20px);
+    margin-bottom: clamp(12px, 2vh, 22px);
+    text-align: left;
+    width: 100%;
+  }
+  .instructions h3 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--water-glow);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .instructions ol {
+    padding-left: 18px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .instructions li {
+    font-size: clamp(0.74rem, 1.8vw, 0.84rem);
+    color: var(--text-light);
+    line-height: 1.35;
+  }
+  .btn-play {
+    background: linear-gradient(135deg, var(--water-teal), var(--water-blue));
+    color: var(--white);
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(0.92rem, 2.5vw, 1.08rem);
+    font-weight: 700;
+    border: none; cursor: pointer;
+    padding: clamp(12px, 1.8vh, 16px) 44px;
+    border-radius: 50px;
+    box-shadow: 0 4px 24px rgba(23,160,160,0.5);
+    transition: transform 0.15s, box-shadow 0.15s;
+    min-height: 48px; min-width: 160px;
+    letter-spacing: 0.5px;
+  }
+  .btn-play:hover  { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(23,160,160,0.65); }
+  .btn-play:active { transform: translateY(0); }
+
+  /* ============================================================
+     GAME SCREEN
+  ============================================================ */
+  #gameScreen {
+    flex-direction: column;
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+  .game-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%; height: 100%;
+    overflow: hidden;
+  }
+
+  /* Top HUD */
+  .hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(6,13,31,0.7);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .hud-title {
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--water-glow), var(--mint));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hud-progress {
+    display: flex; align-items: center; gap: 8px;
+    font-size: clamp(0.75rem, 2vw, 0.88rem);
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .fish-dots {
+    display: flex; gap: 5px;
+  }
+  .fish-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--water-teal);
+    background: transparent;
+    transition: all 0.3s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .fish-dot.filled {
+    background: var(--water-teal);
+    box-shadow: 0 0 8px var(--water-teal);
+  }
+
+  /* Main game layout */
+  .game-main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  /* ============================================================
+     AQUARIUM (LEFT PANEL)
+  ============================================================ */
+  .aquarium-panel {
+    flex: 0 0 38%;
+    max-width: 420px;
+    min-width: 200px;
+    position: relative;
+    overflow: hidden;
+    border-right: 1px solid var(--glass-border);
+  }
+  .aquarium-label {
+    position: absolute; top: 10px; left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(0.65rem, 1.8vw, 0.78rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--water-glow);
+    background: rgba(6,13,31,0.6);
+    backdrop-filter: blur(6px);
+    padding: 4px 12px;
+    border-radius: 50px;
+    border: 1px solid rgba(34,211,238,0.3);
+    z-index: 5;
+    white-space: nowrap;
+  }
+  .aquarium-water {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg,
+      rgba(10,26,58,0.9) 0%,
+      rgba(10,48,96,0.85) 50%,
+      rgba(8,36,72,0.92) 100%);
+  }
+  /* Caustic light rays */
+  .caustic {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 40px,
+        rgba(34,211,238,0.03) 40px,
+        rgba(34,211,238,0.03) 42px
+      );
+    animation: caustic-move 8s linear infinite;
+  }
+  @keyframes caustic-move {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(84px); }
+  }
+  /* Sand floor */
+  .aquarium-sand {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 14%;
+    background: linear-gradient(180deg, var(--sand-dark) 0%, var(--sand) 100%);
+    border-radius: 0 0 0 0;
+  }
+  .aquarium-sand::before {
+    content: '';
+    position: absolute; top: -8px; left: 0; right: 0; height: 16px;
+    background: radial-gradient(ellipse 20px 10px at 20% 50%, var(--sand-dark) 0%, transparent 100%),
+                radial-gradient(ellipse 16px 8px  at 55% 50%, var(--sand-dark) 0%, transparent 100%),
+                radial-gradient(ellipse 24px 10px at 80% 50%, var(--sand-dark) 0%, transparent 100%);
+  }
+  /* Seaweed */
+  .seaweed {
+    position: absolute; bottom: 14%; width: 12px;
+    transform-origin: bottom center;
+    animation: sway 3s ease-in-out infinite;
+  }
+  .seaweed:nth-child(1) { left: 12%; animation-delay: 0s;   height: 18%; }
+  .seaweed:nth-child(2) { left: 20%; animation-delay: 0.7s; height: 14%; }
+  .seaweed:nth-child(3) { right:10%; animation-delay: 1.2s; height: 20%; }
+  .seaweed:nth-child(4) { right:18%; animation-delay: 0.4s; height: 15%; }
+  @keyframes sway {
+    0%,100% { transform: rotate(-8deg); }
+    50%      { transform: rotate(8deg);  }
+  }
+  .seaweed-inner {
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, #22c55e, #16a34a, #15803d);
+    border-radius: 50% 50% 0 0 / 60% 60% 0 0;
+    clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+  }
+  /* Bubbles in tank */
+  .tank-bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    animation: tank-rise linear infinite;
+  }
+  @keyframes tank-rise {
+    0%   { transform: translateY(0) translateX(0); opacity: 0.8; }
+    50%  { transform: translateY(-40%) translateX(6px); }
+    100% { transform: translateY(-85%) translateX(-4px); opacity: 0; }
+  }
+  /* Fish in aquarium */
+  .aqua-fish {
+    position: absolute;
+    transition: none;
+    cursor: default;
+  }
+  .aqua-fish img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(0,150,200,0.5));
+  }
+  /* Empty aquarium hint */
+  .empty-hint {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: rgba(255,255,255,0.2);
+    font-size: clamp(0.7rem, 2vw, 0.85rem);
+    font-weight: 500;
+    pointer-events: none;
+    transition: opacity 0.5s;
+  }
+  .empty-hint .hint-icon { font-size: 2rem; margin-bottom: 6px; }
+
+  /* ============================================================
+     FISH SHOP (RIGHT PANEL)
+  ============================================================ */
+  .shop-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: rgba(6,13,31,0.4);
+  }
+  .shop-header {
+    padding: 10px 14px 6px;
+    flex-shrink: 0;
+  }
+  .shop-title {
+    font-size: clamp(0.78rem, 2vw, 0.9rem);
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .shop-subtitle {
+    font-size: clamp(0.65rem, 1.8vw, 0.75rem);
+    color: rgba(255,255,255,0.35);
+    font-weight: 400;
+  }
+  .fish-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(6px, 1.5vw, 10px);
+    padding: clamp(6px, 1.5vw, 10px);
+    overflow-y: auto;
+    align-content: start;
+  }
+  .fish-grid::-webkit-scrollbar { width: 4px; }
+  .fish-grid::-webkit-scrollbar-track { background: transparent; }
+  .fish-grid::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
+
+  /* Fish card */
+  .fish-card {
+    background: var(--glass);
+    border: 1.5px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: clamp(8px, 2vw, 12px) clamp(6px, 1.5vw, 10px);
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    cursor: pointer;
+    transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s, background 0.18s;
+    min-height: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .fish-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--water-teal);
+    box-shadow: 0 6px 20px rgba(23,160,160,0.3);
+    background: rgba(23,160,160,0.12);
+  }
+  .fish-card:active { transform: translateY(-1px); }
+  .fish-card.sold {
+    opacity: 0.4;
+    pointer-events: none;
+    filter: grayscale(0.7);
+  }
+  .fish-card.sold::after {
+    content: 'SOLD';
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(0.7rem, 2vw, 0.85rem);
+    font-weight: 800;
+    color: var(--coral);
+    letter-spacing: 2px;
+    background: rgba(0,0,0,0.4);
+    border-radius: var(--radius-md);
+  }
+  .fish-card-img {
+    width: clamp(44px, 8vw, 64px);
+    height: clamp(36px, 6vw, 52px);
+    object-fit: contain;
+    filter: drop-shadow(0 2px 6px rgba(0,150,200,0.4));
+    transition: transform 0.3s;
+  }
+  .fish-card:hover .fish-card-img { transform: scale(1.1) rotate(-5deg); }
+  .fish-name {
+    font-size: clamp(0.6rem, 1.6vw, 0.72rem);
+    font-weight: 600;
+    color: var(--text-light);
+    text-align: center;
+  }
+  .fish-price-tag {
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    color: var(--ocean-deep);
+    font-size: clamp(0.7rem, 1.8vw, 0.82rem);
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 50px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ============================================================
+     MODAL OVERLAY
+  ============================================================ */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.hidden {
+    opacity: 0; pointer-events: none;
+  }
+
+  .modal {
+    background: linear-gradient(160deg, #0d2547, #091830);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    /* No scrolling — everything fits. Use vh to keep it within viewport. */
+    padding: clamp(12px, 2vh, 20px) clamp(14px, 3vw, 24px);
+    width: 100%;
+    max-width: 460px;
+    /* Hard cap so it never exceeds viewport */
+    max-height: calc(100vh - 32px);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: var(--shadow), 0 0 80px rgba(34,211,238,0.12);
+    animation: modal-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes modal-in {
+    0%   { transform: scale(0.85) translateY(20px); opacity: 0; }
+    100% { transform: scale(1) translateY(0);       opacity: 1; }
+  }
+
+  .modal-fish-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: clamp(6px, 1vh, 12px);
+    flex-shrink: 0;
+  }
+  .modal-fish-img {
+    width: clamp(44px, 8vw, 64px);
+    height: clamp(36px, 7vw, 52px);
+    object-fit: contain;
+    filter: drop-shadow(0 4px 12px rgba(34,211,238,0.4));
+    animation: swim-modal 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes swim-modal {
+    0%,100% { transform: translateY(-3px) rotate(-3deg); }
+    50%      { transform: translateY(3px)  rotate(3deg);  }
+  }
+  .modal-fish-info { flex: 1; }
+  .modal-fish-name {
+    font-size: clamp(0.9rem, 2.5vw, 1.15rem);
+    font-weight: 800;
+    color: var(--white);
+  }
+  .modal-prompt {
+    font-size: clamp(0.68rem, 1.8vw, 0.78rem);
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .modal-price-display {
+    text-align: center;
+    margin-bottom: clamp(6px, 1vh, 12px);
+    flex-shrink: 0;
+  }
+  .price-label {
+    font-size: clamp(0.62rem, 1.5vw, 0.72rem);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .price-amount {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--gold), var(--sand));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+
+  /* Selected total tracker */
+  .selected-total-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: clamp(5px, 0.8vh, 8px) 14px;
+    margin-bottom: clamp(6px, 1vh, 12px);
+    flex-shrink: 0;
+  }
+  .selected-total-label {
+    font-size: clamp(0.66rem, 1.6vw, 0.76rem);
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .selected-total-amount {
+    font-size: clamp(0.85rem, 2.2vw, 1rem);
+    font-weight: 800;
+    color: var(--white);
+    transition: color 0.2s;
+  }
+  .selected-total-amount.exact  { color: var(--mint); }
+  .selected-total-amount.over   { color: var(--coral); }
+
+  /* Money grid */
+  .money-section-label {
+    font-size: clamp(0.6rem, 1.5vw, 0.7rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: clamp(4px, 0.6vh, 8px);
+    flex-shrink: 0;
+  }
+  .money-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(5px, 1vw, 8px);
+    margin-bottom: clamp(6px, 1vh, 10px);
+    flex-shrink: 0;
+  }
+  .money-btn {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
+    background: var(--glass);
+    border: 2px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: clamp(5px, 1vh, 10px) 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: clamp(54px, 9vh, 72px);
+    position: relative;
+    overflow: hidden;
+  }
+  .money-btn:hover {
+    border-color: var(--water-teal);
+    background: rgba(23,160,160,0.15);
+    transform: translateY(-2px);
+  }
+  .money-btn:active { transform: translateY(0); }
+  .money-btn.selected {
+    border-color: var(--mint);
+    background: rgba(74,222,128,0.15);
+    box-shadow: 0 0 16px rgba(74,222,128,0.3);
+  }
+  .money-btn.selected::after {
+    content: '✓';
+    position: absolute; top: 3px; right: 5px;
+    font-size: 10px; font-weight: 800;
+    color: var(--mint);
+  }
+  .money-img {
+    width: clamp(26px, 5.5vw, 40px);
+    height: clamp(26px, 5.5vw, 40px);
+    object-fit: contain;
+  }
+  .money-label {
+    font-size: clamp(0.58rem, 1.4vw, 0.68rem);
+    font-weight: 700;
+    color: var(--text-light);
+    text-align: center;
+  }
+  /* No count badge needed — toggle mode, one selection per denomination */
+
+  /* Modal action buttons — always visible, never pushed off screen */
+  .modal-actions {
+    display: flex; gap: 10px;
+    margin-top: clamp(8px, 1.2vh, 14px);
+    flex-shrink: 0;
+  }
+  .btn-clear {
+    flex: 0 0 auto;
+    background: rgba(255,107,107,0.15);
+    border: 1.5px solid var(--coral);
+    color: var(--coral);
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(0.74rem, 1.8vw, 0.84rem);
+    font-weight: 700;
+    padding: clamp(9px, 1.3vh, 12px) 18px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 44px;
+  }
+  .btn-clear:hover { background: rgba(255,107,107,0.28); }
+  .btn-pay {
+    flex: 1;
+    background: linear-gradient(135deg, var(--mint-dark), var(--water-teal));
+    border: none;
+    color: var(--white);
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(0.84rem, 2.2vw, 0.96rem);
+    font-weight: 800;
+    padding: clamp(10px, 1.5vh, 14px);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 4px 20px rgba(34,197,94,0.4);
+    min-height: 44px;
+    letter-spacing: 0.3px;
+  }
+  .btn-pay:hover   { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(34,197,94,0.55); }
+  .btn-pay:active  { transform: translateY(0); }
+  .btn-pay:disabled {
+    opacity: 0.4; cursor: not-allowed;
+    transform: none; box-shadow: none;
+  }
+  .btn-modal-close {
+    position: absolute; top: 12px; right: 12px;
+    width: 32px; height: 32px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    z-index: 5;
+  }
+  .btn-modal-close:hover { background: rgba(255,255,255,0.15); color: var(--white); }
+
+  /* Wrong answer shake */
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-10px); }
+    40%      { transform: translateX(10px); }
+    60%      { transform: translateX(-8px); }
+    80%      { transform: translateX(8px); }
+  }
+  .shake { animation: shake 0.45s ease; }
+
+  /* ============================================================
+     WIN SCREEN
+  ============================================================ */
+  #winScreen {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+  .win-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: clamp(24px, 5vw, 48px) clamp(24px, 6vw, 56px);
+    max-width: 480px; width: 100%;
+    box-shadow: var(--shadow), 0 0 80px rgba(74,222,128,0.15);
+    animation: modal-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .win-emoji {
+    font-size: clamp(3rem, 10vw, 5rem);
+    animation: bounce 1s ease infinite;
+    display: block; margin-bottom: 10px;
+  }
+  @keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-14px); }
+  }
+  .win-title {
+    font-size: clamp(1.6rem, 5vw, 2.5rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--mint), var(--water-glow), var(--gold));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .win-msg {
+    font-size: clamp(0.82rem, 2.2vw, 0.95rem);
+    color: var(--text-muted);
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+  .win-fish-row {
+    display: flex; justify-content: center;
+    gap: clamp(6px, 2vw, 14px);
+    margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .win-fish-img {
+    width: clamp(36px, 7vw, 52px);
+    height: clamp(30px, 6vw, 42px);
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(34,211,238,0.5));
+    animation: swim-preview 2.5s ease-in-out infinite;
+  }
+  .win-fish-img:nth-child(odd)  { animation-delay: 0.3s; }
+  .win-fish-img:nth-child(even) { animation-delay: 0.8s; }
+
+  /* ============================================================
+     TOAST / FEEDBACK
+  ============================================================ */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(13,37,71,0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    color: var(--white);
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 50px;
+    z-index: 200;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    opacity: 0; pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  /* ============================================================
+     LOADING SCREEN
+  ============================================================ */
+  #loadingScreen {
+    flex-direction: column; gap: 16px;
+    background: var(--ocean-deep);
+  }
+  .loading-fish {
+    font-size: 3rem;
+    animation: swim-preview 1.5s ease-in-out infinite;
+  }
+  .loading-text {
+    font-size: 1rem; font-weight: 600;
+    color: var(--text-muted);
+  }
+  .loading-bar-wrap {
+    width: 200px; height: 6px;
+    background: var(--glass);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .loading-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--water-teal), var(--water-glow));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.2s;
+  }
+
+  /* ============================================================
+     CONFETTI CANVAS
+  ============================================================ */
+  #confettiCanvas {
+    position: fixed; inset: 0; z-index: 90;
+    pointer-events: none;
+  }
+
+  /* ============================================================
+     RESPONSIVE TWEAKS
+  ============================================================ */
+  @media (max-width: 600px) {
+    .aquarium-panel { flex: 0 0 42%; }
+    .fish-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 400px) {
+    .aquarium-panel { flex: 0 0 40%; }
+    .fish-grid { gap: 5px; padding: 5px; }
+    .fish-card { padding: 7px 5px; }
+  }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .hud { padding: 6px 12px; }
+    .fish-grid { gap: 5px; padding: 5px; }
+    .fish-card { min-height: 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Ocean BG -->
+<div class="ocean-bg" id="oceanBg"></div>
+
+<!-- Confetti Canvas -->
+<canvas id="confettiCanvas"></canvas>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ============================================================
+     LOADING SCREEN
+============================================================ -->
+<div class="screen" id="loadingScreen">
+  <div class="loading-fish">🐠</div>
+  <div class="loading-text">Loading fish market…</div>
+  <div class="loading-bar-wrap">
+    <div class="loading-bar" id="loadingBar"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     START SCREEN
+============================================================ -->
+<div class="screen hidden" id="startScreen">
+  <div class="start-card">
+    <div class="fish-preview">🐟🐠🐡</div>
+    <div class="game-title">Fish Market<br>Frenzy!</div>
+    <div class="game-subtitle">A Money Skills Aquarium Game</div>
+    <div class="instructions">
+      <h3>How to Play</h3>
+      <ol>
+        <li>Browse the <strong>fish shop</strong> on the right — each fish has a price tag.</li>
+        <li>Tap a fish to open the <strong>fish stall</strong>.</li>
+        <li>Use the <strong>money buttons</strong> to select the exact amount.</li>
+        <li>Press <strong>Pay</strong> and watch your fish swim into the aquarium!</li>
+        <li>Buy <strong>5 fish</strong> to fill your aquarium and win! 🎉</li>
+      </ol>
+    </div>
+    <button class="btn-play" id="btnPlay">▶ Start Game</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     GAME SCREEN
+============================================================ -->
+<div class="screen hidden" id="gameScreen">
+  <div class="game-wrapper">
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-title">🐠 Fish Market Frenzy</div>
+      <div class="hud-progress">
+        <span>My Aquarium:</span>
+        <div class="fish-dots" id="fishDots"></div>
+      </div>
+    </div>
+    <!-- Main -->
+    <div class="game-main">
+      <!-- Aquarium -->
+      <div class="aquarium-panel" id="aquariumPanel">
+        <div class="aquarium-label">🏠 My Aquarium</div>
+        <div class="aquarium-water"></div>
+        <div class="caustic"></div>
+        <!-- Seaweed -->
+        <div class="seaweed"><div class="seaweed-inner"></div></div>
+        <div class="seaweed"><div class="seaweed-inner"></div></div>
+        <div class="seaweed"><div class="seaweed-inner"></div></div>
+        <div class="seaweed"><div class="seaweed-inner"></div></div>
+        <div class="aquarium-sand"></div>
+        <div class="empty-hint" id="emptyHint">
+          <div class="hint-icon">🛒</div>
+          Buy fish from<br>the shop!
+        </div>
+      </div>
+      <!-- Shop -->
+      <div class="shop-panel">
+        <div class="shop-header">
+          <div class="shop-title">🏪 Fish Shop</div>
+          <div class="shop-subtitle">Tap a fish to buy it</div>
+        </div>
+        <div class="fish-grid" id="fishGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     WIN SCREEN
+============================================================ -->
+<div class="screen hidden" id="winScreen">
+  <div class="win-card">
+    <span class="win-emoji">🏆</span>
+    <div class="win-title">Aquarium Complete!</div>
+    <div class="win-msg">Amazing work! You paid the exact right amount<br>for all 5 fish. Your aquarium is full! 🎉</div>
+    <div class="win-fish-row" id="winFishRow"></div>
+    <button class="btn-play" id="btnPlayAgain">🔄 Play Again</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     PURCHASE MODAL
+============================================================ -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal" id="modal" style="position:relative;">
+    <button class="btn-modal-close" id="btnModalClose">✕</button>
+    <div class="modal-fish-header">
+      <img class="modal-fish-img" id="modalFishImg" src="" alt="">
+      <div class="modal-fish-info">
+        <div class="modal-fish-name" id="modalFishName"></div>
+        <div class="modal-prompt">Select the exact amount to pay:</div>
+      </div>
+    </div>
+    <div class="modal-price-display">
+      <div class="price-label">Price</div>
+      <div class="price-amount" id="modalPriceAmount"></div>
+    </div>
+
+    <!-- Selected total tracker -->
+    <div class="selected-total-bar">
+      <span class="selected-total-label">You've selected:</span>
+      <span class="selected-total-amount" id="selectedTotal">$0.00</span>
+    </div>
+
+    <!-- Dollar row -->
+    <div class="money-section-label">Dollars</div>
+    <div class="money-row" id="dollarRow"></div>
+    <!-- Cent row -->
+    <div class="money-section-label">Cents</div>
+    <div class="money-row" id="centRow"></div>
+
+    <div class="modal-actions">
+      <button class="btn-clear" id="btnClear">Clear</button>
+      <button class="btn-pay" id="btnPay" disabled>💳 Pay</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =================================================================
+   GAME DATA & CONFIG
+================================================================= */
+const FISH_NAMES = [
+  "Goldie","Bubbles","Nemo","Dory","Finn",
+  "Splash","Coral","Azure","Shimmer"
+];
+
+// Dollar & cent denominations (in cents for precision)
+const DOLLARS = [
+  { label:"$1",  value:100, img:"asset/1d.png"  },
+  { label:"$2",  value:200, img:"asset/2d.png"  },
+  { label:"$5",  value:500, img:"asset/5d.png"  },
+  { label:"$10", value:1000,img:"asset/10d.png" },
+];
+const CENTS = [
+  { label:"5¢",  value:5,   img:"asset/5c.png"  },
+  { label:"10¢", value:10,  img:"asset/10c.png" },
+  { label:"20¢", value:20,  img:"asset/20c.png" },
+  { label:"50¢", value:50,  img:"asset/50c.png" },
+];
+
+// Valid dollar parts: 1,2,5,10
+const DOLLAR_VALS = [100,200,500,1000];
+// Valid cent parts: 0,5,10,20,50
+const CENT_VALS   = [0,5,10,20,50];
+
+/* Generate a random price that is exactly one dollar denomination + one cent denomination */
+function randomPrice() {
+  const d = DOLLAR_VALS[Math.floor(Math.random() * DOLLAR_VALS.length)];
+  const c = CENT_VALS[Math.floor(Math.random() * CENT_VALS.length)];
+  return d + c; // in cents
+}
+
+/* Format cents → "$X.XX" */
+function formatPrice(cents) {
+  const d = Math.floor(cents / 100);
+  const c = cents % 100;
+  return `$${d}.${c.toString().padStart(2,'0')}`;
+}
+
+/* All fish assets */
+const ALL_FISH = Array.from({length:9}, (_,i) => ({
+  id: i,
+  name: FISH_NAMES[i],
+  img: `asset/Fish${i+1}.png`,
+  price: randomPrice(), // assigned in init
+}));
+
+/* =================================================================
+   PRELOADER
+================================================================= */
+const ALL_ASSETS = [
+  ...DOLLARS.map(d=>d.img),
+  ...CENTS.map(c=>c.img),
+  ...ALL_FISH.map(f=>f.img),
+];
+
+function preloadAssets(assets, onProgress, onDone) {
+  let loaded = 0;
+  const total = assets.length;
+  if (total === 0) { onDone(); return; }
+  assets.forEach(src => {
+    const img = new Image();
+    img.onload = img.onerror = () => {
+      loaded++;
+      onProgress(loaded / total);
+      if (loaded === total) onDone();
+    };
+    img.src = src;
+  });
+}
+
+/* =================================================================
+   STATE
+================================================================= */
+let state = {
+  fishList: [],         // all 9 fish with prices
+  boughtFishIds: [],    // ids of purchased fish
+  currentFishId: null,  // fish being purchased
+  selectedMoney: [],    // [{value, label, img}] — at most one per denomination (toggle)
+};
+
+/* =================================================================
+   BUBBLE GENERATOR (background)
+================================================================= */
+function spawnBubbles() {
+  const bg = document.getElementById('oceanBg');
+  for (let i = 0; i < 18; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    const size = 4 + Math.random() * 16;
+    b.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      bottom:-${size}px;
+      animation-duration:${10+Math.random()*18}s;
+      animation-delay:${Math.random()*15}s;
+    `;
+    bg.appendChild(b);
+  }
+}
+
+/* =================================================================
+   AQUARIUM FISH ANIMATION
+================================================================= */
+const fishAnimations = {}; // id → { el, vx, vy, x, y, flipped }
+
+function addFishToAquarium(fishData) {
+  const panel = document.getElementById('aquariumPanel');
+  const panelW = panel.clientWidth;
+  const panelH = panel.clientHeight;
+  const fishSize = Math.max(40, Math.min(panelW * 0.22, 70));
+
+  const el = document.createElement('div');
+  el.className = 'aqua-fish';
+  el.id = `aqua-fish-${fishData.id}`;
+  el.style.cssText = `width:${fishSize}px;height:${fishSize*0.8}px;`;
+
+  const img = document.createElement('img');
+  img.src = fishData.img;
+  img.alt = fishData.name;
+  el.appendChild(img);
+  panel.appendChild(el);
+
+  // Entrance animation
+  el.style.opacity = '0';
+  el.style.transform = 'scale(0.2)';
+  el.style.transition = 'opacity 0.5s, transform 0.5s';
+  requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'scale(1)';
+    setTimeout(() => {
+      el.style.transition = 'none';
+    }, 600);
+  });
+
+  const swimZoneH = panelH * 0.80; // stay above sand
+  const startX = Math.random() * (panelW - fishSize);
+  const startY = 40 + Math.random() * (swimZoneH - fishSize - 40);
+  const speed = 0.4 + Math.random() * 0.5;
+  const angle = Math.random() * Math.PI * 2;
+
+  fishAnimations[fishData.id] = {
+    el, img,
+    x: startX, y: startY,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed * 0.4,
+    size: fishSize,
+    sizeH: fishSize * 0.8,
+    flipped: false,
+    turnTimer: 0,
+  };
+
+  // Hide empty hint
+  document.getElementById('emptyHint').style.opacity = '0';
+}
+
+function animateFish() {
+  const panel = document.getElementById('aquariumPanel');
+  if (!panel) { requestAnimationFrame(animateFish); return; }
+  const panelW = panel.clientWidth;
+  const panelH = panel.clientHeight;
+  const swimH  = panelH * 0.78;
+
+  Object.values(fishAnimations).forEach(f => {
+    f.x += f.vx;
+    f.y += f.vy;
+    f.turnTimer++;
+
+    // Bounce off walls
+    if (f.x <= 0) { f.x = 0; f.vx = Math.abs(f.vx); }
+    if (f.x + f.size >= panelW) { f.x = panelW - f.size; f.vx = -Math.abs(f.vx); }
+    if (f.y <= 40) { f.y = 40; f.vy = Math.abs(f.vy) * 0.5; }
+    if (f.y + f.sizeH >= swimH) { f.y = swimH - f.sizeH; f.vy = -Math.abs(f.vy) * 0.5; }
+
+    // Random gentle turns
+    if (f.turnTimer > 120 + Math.random() * 80) {
+      f.vy += (Math.random() - 0.5) * 0.3;
+      f.vy = Math.max(-0.5, Math.min(0.5, f.vy));
+      f.turnTimer = 0;
+    }
+
+    // Flip image based on direction.
+    // Fish sprites face LEFT by default, so mirror them when moving RIGHT (vx > 0).
+    const shouldFlip = f.vx > 0;
+    if (shouldFlip !== f.flipped) {
+      f.flipped = shouldFlip;
+      f.img.style.transform = shouldFlip ? 'scaleX(-1)' : 'scaleX(1)';
+    }
+
+    f.el.style.left = f.x + 'px';
+    f.el.style.top  = f.y + 'px';
+  });
+
+  requestAnimationFrame(animateFish);
+}
+
+/* Tank bubbles */
+function spawnTankBubbles() {
+  const panel = document.getElementById('aquariumPanel');
+  if (!panel) return;
+  const b = document.createElement('div');
+  b.className = 'tank-bubble';
+  const size = 3 + Math.random() * 7;
+  const left = 10 + Math.random() * 80;
+  const dur  = 4 + Math.random() * 5;
+  b.style.cssText = `width:${size}px;height:${size}px;left:${left}%;bottom:15%;animation-duration:${dur}s;`;
+  panel.appendChild(b);
+  setTimeout(() => b.remove(), dur * 1000);
+}
+
+/* =================================================================
+   HUD
+================================================================= */
+function renderHUD() {
+  const dots = document.getElementById('fishDots');
+  dots.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const d = document.createElement('div');
+    d.className = 'fish-dot' + (i < state.boughtFishIds.length ? ' filled' : '');
+    d.textContent = i < state.boughtFishIds.length ? '🐟' : '';
+    dots.appendChild(d);
+  }
+}
+
+/* =================================================================
+   FISH GRID (SHOP)
+================================================================= */
+function renderShop() {
+  const grid = document.getElementById('fishGrid');
+  grid.innerHTML = '';
+  state.fishList.forEach(fish => {
+    const card = document.createElement('div');
+    card.className = 'fish-card' + (state.boughtFishIds.includes(fish.id) ? ' sold' : '');
+    card.innerHTML = `
+      <img class="fish-card-img" src="${fish.img}" alt="${fish.name}">
+      <div class="fish-name">${fish.name}</div>
+      <div class="fish-price-tag">${formatPrice(fish.price)}</div>
+    `;
+    if (!state.boughtFishIds.includes(fish.id)) {
+      card.addEventListener('click', () => openModal(fish));
+      card.addEventListener('touchend', (e) => { e.preventDefault(); openModal(fish); }, {passive:false});
+    }
+    grid.appendChild(card);
+  });
+}
+
+/* =================================================================
+   MODAL
+================================================================= */
+function openModal(fish) {
+  state.currentFishId = fish.id;
+  state.selectedMoney = [];
+
+  document.getElementById('modalFishImg').src    = fish.img;
+  document.getElementById('modalFishImg').alt    = fish.name;
+  document.getElementById('modalFishName').textContent   = fish.name;
+  document.getElementById('modalPriceAmount').textContent = formatPrice(fish.price);
+
+  buildMoneyButtons();
+  updateSelectedTotal();
+
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+  state.currentFishId = null;
+  state.selectedMoney = [];
+}
+
+/* Build money buttons — each button toggles selected/unselected (one tap = select, tap again = deselect) */
+function buildMoneyButtons() {
+  const dollarRow = document.getElementById('dollarRow');
+  const centRow   = document.getElementById('centRow');
+  dollarRow.innerHTML = '';
+  centRow.innerHTML   = '';
+
+  function makeBtn(denom, container) {
+    const btn = document.createElement('button');
+    btn.className = 'money-btn';
+    btn.dataset.value = denom.value;
+
+    btn.innerHTML = `
+      <img class="money-img" src="${denom.img}" alt="${denom.label}">
+      <span class="money-label">${denom.label}</span>
+    `;
+
+    function toggle() {
+      const isSelected = btn.classList.contains('selected');
+      if (isSelected) {
+        // Deselect: remove this denomination from selectedMoney
+        btn.classList.remove('selected');
+        state.selectedMoney = state.selectedMoney.filter(m => m.value !== denom.value);
+      } else {
+        // Select: add this denomination (replace any existing one of same value)
+        state.selectedMoney = state.selectedMoney.filter(m => m.value !== denom.value);
+        state.selectedMoney.push(denom);
+        btn.classList.add('selected');
+      }
+      updateSelectedTotal();
+    }
+
+    btn.addEventListener('click', toggle);
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); toggle(); }, {passive:false});
+
+    container.appendChild(btn);
+  }
+
+  DOLLARS.forEach(d => makeBtn(d, dollarRow));
+  CENTS.forEach(c => makeBtn(c, centRow));
+}
+
+function clearSelection() {
+  state.selectedMoney = [];
+  document.querySelectorAll('.money-btn').forEach(btn => {
+    btn.classList.remove('selected');
+  });
+  updateSelectedTotal();
+}
+
+function updateSelectedTotal() {
+  const total = state.selectedMoney.reduce((sum, m) => sum + m.value, 0);
+  const fish  = state.fishList.find(f => f.id === state.currentFishId);
+  const totalEl = document.getElementById('selectedTotal');
+  const payBtn  = document.getElementById('btnPay');
+
+  totalEl.textContent = formatPrice(total);
+  totalEl.classList.remove('exact','over');
+
+  if (!fish) return;
+
+  if (total === fish.price) {
+    totalEl.classList.add('exact');
+    payBtn.disabled = false;
+  } else if (total > fish.price) {
+    totalEl.classList.add('over');
+    payBtn.disabled = true;
+  } else {
+    payBtn.disabled = true;
+  }
+}
+
+function attemptPay() {
+  const fish  = state.fishList.find(f => f.id === state.currentFishId);
+  const total = state.selectedMoney.reduce((sum,m) => sum + m.value, 0);
+  if (!fish || total !== fish.price) {
+    // Shake modal
+    const modal = document.getElementById('modal');
+    modal.classList.remove('shake');
+    void modal.offsetWidth;
+    modal.classList.add('shake');
+    showToast('Not the right amount! Try again.');
+    return;
+  }
+  // Success!
+  state.boughtFishIds.push(fish.id);
+  closeModal();
+  addFishToAquarium(fish);
+  renderShop();
+  renderHUD();
+  showToast(`${fish.name} is now swimming in your aquarium! 🐠`);
+
+  // Check win
+  if (state.boughtFishIds.length >= 5) {
+    setTimeout(showWinScreen, 1200);
+  }
+}
+
+/* =================================================================
+   TOAST
+================================================================= */
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* =================================================================
+   WIN SCREEN
+================================================================= */
+function showWinScreen() {
+  // Populate win fish row
+  const row = document.getElementById('winFishRow');
+  row.innerHTML = '';
+  state.boughtFishIds.forEach(id => {
+    const fish = state.fishList.find(f => f.id === id);
+    if (!fish) return;
+    const img = document.createElement('img');
+    img.className = 'win-fish-img';
+    img.src = fish.img;
+    img.alt = fish.name;
+    row.appendChild(img);
+  });
+
+  showScreen('winScreen');
+  launchConfetti();
+}
+
+/* =================================================================
+   CONFETTI
+================================================================= */
+function launchConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const particles = [];
+  const colors = ['#22d3ee','#4ade80','#fbbf24','#ff6b6b','#a78bfa','#fb923c'];
+
+  for (let i = 0; i < 120; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * canvas.height * 0.3,
+      r: 4 + Math.random() * 7,
+      d: 1 + Math.random() * 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      tilt: Math.random() * 10 - 5,
+      tiltAngle: 0,
+      tiltSpeed: 0.1 + Math.random() * 0.15,
+    });
+  }
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.tiltAngle += p.tiltSpeed;
+      p.y += p.d + Math.sin(frame * 0.02) * 0.5;
+      p.x += Math.sin(frame * 0.015 + p.tiltAngle) * 1.2;
+      p.tilt = Math.sin(p.tiltAngle) * 12;
+
+      ctx.beginPath();
+      ctx.lineWidth = p.r;
+      ctx.strokeStyle = p.color;
+      ctx.moveTo(p.x + p.tilt + p.r / 2, p.y);
+      ctx.lineTo(p.x + p.tilt, p.y + p.r * 2);
+      ctx.stroke();
+    });
+    frame++;
+    if (frame < 220) requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  draw();
+}
+
+/* =================================================================
+   SCREEN MANAGEMENT
+================================================================= */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.toggle('hidden', s.id !== id);
+  });
+}
+
+/* =================================================================
+   INITIALISE GAME
+================================================================= */
+function initGame() {
+  // Assign fresh prices
+  state.fishList = ALL_FISH.map(f => ({ ...f, price: randomPrice() }));
+  state.boughtFishIds = [];
+  state.currentFishId = null;
+  state.selectedMoney = [];
+
+  // Clear aquarium
+  document.querySelectorAll('.aqua-fish').forEach(el => el.remove());
+  Object.keys(fishAnimations).forEach(k => delete fishAnimations[k]);
+  document.getElementById('emptyHint').style.opacity = '1';
+
+  renderHUD();
+  renderShop();
+  showScreen('gameScreen');
+  animateFish();
+
+  // Tank bubbles interval
+  clearInterval(window._tankBubbleInterval);
+  window._tankBubbleInterval = setInterval(spawnTankBubbles, 1800);
+}
+
+/* =================================================================
+   EVENT LISTENERS
+================================================================= */
+document.getElementById('btnPlay').addEventListener('click', initGame);
+document.getElementById('btnPlay').addEventListener('touchend', (e) => { e.preventDefault(); initGame(); }, {passive:false});
+
+document.getElementById('btnPlayAgain').addEventListener('click', initGame);
+document.getElementById('btnPlayAgain').addEventListener('touchend', (e) => { e.preventDefault(); initGame(); }, {passive:false});
+
+document.getElementById('btnModalClose').addEventListener('click', closeModal);
+document.getElementById('btnClear').addEventListener('click',      clearSelection);
+document.getElementById('btnPay').addEventListener('click',        attemptPay);
+document.getElementById('btnPay').addEventListener('touchend', (e) => { e.preventDefault(); attemptPay(); }, {passive:false});
+
+// Close modal tapping overlay background
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+/* =================================================================
+   BOOT SEQUENCE
+================================================================= */
+spawnBubbles();
+showScreen('loadingScreen');
+
+const loadingBar = document.getElementById('loadingBar');
+preloadAssets(ALL_ASSETS,
+  (progress) => {
+    loadingBar.style.width = (progress * 100) + '%';
+  },
+  () => {
+    // Short pause so the bar fills
+    setTimeout(() => {
+      showScreen('startScreen');
+    }, 400);
+  }
+);
+
+/* Resize handler for aquarium fish */
+window.addEventListener('resize', () => {
+  // Re-clamp fish positions
+  const panel = document.getElementById('aquariumPanel');
+  if (!panel) return;
+  const panelW = panel.clientWidth;
+  const panelH = panel.clientHeight;
+  const swimH  = panelH * 0.78;
+  Object.values(fishAnimations).forEach(f => {
+    f.x = Math.min(f.x, panelW - f.size);
+    f.y = Math.min(f.y, swimH  - f.sizeH);
+    f.x = Math.max(0, f.x);
+    f.y = Math.max(40, f.y);
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Refrigerator Sorter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #e0f7fa;
+            --fridge-body: #ffffff;
+            --fridge-trim: #cfd8dc;
+            --accent-color: #ff8a65;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--primary-bg);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- UI Header --- */
+        #ui-layer {
+            width: 100%;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 10;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #37474f;
+        }
+
+        /* --- Game Layout --- */
+        #game-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            align-items: center;
+        }
+
+        /* --- Items Table --- */
+        #table-area {
+            height: 80%;
+            background: #d7ccc8;
+            border-radius: 20px;
+            border-bottom: 10px solid #a1887f;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 15px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .food-item {
+            width: 70px;
+            height: 70px;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, box-shadow 0.1s;
+            z-index: 5;
+            touch-action: none;
+        }
+
+        .food-item:active { cursor: grabbing; }
+        .dragging {
+            transform: scale(1.1);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            opacity: 0.9;
+        }
+
+        /* --- The Fridge CSS --- */
+        #fridge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .fridge {
+            width: 280px;
+            height: 500px;
+            background: var(--fridge-body);
+            border: 4px solid var(--fridge-trim);
+            border-radius: 20px 20px 10px 10px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 5px;
+        }
+
+        .door {
+            background: #f8f9fa;
+            border: 2px solid #eceff1;
+            border-radius: 10px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #90a4ae;
+            position: relative;
+            transition: transform 0.3s ease, background 0.3s;
+            transform-origin: left;
+        }
+
+        .door::after {
+            content: '';
+            position: absolute;
+            right: 15px;
+            width: 10px;
+            height: 40px;
+            background: #cfd8dc;
+            border-radius: 5px;
+        }
+
+        .freezer-door { height: 30%; font-size: 1.2rem; }
+        .fridge-door { height: 68%; font-size: 1.5rem; }
+
+        .door.open {
+            transform: rotateY(-30deg);
+            background: #e3f2fd;
+            color: var(--accent-color);
+        }
+
+        /* --- Screens --- */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.2rem;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .btn-primary:active { transform: scale(0.95); }
+
+        /* --- Utilities --- */
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @media (max-width: 768px) {
+            #game-container { grid-template-columns: 1fr; }
+            .fridge { width: 220px; height: 400px; }
+            #table-area { height: 200px; order: 2; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="overlay">
+        <h1 style="font-size: 3.5rem; margin-bottom: 10px;">Refrigerator Sorter 🧊</h1>
+        <p style="font-size: 1.2rem; max-width: 400px;">Drag the 8 items into the correct section. <br>4 for the <b>Freezer</b> and 4 for the <b>Fridge</b>!</p>
+        <button class="btn-primary" onclick="startGame()">Play Game</button>
+    </div>
+
+    <div id="ui-layer">
+        <div class="timer">Time: <span id="time-val">60</span>s</div>
+        <h2 style="margin:0; color: #37474f;">Fridge Sorter</h2>
+        <div id="score" style="font-weight:600">Items: 0/8</div>
+    </div>
+
+    <div id="game-container">
+        <div id="table-area"></div>
+
+        <div id="fridge-container">
+            <div class="fridge">
+                <div id="freezer-target" class="door freezer-door">FREEZER</div>
+                <div id="fridge-target" class="door fridge-door">FRIDGE</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="end-screen" class="overlay" style="display: none;">
+        <h1 style="font-size: 3rem; margin-bottom: 0;">Well Done! 🍎</h1>
+        <p id="final-stats"></p>
+        <button class="btn-primary" onclick="resetGame()">Play Again</button>
+    </div>
+
+    <script>
+        const freezerItems = [
+            { icon: '🧊', type: 'freezer', name: 'Ice' },
+            { icon: '🍦', type: 'freezer', name: 'Ice Cream' },
+            { icon: '🥩', type: 'freezer', name: 'Raw Meat' },
+            { icon: '🐟', type: 'freezer', name: 'Fish' }
+        ];
+
+        // Fridge pool: Fruits, Veg, Prepared Food, Juice (Milk and Banana removed)
+        const fridgePool = [
+            { icon: '🍎', type: 'fridge' }, { icon: '🍓', type: 'fridge' }, { icon: '🍇', type: 'fridge' }, 
+            { icon: '🥦', type: 'fridge' }, { icon: '🥕', type: 'fridge' }, { icon: '🌽', type: 'fridge' }, 
+            { icon: '🍔', type: 'fridge' }, { icon: '🥪', type: 'fridge' }, { icon: '🌭', type: 'fridge' }, 
+            { icon: '🥗', type: 'fridge' }, { icon: '🍕', type: 'fridge' }, { icon: '🌮', type: 'fridge' }, 
+            { icon: '🧃', type: 'fridge' }, { icon: '🍊', type: 'fridge' }, { icon: '🍑', type: 'fridge' }
+        ];
+
+        let gameItems = [];
+        let score = 0;
+        let timeLeft = 60;
+        let timerId;
+        let activeItem = null;
+        let offset = { x: 0, y: 0 };
+
+        const tableArea = document.getElementById('table-area');
+        const freezerDoor = document.getElementById('freezer-target');
+        const fridgeDoor = document.getElementById('fridge-target');
+        const timeDisplay = document.getElementById('time-val');
+        const scoreDisplay = document.getElementById('score');
+
+        const playPop = () => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1);
+        };
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            initGame();
+        }
+
+        function initGame() {
+            score = 0;
+            timeLeft = 60;
+            scoreDisplay.innerText = `Items: 0/8`;
+            tableArea.innerHTML = '';
+            document.getElementById('end-screen').style.display = 'none';
+
+            const currentFreezer = [...freezerItems];
+            
+            const currentFridge = fridgePool
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 4);
+
+            gameItems = [...currentFreezer, ...currentFridge].sort(() => 0.5 - Math.random());
+
+            gameItems.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'food-item';
+                el.innerHTML = item.icon;
+                el.dataset.type = item.type;
+                el.id = `item-${index}`;
+                el.addEventListener('pointerdown', startDrag);
+                tableArea.appendChild(el);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerId);
+            timerId = setInterval(() => {
+                timeLeft--;
+                timeDisplay.innerText = timeLeft;
+                if (timeLeft <= 0) endGame(false);
+            }, 1000);
+        }
+
+        function startDrag(e) {
+            activeItem = e.target;
+            activeItem.classList.add('dragging');
+            const rect = activeItem.getBoundingClientRect();
+            offset.x = e.clientX - rect.left;
+            offset.y = e.clientY - rect.top;
+            document.addEventListener('pointermove', onDrag);
+            document.addEventListener('pointerup', endDrag);
+        }
+
+        function onDrag(e) {
+            if (!activeItem) return;
+            const x = e.clientX - offset.x;
+            const y = e.clientY - offset.y;
+            activeItem.style.position = 'fixed';
+            activeItem.style.left = `${x}px`;
+            activeItem.style.top = `${y}px`;
+            checkProximity(freezerDoor, e);
+            checkProximity(fridgeDoor, e);
+        }
+
+        function checkProximity(door, e) {
+            const rect = door.getBoundingClientRect();
+            if (e.clientX > rect.left && e.clientX < rect.right && 
+                e.clientY > rect.top && e.clientY < rect.bottom) {
+                door.classList.add('open');
+            } else {
+                door.classList.remove('open');
+            }
+        }
+
+        function endDrag(e) {
+            if (!activeItem) return;
+            const freezerRect = freezerDoor.getBoundingClientRect();
+            const fridgeRect = fridgeDoor.getBoundingClientRect();
+            const itemType = activeItem.dataset.type;
+            let success = false;
+
+            if (isInside(e, freezerRect) && itemType === 'freezer') success = true;
+            else if (isInside(e, fridgeRect) && itemType === 'fridge') success = true;
+
+            if (success) {
+                playPop();
+                activeItem.remove();
+                score++;
+                scoreDisplay.innerText = `Items: ${score}/8`;
+                if (score === 8) endGame(true);
+            } else {
+                activeItem.style.position = 'static';
+                activeItem.classList.remove('dragging');
+                activeItem.classList.add('shake');
+                setTimeout(() => activeItem.classList.remove('shake'), 400);
+            }
+
+            freezerDoor.classList.remove('open');
+            fridgeDoor.classList.remove('open');
+            document.removeEventListener('pointermove', onDrag);
+            document.removeEventListener('pointerup', endDrag);
+            activeItem = null;
+        }
+
+        function isInside(e, rect) {
+            return e.clientX > rect.left && e.clientX < rect.right && 
+                   e.clientY > rect.top && e.clientY < rect.bottom;
+        }
+
+        function endGame(win) {
+            clearInterval(timerId);
+            const screen = document.getElementById('end-screen');
+            const stats = document.getElementById('final-stats');
+            screen.style.display = 'flex';
+            stats.innerText = win ? `You sorted all 8 items in ${60 - timeLeft} seconds!` : "Time ran out! Try again.";
+        }
+
+        function resetGame() {
+            initGame();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Laundry Day Sort</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #caf0f8;
+            --white-bin-color: #ffffff;
+            --color-bin-color: #ff8fa3;
+            --accent: #4cc9f0;
+            --text: #2b2d42;
+            --basket-rim: #ced4da;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            touch-action: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg-color);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 800px;
+            max-height: 600px;
+            background: white;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 24px;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .hidden { display: none !important; }
+
+        .basket {
+            width: 160px;
+            height: 140px;
+            position: relative;
+            background: #e9ecef;
+            border-radius: 10px 10px 40px 40px;
+            border-bottom: 8px solid rgba(0,0,0,0.1);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .basket::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            width: 180px;
+            height: 20px;
+            background: var(--basket-rim);
+            border-radius: 10px;
+        }
+
+        .basket.white-style { background: #f8f9fa; --basket-rim: #dee2e6; }
+        .basket.color-style { background: #ffccd5; --basket-rim: #ffb3c1; }
+
+        .basket-handle {
+            width: 40px;
+            height: 15px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 20px;
+            margin-top: 25px;
+        }
+
+        .clothing-item {
+            width: 120px;
+            height: 120px;
+            font-size: 5.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            position: absolute;
+            z-index: 100;
+            background: #e8e8e8;
+            border-radius: 20px;
+            border: 4px solid #dcdcdc;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        .detailed-white {
+            filter: sepia(1) saturate(0) brightness(1.45);
+        }
+
+        .bins-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            padding-bottom: 40px;
+        }
+
+        .bin-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .hover-basket { transform: scale(1.1); }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            min-height: 44px;
+            box-shadow: 0 4px 0 #3ab0d1;
+        }
+
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #3ab0d1; }
+
+        .label { font-weight: 900; color: var(--text); letter-spacing: 1px; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .shake { animation: shake 0.4s ease-in-out; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="start-screen" class="screen">
+        <h1 style="font-size: 3.5rem; margin-bottom: 0;">Laundry Day</h1>
+        <p style="font-size: 1.5rem; margin-top: 0;">Sort white and coloured clothes into separate baskets!</p>
+        <div style="margin: 20px; font-size: 4rem;">🧺🧼</div>
+        <div style="margin-bottom: 20px;">
+            <input type="checkbox" id="timer-toggle" checked style="transform: scale(1.5);">
+            <label for="timer-toggle" style="font-weight: bold; margin-left: 10px;">30s Timer</label>
+        </div>
+        <button class="btn" onclick="startGame()">Start Sorting</button>
+    </div>
+
+    <div id="main-game" class="screen hidden" style="justify-content: space-between; padding: 10px;">
+        <div style="display: flex; justify-content: space-around; width: 100%; padding: 10px;">
+            <div class="label">Progress: <span id="score">0</span>/16</div>
+            <div class="label" id="timer-text">Time: 30s</div>
+        </div>
+
+        <div id="play-area" style="flex-grow: 1; width: 100%; position: relative;"></div>
+
+        <div class="bins-container">
+            <div class="bin-wrapper">
+                <div id="bin-white" class="basket white-style" data-type="white">
+                    <div class="basket-handle"></div>
+                </div>
+                <div class="label">WHITES</div>
+            </div>
+            <div class="bin-wrapper">
+                <div id="bin-color" class="basket color-style" data-type="color">
+                    <div class="basket-handle"></div>
+                </div>
+                <div class="label">COLOURS</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="end-screen" class="screen hidden">
+        <h1 id="status-msg">All clean!</h1>
+        <div style="font-size: 4rem; margin: 20px;">👕✨🧴</div>
+        <button class="btn" onclick="resetToMenu()">Sort More</button>
+    </div>
+</div>
+
+<script>
+    const laundryItems = [
+        { icon: '👕', type: 'white' }, { icon: '🧦', type: 'white' },
+        { icon: '👔', type: 'white' }, { icon: '👚', type: 'white' },
+        { icon: '🎽', type: 'white' }, { icon: '🧤', type: 'white' },
+        { icon: '🧥', type: 'white' }, { icon: '🧦', type: 'white' }, // Replaced pants with socks
+        { icon: '👗', type: 'color' }, { icon: '🧣', type: 'color' },
+        { icon: '🧢', type: 'color' }, { icon: '🩳', type: 'color' },
+        { icon: '👘', type: 'color' }, { icon: '🩰', type: 'color' },
+        { icon: '👔', type: 'color' }, { icon: '👕', type: 'color' }
+    ];
+
+    let score = 0;
+    let timeLeft = 30;
+    let timer;
+    let shuffledItems = [];
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(freq, type = 'sine', duration = 0.2) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function resetToMenu() {
+        clearInterval(timer);
+        score = 0;
+        timeLeft = 30;
+        document.getElementById('score').innerText = "0";
+        document.getElementById('timer-text').innerText = "Time: 30s";
+        document.getElementById('play-area').innerHTML = '';
+        document.getElementById('end-screen').classList.add('hidden');
+        document.getElementById('start-screen').classList.remove('hidden');
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('main-game').classList.remove('hidden');
+        shuffledItems = [...laundryItems].sort(() => Math.random() - 0.5);
+
+        if(document.getElementById('timer-toggle').checked) {
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-text').innerText = `Time: ${timeLeft}s`;
+                if(timeLeft <= 0) endGame(false);
+            }, 1000);
+        } else {
+            document.getElementById('timer-text').innerText = "Free Play";
+        }
+        spawnItem();
+    }
+
+    function spawnItem() {
+        const playArea = document.getElementById('play-area');
+        playArea.innerHTML = '';
+        
+        if(score >= 16) {
+            endGame(true);
+            return;
+        }
+
+        const data = shuffledItems[score];
+        const el = document.createElement('div');
+        el.className = 'clothing-item';
+        const emojiSpan = document.createElement('span');
+        emojiSpan.innerHTML = data.icon;
+        if (data.type === 'white') emojiSpan.className = 'detailed-white';
+        el.appendChild(emojiSpan);
+        el.style.left = '50%';
+        el.style.top = '50%';
+        el.style.transform = 'translate(-50%, -50%)';
+
+        let isDragging = false;
+        const startDrag = (e) => { isDragging = true; playSound(300, 'sine', 0.1); el.style.zIndex = 1000; };
+        const moveAt = (e) => {
+            if(!isDragging) return;
+            const x = (e.touches ? e.touches[0].clientX : e.clientX);
+            const y = (e.touches ? e.touches[0].clientY : e.clientY);
+            const container = document.getElementById('game-container').getBoundingClientRect();
+            el.style.left = (x - container.left) + 'px';
+            el.style.top = (y - container.top) + 'px';
+            checkHover(x, y);
+        };
+        const endDrag = (e) => {
+            if(!isDragging) return;
+            isDragging = false;
+            const x = (e.changedTouches ? e.changedTouches[0].clientX : e.clientX);
+            const y = (e.changedTouches ? e.changedTouches[0].clientY : e.clientY);
+            validateDrop(x, y, data.type);
+        };
+
+        el.addEventListener('mousedown', startDrag);
+        window.addEventListener('mousemove', moveAt);
+        window.addEventListener('mouseup', endDrag);
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); startDrag(e); });
+        window.addEventListener('touchmove', moveAt);
+        window.addEventListener('touchend', endDrag);
+
+        playArea.appendChild(el);
+    }
+
+    function checkHover(x, y) {
+        ['bin-white', 'bin-color'].forEach(id => {
+            const bin = document.getElementById(id);
+            const rect = bin.getBoundingClientRect();
+            bin.classList.toggle('hover-basket', x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+        });
+    }
+
+    function validateDrop(x, y, correctType) {
+        const targetBin = document.getElementById(`bin-${correctType}`);
+        const rect = targetBin.getBoundingClientRect();
+        if(x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            playSound(600, 'triangle', 0.3);
+            score++;
+            document.getElementById('score').innerText = score;
+            spawnItem();
+        } else {
+            const otherType = correctType === 'white' ? 'color' : 'white';
+            const otherRect = document.getElementById(`bin-${otherType}`).getBoundingClientRect();
+            if(x >= otherRect.left && x <= otherRect.right && y >= otherRect.top && y <= otherRect.bottom) {
+                document.getElementById('game-container').classList.add('shake');
+                setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 400);
+            }
+            const el = document.querySelector('.clothing-item');
+            if (el) {
+                el.style.left = '50%'; el.style.top = '50%'; el.style.transform = 'translate(-50%, -50%)';
+            }
+        }
+        document.querySelectorAll('.basket').forEach(b => b.classList.remove('hover-basket'));
+    }
+
+    function endGame(win) {
+        clearInterval(timer);
+        document.getElementById('main-game').classList.add('hidden');
+        document.getElementById('end-screen').classList.remove('hidden');
+        document.getElementById('status-msg').innerText = win ? "Perfectly Sorted!" : "Time's Up!";
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Identify Emotions - Educational Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f0f9ff;
+            --primary: #4cc9f0;
+            --secondary: #4895ef;
+            --success: #4caf50;
+            --error: #f72585;
+            --text: #2b2d42;
+            --white: #ffffff;
+            --shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            width: 95vw;
+            height: 95vh;
+            max-width: 800px;
+            max-height: 1000px;
+            background: var(--white);
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            border: 8px solid var(--primary);
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 { font-size: 2.5rem; color: var(--secondary); margin-bottom: 10px; }
+        p { font-size: 1.1rem; margin-bottom: 20px; }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 #3ba7c9;
+            margin: 10px;
+            min-width: 150px;
+        }
+
+        .btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #3ba7c9;
+        }
+
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid var(--secondary);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .settings-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .setting-label { font-weight: 600; margin-bottom: 10px; display: block; }
+        
+        .chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .chip {
+            padding: 10px 20px;
+            background: #e9ecef;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid transparent;
+            font-size: 0.9rem;
+        }
+
+        .chip.active {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+
+        #hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        #progress-wrapper {
+            flex-grow: 1;
+            height: 15px;
+            background: #e9ecef;
+            border-radius: 10px;
+            margin: 0 20px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--success);
+            transition: width 0.3s ease;
+        }
+
+        #image-display {
+            width: 100%;
+            flex-grow: 1;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            border: 4px solid #f0f0f0;
+        }
+
+        #image-display img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        #options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .option-btn {
+            padding: 20px;
+            font-size: 1.3rem;
+            border-radius: 20px;
+            border: 3px solid #ddd;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: 0.2s;
+            font-family: inherit;
+            min-height: 80px;
+        }
+
+        .option-btn span { font-size: 1.8rem; }
+
+        .correct {
+            background-color: var(--success) !important;
+            color: white !important;
+            border-color: #388e3c !important;
+            animation: pulse 0.5s ease;
+        }
+
+        .shake {
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <div id="screen-start" class="screen active">
+        <h1>Identify Emotions! 🌈</h1>
+        <p>Look at the picture and pick the emotion.</p>
+        
+        <div class="settings-group">
+            <span class="setting-label">Which emotions?</span>
+            <div id="emotion-chips" class="chip-container">
+                <div class="chip active" data-val="happy">😊 Happy</div>
+                <div class="chip active" data-val="sad">😢 Sad</div>
+                <div class="chip active" data-val="angry">😡 Angry</div>
+                <div class="chip active" data-val="scared">😱 Scared</div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <span class="setting-label">How many rounds?</span>
+            <div id="count-chips" class="chip-container">
+                <div class="chip" data-val="3">3</div>
+                <div class="chip active" data-val="6">6</div>
+                <div class="chip" data-val="10">10</div>
+            </div>
+        </div>
+
+        <button class="btn" onclick="initGameFlow()">PLAY GAME</button>
+    </div>
+
+    <div id="screen-loading" class="screen">
+        <div class="loader"></div>
+        <h2>Loading Photos...</h2>
+        <p>Get ready to play!</p>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div id="hud">
+            <div id="score-display">Score: <b>0</b></div>
+            <div id="progress-wrapper"><div id="progress-bar"></div></div>
+            <div id="round-display">1/6</div>
+        </div>
+        
+        <div id="image-display">
+            <img id="target-img" src="" alt="Emotion photo">
+        </div>
+
+        <div id="options-grid"></div>
+    </div>
+
+    <div id="screen-result" class="screen">
+        <h1 id="result-title">Great Job!</h1>
+        <p id="result-text">You identified all the emotions.</p>
+        <div style="font-size: 4rem; margin: 20px;">🏆</div>
+        <button class="btn" onclick="showStart()">PLAY AGAIN</button>
+    </div>
+
+</div>
+
+<script>
+    const EMOTION_DATA = {
+        happy: {
+            emoji: "😊",
+            images: [
+                "https://i.postimg.cc/13NbWwMC/happy-(3).jpg",
+                "https://i.postimg.cc/Gms6MGzv/happy-(2).jpg",
+                "https://i.postimg.cc/KYSwCjHS/happy-(9).jpg"
+            ]
+        },
+        sad: {
+            emoji: "😢",
+            images: [
+                "https://i.postimg.cc/PxdcrcHL/sad-(3).jpg",
+                "https://i.postimg.cc/7L3d44F5/sad-(2).jpg",
+                "https://i.postimg.cc/26Ttqw8j/sad-(1).jpg"
+            ]
+        },
+        angry: {
+            emoji: "😡",
+            images: [
+                "https://i.postimg.cc/Y2sXJjvR/angry-(18).jpg",
+                "https://i.postimg.cc/KcH9d41r/angry-(15).jpg",
+                "https://i.postimg.cc/kMpjkD2S/angry-(11).jpg"
+            ]
+        },
+        scared: {
+            emoji: "😱",
+            images: [
+                "https://i.postimg.cc/7hfK5rWW/scared-(14).jpg",
+                "https://i.postimg.cc/RhNgWxDb/scared-(11).jpg",
+                "https://i.postimg.cc/yxkLDCbc/scared-(5).jpg"
+            ]
+        }
+    };
+
+    let gameState = {
+        totalRounds: 6,
+        currentRound: 0,
+        score: 0,
+        activeEmotions: [],
+        questions: []
+    };
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(freq, type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            const group = this.parentElement.id;
+            if (group === 'count-chips') {
+                this.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+            } else {
+                const actives = this.parentElement.querySelectorAll('.chip.active');
+                if (actives.length > 1 || !this.classList.contains('active')) {
+                    this.classList.toggle('active');
+                }
+            }
+        });
+    });
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`screen-${screenId}`).classList.add('active');
+    }
+
+    function showStart() {
+        showScreen('start');
+    }
+
+    function preloadImages(urls) {
+        return Promise.all(urls.map(url => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = url;
+                img.onload = resolve;
+                img.onerror = resolve;
+            });
+        }));
+    }
+
+    async function initGameFlow() {
+        const emotionChips = document.querySelectorAll('#emotion-chips .chip.active');
+        gameState.activeEmotions = Array.from(emotionChips).map(c => c.dataset.val);
+        showScreen('loading');
+        const imagesToLoad = [];
+        gameState.activeEmotions.forEach(emo => imagesToLoad.push(...EMOTION_DATA[emo].images));
+        await preloadImages(imagesToLoad);
+        startGame();
+    }
+
+    function startGame() {
+        const countChip = document.querySelector('#count-chips .chip.active');
+        gameState.totalRounds = parseInt(countChip.dataset.val);
+
+        gameState.questions = [];
+        let lastImage = null;
+
+        for (let i = 0; i < gameState.totalRounds; i++) {
+            // Pick a random emotion from ALL active ones (allows back-to-back same emotion)
+            const emotion = gameState.activeEmotions[Math.floor(Math.random() * gameState.activeEmotions.length)];
+            const imgList = EMOTION_DATA[emotion].images;
+            
+            // Only prevent the EXACT same image file from repeating twice in a row
+            let availableImages = imgList.length > 1 
+                ? imgList.filter(img => img !== lastImage)
+                : imgList;
+            
+            const img = availableImages[Math.floor(Math.random() * availableImages.length)];
+            
+            gameState.questions.push({ emotion, img });
+            lastImage = img;
+        }
+
+        gameState.currentRound = 0;
+        gameState.score = 0;
+        updateHUD();
+        nextRound();
+        showScreen('game');
+    }
+
+    function updateHUD() {
+        document.querySelector('#score-display b').innerText = gameState.score;
+        document.getElementById('round-display').innerText = `${gameState.currentRound + 1}/${gameState.totalRounds}`;
+        const progress = (gameState.currentRound / gameState.totalRounds) * 100;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+    }
+
+    function nextRound() {
+        if (gameState.currentRound >= gameState.totalRounds) {
+            endGame();
+            return;
+        }
+
+        const question = gameState.questions[gameState.currentRound];
+        gameState.currentAnswer = question.emotion;
+        document.getElementById('target-img').src = question.img;
+
+        const grid = document.getElementById('options-grid');
+        grid.innerHTML = '';
+        
+        const shuffledButtons = [...gameState.activeEmotions].sort(() => Math.random() - 0.5);
+
+        shuffledButtons.forEach(emo => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerHTML = `<span>${EMOTION_DATA[emo].emoji}</span> ${emo.charAt(0).toUpperCase() + emo.slice(1)}`;
+            btn.onclick = () => handleChoice(emo, btn);
+            grid.appendChild(btn);
+        });
+        
+        updateHUD();
+    }
+
+    function handleChoice(choice, btnElement) {
+        if (choice === gameState.currentAnswer) {
+            gameState.score += 10;
+            btnElement.classList.add('correct');
+            playSound(523.25, 'sine');
+            setTimeout(() => playSound(659.25, 'sine'), 100);
+            
+            setTimeout(() => {
+                gameState.currentRound++;
+                nextRound();
+            }, 600);
+        } else {
+            btnElement.classList.add('shake');
+            setTimeout(() => btnElement.classList.remove('shake'), 400);
+        }
+    }
+
+    function endGame() {
+        document.getElementById('progress-bar').style.width = `100%`;
+        const percentage = (gameState.score / (gameState.totalRounds * 10)) * 100;
+        
+        let title = "Awesome!";
+        if (percentage < 50) title = "Keep Practicing!";
+        else if (percentage < 100) title = "Great Work!";
+
+        document.getElementById('result-title').innerText = title;
+        document.getElementById('result-text').innerText = `You scored ${gameState.score} points!`;
+        showScreen('result');
+    }
+
+    showStart();
+</script>
+</body>
+</html>
