@@ -152,9 +152,6 @@
         .card-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 8px 0; }
         .card-desc { font-size: 0.85rem; color: var(--text-light); margin-bottom: 16px; flex-grow: 1; line-height: 1.5; }
 
-        .card-actions-row { display: flex; gap: 8px; width: 100%; }
-        .card-actions-row .play-btn { flex-grow: 1; }
-
         .play-btn { 
             background: var(--primary); 
             color: white; 
@@ -164,21 +161,8 @@
             border: none; 
             cursor: pointer;
             font-family: 'Poppins', sans-serif;
+            width: 100%;
         }
-
-        .audio-toggle-btn {
-            background: #e2e8f0;
-            border: none;
-            border-radius: 10px;
-            padding: 10px 14px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        }
-        .audio-toggle-btn:hover { background: #cbd5e1; }
 
         #detail-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 3000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
         .detail-container { max-width: 850px; margin: 20px auto; background: white; border-radius: 24px; overflow: hidden; position: relative; }
@@ -211,7 +195,7 @@
             .view-compact .card-title { font-size: 0.9rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             .view-compact .creator-info { margin-bottom: 4px; }
             .view-compact .creator-name { font-size: 0.65rem; }
-            .view-compact .card-desc, .view-compact .card-actions-row { display: none; }
+            .view-compact .card-desc, .view-compact .play-btn { display: none; }
             .view-compact .badge-new { top: 5px; left: 5px; font-size: 0.5rem; padding: 2px 5px; }
         }
     </style>
@@ -271,11 +255,7 @@
                     <div id="detail-compat"></div>
                 </div>
                 <p id="detail-desc" style="line-height:1.6; color:var(--text-light); margin-bottom: 25px;"></p>
-                
-                <div class="card-actions-row">
-                    <button id="detail-play-btn" class="play-btn" style="padding: 15px; font-size:1rem;">Play Game</button>
-                    <button id="detail-audio-btn" class="audio-toggle-btn" style="padding: 15px; font-size:1.2rem;" title="Toggle Audio">🔊</button>
-                </div>
+                <button id="detail-play-btn" class="play-btn" style="padding: 15px; font-size:1rem;">Play Game</button>
             </div>
             <div class="qr-area">
                 <p style="font-size: 0.8rem; font-weight: 600; margin-bottom: 10px;">Open on Tablet</p>
@@ -296,8 +276,7 @@
     let allGames = [];
     let currentCategory = 'Home';
     let currentView = 'grid';
-    let gameAudioStates = {}; // Keeps track of audio configurations per game ID ('on' or 'off')
-    let activeGameId = null;  // Identifies the game running right now inside the overlay
+    let isMutedGlobal = false; // Tracks global sound preference inside the overlay layout
 
     const avatarSvg = `<div class="creator-avatar"><svg width="12" height="12" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
 
@@ -367,8 +346,6 @@
     function createCard(game) {
         const isNew = checkIsNew(game.uploadDate);
         const newBadge = isNew ? `<div class="badge-new">NEW</div>` : '';
-        const audioState = gameAudioStates[game.id] || 'on';
-        const audioIcon = audioState === 'on' ? '🔊' : '🔇';
 
         return `
             <div class="game-card">
@@ -378,37 +355,36 @@
                     <div class="creator-info">${avatarSvg}<span class="creator-name">Created by ${game.creatorName || 'Instructor'}</span></div>
                     <h3 class="card-title">${game.title}</h3>
                     <p class="card-desc">${game.description}</p>
-                    <div class="card-actions-row">
-                        <button class="play-btn" onclick="validateAndPlay('${game.id}')">Play Game</button>
-                        <button class="audio-toggle-btn" onclick="toggleAudio(event, '${game.id}')" title="Toggle Audio">${audioIcon}</button>
-                    </div>
+                    <button class="play-btn" onclick="validateAndPlay('${game.id}')">Play Game</button>
                 </div>
             </div>
         `;
     }
 
-    function toggleAudio(e, id, rerender = true) {
-        if (e) e.stopPropagation();
-        const current = gameAudioStates[id] || 'on';
-        gameAudioStates[id] = current === 'on' ? 'off' : 'on';
-        if (rerender) renderContent();
-    }
-
     function toggleModalAudio() {
-        if (!activeGameId) return;
-        const current = gameAudioStates[activeGameId] || 'on';
-        const targetState = current === 'on' ? 'off' : 'on';
-        gameAudioStates[activeGameId] = targetState;
+        isMutedGlobal = !isMutedGlobal;
         
-        // Update overlay control icon immediately
-        document.getElementById('modal-audio-btn').innerText = targetState === 'on' ? '🔊' : '🔇';
+        // Change overlay text status immediately without reloading page
+        document.getElementById('modal-audio-btn').innerText = isMutedGlobal ? '🔇' : '🔊';
         
-        // Push configuration immediately into the running frame
-        const game = allGames.find(g => g.id === activeGameId);
-        if (game) {
-            const baseUrl = getGameUrl(game);
-            const separator = baseUrl.includes('?') ? '&' : '?';
-            document.getElementById('game-frame').src = baseUrl + separator + `audio=${targetState}`;
+        try {
+            const iframe = document.getElementById('game-frame');
+            const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+            
+            // 1. Target standard HTML5 Audio/Video tags instantly
+            const mediaElements = innerDoc.querySelectorAll('audio, video');
+            mediaElements.forEach(el => {
+                el.muted = isMutedGlobal;
+            });
+
+            // 2. Send background message signaling internal game hooks
+            iframe.contentWindow.postMessage({ 
+                type: 'toggleAudio', 
+                muted: isMutedGlobal,
+                audio: isMutedGlobal ? 'off' : 'on'
+            }, '*');
+        } catch (e) {
+            console.log("Cross-origin security bounds prevented directly muting frame elements.");
         }
     }
 
@@ -453,19 +429,6 @@
         const compDiv = document.getElementById('detail-compat');
         compDiv.innerHTML = g.compatibility ? g.compatibility.map(c => `<span class="compat-badge">${c}</span>`).join('') : '<span class="compat-badge">Universal</span>';
         
-        // Setup direct details layout interaction hooks
-        const detailAudioBtn = document.getElementById('detail-audio-btn');
-        const syncDetailAudioIcon = () => {
-            const current = gameAudioStates[id] || 'on';
-            detailAudioBtn.innerText = current === 'on' ? '🔊' : '🔇';
-        };
-        syncDetailAudioIcon();
-        
-        detailAudioBtn.onclick = (e) => {
-            toggleAudio(e, id, false);
-            syncDetailAudioIcon();
-        };
-
         document.getElementById('detail-play-btn').onclick = () => validateAndPlay(id);
         document.getElementById('detail-view').style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -475,16 +438,17 @@
     function handleBackdropClick(e) { if (e.target.id === 'detail-view') closeDetails(); }
     
     function playGame(id) { 
-        activeGameId = id;
         const game = allGames.find(g => g.id === id);
         const baseUrl = getGameUrl(game);
-        const state = gameAudioStates[id] || 'on';
+        
+        // Reset overlay display text tracking
+        document.getElementById('modal-audio-btn').innerText = isMutedGlobal ? '🔇' : '🔊';
+        
+        // Pass baseline parameter setup safely on startup
         const separator = baseUrl.includes('?') ? '&' : '?';
+        const initialAudioParam = `audio=${isMutedGlobal ? 'off' : 'on'}`;
         
-        // Sync running overlay layout values
-        document.getElementById('modal-audio-btn').innerText = state === 'on' ? '🔊' : '🔇';
-        
-        document.getElementById('game-frame').src = baseUrl + separator + `audio=${state}`; 
+        document.getElementById('game-frame').src = baseUrl + separator + initialAudioParam; 
         document.getElementById('modal').style.display = 'block'; 
         document.body.style.overflow = 'hidden';
     }
@@ -492,9 +456,7 @@
     function closeGame() { 
         document.getElementById('modal').style.display = 'none'; 
         document.getElementById('game-frame').src = ''; 
-        activeGameId = null;
         if (document.getElementById('detail-view').style.display !== 'block') document.body.style.overflow = 'auto';
-        renderContent(); 
     }
 
     init();
