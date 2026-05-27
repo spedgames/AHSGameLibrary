@@ -94,7 +94,7 @@
             margin-bottom: 20px;
         }
 
-        /* Scrollable Configuration Items */
+        /* Scrollable Content Configurations */
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
@@ -134,14 +134,14 @@
             margin-bottom: 8px;
         }
 
-        /* Interactive Controls */
+        /* Interactive Target Buttons */
         button {
             font-family: 'Poppins', sans-serif;
             cursor: pointer;
             border: none;
             outline: none;
             transition: var(--transition);
-            min-height: 48px; /* Safe mobile target layout */
+            min-height: 48px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -202,7 +202,7 @@
             transform: translateY(-1px);
         }
 
-        /* Main Game Elements */
+        /* Game Arena Dashboard */
         .game-header {
             display: flex;
             justify-content: space-between;
@@ -263,7 +263,7 @@
             object-fit: contain;
         }
 
-        /* Continuous pulse while the child needs to listen */
+        /* Wave pulse animation indicating the child must listen */
         .btn-replay-audio.playing {
             animation: pulse-ring 1.2s infinite;
             border-color: var(--secondary);
@@ -296,11 +296,11 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
 
-        /* Visual styling locks when the answer matrix is frozen */
+        /* Input Prevention Visual Filter Lock */
         .options-grid.locked .btn-option {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
-            pointer-events: none; /* Hard browser layer lock */
+            pointer-events: none; /* Disables web engine touch processing entirely */
         }
 
         .btn-option:hover {
@@ -322,7 +322,7 @@
             animation: shake 0.4s ease;
         }
 
-        /* End Screen Components */
+        /* Metrics Display Terminal */
         .end-card {
             flex: 1;
             display: flex;
@@ -362,7 +362,7 @@
             transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Modal Overlays */
+        /* Overlay Control Windows */
         .modal-overlay {
             position: absolute;
             top: 0;
@@ -467,7 +467,7 @@
             width: 100%;
         }
 
-        /* Micro Animation Timelines */
+        /* Animation Vectors */
         @keyframes popSuccess {
             0% { transform: scale(1); }
             50% { transform: scale(1.04); }
@@ -541,7 +541,7 @@
                 <button id="btn-audio" class="btn-replay-audio" aria-label="Listen to word">
                     <img src="https://api.arasaac.org/api/pictograms/2381" alt="Sound Icon">
                 </button>
-                <div class="audio-label">Listen</div>
+                <div class="audio-label" id="audio-label">Tap to Listen</div>
             </div>
 
             <div id="options-container" class="options-grid"></div>
@@ -579,7 +579,7 @@
     </div>
 
     <script>
-        // --- COMPLETE INFRASTRUCTURE SIGHT WORDS REFERENCE DATABASES ---
+        // --- DATA POOL SIGHT WORD DATA STORES ---
         const DOLCH_DATASET = {
             "Pre-Kindergarten": [
                 "a", "and", "away", "big", "blue", "can", "come", "down", "find", "for", 
@@ -617,7 +617,7 @@
             ]
         };
 
-        // --- GLOBAL APPS ENGINE STATES TRACKING SYSTEMS ---
+        // --- GLOBAL HARDWARE & GAME SYSTEMS CONFIG ---
         let configState = {
             currentCategory: "Pre-Kindergarten",
             targetPoolCount: "5",
@@ -632,16 +632,13 @@
             lockInput: false
         };
 
-        // SINGLE PERSISTENT RESIDENT MEDIA NODE TO ESCAPE IOS/ANDROID SANDBOX LOCKS
-        const gameAudio = new Audio();
-
         function initFilters() {
             for (const category in DOLCH_DATASET) {
                 configState.wordFilters[category] = new Set(DOLCH_DATASET[category]);
             }
         }
 
-        // --- TARGET UI SELECTION LINKS MAPS ---
+        // --- INTERFACE ELEMENT ARRAYS MAPS ---
         const categoriesContainer = document.getElementById('categories-container');
         const countButtons = document.querySelectorAll('.count-grid .btn-radio');
         const btnStartGame = document.getElementById('btn-start-game');
@@ -667,20 +664,13 @@
         const btnModalAll = document.getElementById('btn-modal-all');
         const btnModalNone = document.getElementById('btn-modal-none');
 
-        // --- LIFE-CYCLE INIT PIPELINES ---
+        // --- GAME INITIALIZATION SETUP ---
         function initApp() {
             initFilters();
             buildCategoryControls();
             setupConfigListeners();
             setupGameEngineListeners();
             setupModalListeners();
-            
-            // Audio complete playback cycle hook: removes the lock state instantly
-            gameAudio.addEventListener('ended', () => {
-                gameState.lockInput = false;
-                optionsContainer.classList.remove('locked');
-                btnAudio.classList.remove('playing');
-            });
         }
 
         function buildCategoryControls() {
@@ -739,13 +729,14 @@
 
         function setupGameEngineListeners() {
             btnAudio.addEventListener('click', () => {
-                // Manual replays are native user gestures, they bypass all sandbox block rules
-                playCurrentAudioTrack();
+                unlockAudio();
+                document.getElementById('audio-label').textContent = 'Listen';
+                speakWord(gameState.correctAnswer);
             });
             btnRestart.addEventListener('click', resetToHome);
         }
 
-        // --- FILTER MODAL WINDOW DISPATCH INTERFACES ---
+        // --- RUNTIME MODAL CONTROLS ---
         let modalActiveCategory = "";
         
         function openFilterModal(categoryName) {
@@ -792,12 +783,9 @@
             });
         }
 
-        // --- CORE GAME SESSION MANAGEMENT ACTIONS ---
-        function getAudioUrl(word) {
-            return `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodeURIComponent(word.toLowerCase())}`;
-        }
-
+        // --- CORE ASSESSMENT TIMELINE CONTROLLER ---
         function launchGameValidation() {
+            unlockAudio(); // The "Start Playing" tap counts as the user gesture
             const activePool = Array.from(configState.wordFilters[configState.currentCategory]);
             
             if (activePool.length === 0) {
@@ -815,10 +803,6 @@
             gameState.currentIndex = 0;
             gameState.score = 0;
 
-            // MOBILE RULE 1: Synchronously bind the first track inside this exact click event loop
-            gameAudio.src = getAudioUrl(gameState.targetWordsList[0]);
-            gameAudio.load();
-
             startScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
             
@@ -826,10 +810,6 @@
         }
 
         function loadQuestion() {
-            // Force strict answer locking status until the audio finishes playing completely
-            gameState.lockInput = true; 
-            optionsContainer.classList.add('locked');
-
             const totalQuestions = gameState.targetWordsList.length;
             
             questionCounter.textContent = `${gameState.currentIndex + 1} / ${totalQuestions}`;
@@ -840,7 +820,7 @@
 
             gameState.correctAnswer = gameState.targetWordsList[gameState.currentIndex];
 
-            // Build Options Array Matrix Setup
+            // Build Matrix Distractor Arrays
             const masterList = DOLCH_DATASET[configState.currentCategory];
             let distractors = masterList.filter(word => word !== gameState.correctAnswer);
             distractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
@@ -859,26 +839,98 @@
                 optionsContainer.appendChild(btn);
             });
 
-            // Fire audio track playback
-            playCurrentAudioTrack();
+            // Pronounce word — if audio already unlocked by a prior gesture, speak now.
+            // Otherwise pulse the button to invite the user to tap (mobile gesture requirement).
+            if (audioUnlocked) {
+                speakWord(gameState.correctAnswer);
+            } else {
+                btnAudio.classList.add('playing');
+                document.getElementById('audio-label').textContent = '👆 Tap to hear!';
+            }
         }
 
-        function playCurrentAudioTrack() {
+        // --- AUDIO UNLOCK FOR MOBILE ---
+        // Mobile browsers require audio to be initiated from a direct user gesture.
+        // We track whether the user has interacted so we can speak immediately vs. wait.
+        let audioUnlocked = false;
+
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            // Kick the speech synthesis engine with a silent utterance so it's
+            // warmed up and allowed for subsequent auto-play calls on this page.
+            if ('speechSynthesis' in window) {
+                const warmup = new SpeechSynthesisUtterance('');
+                warmup.volume = 0;
+                window.speechSynthesis.speak(warmup);
+            }
+            audioUnlocked = true;
+        }
+
+        // Attach unlock to every early user interaction on the page
+        ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'].forEach(evt => {
+            document.addEventListener(evt, unlockAudio, { once: false, passive: true });
+        });
+
+        // --- AUDIO ENGINE ---
+        // Uses Web Speech API (SpeechSynthesis) as primary — no network needed, no CORS,
+        // works on iOS/Android after first user gesture. Falls back gracefully.
+        function speakWord(textToSpeak) {
             gameState.lockInput = true;
             optionsContainer.classList.add('locked');
             btnAudio.classList.add('playing');
-            
-            gameAudio.play().catch(error => {
-                console.warn("Mobile autoplay restriction catch activated:", error);
-                // Emergency fail-safe safety lock release if audio errors out
+
+            function terminateAudioProcess() {
                 gameState.lockInput = false;
                 optionsContainer.classList.remove('locked');
                 btnAudio.classList.remove('playing');
-            });
+            }
+
+            if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech first
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+
+                // Pick a natural English voice if available (important on iOS/Android)
+                const voices = window.speechSynthesis.getVoices();
+                const englishVoice = voices.find(v => v.lang.startsWith('en') && !v.name.includes('Google')) 
+                                  || voices.find(v => v.lang.startsWith('en'))
+                                  || null;
+                if (englishVoice) utterance.voice = englishVoice;
+
+                utterance.onend = () => terminateAudioProcess();
+                utterance.onerror = () => terminateAudioProcess();
+
+                // Safety timeout in case onend never fires (known iOS Safari bug)
+                const safetyTimer = setTimeout(() => terminateAudioProcess(), 4000);
+                utterance.onend = () => { clearTimeout(safetyTimer); terminateAudioProcess(); };
+                utterance.onerror = () => { clearTimeout(safetyTimer); terminateAudioProcess(); };
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                // Last resort: Google TTS (desktop only, blocked on mobile by CORS)
+                const encodedWord = encodeURIComponent(textToSpeak.toLowerCase());
+                const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodedWord}`;
+                const track = new Audio(audioUrl);
+                const safetyTimer = setTimeout(() => terminateAudioProcess(), 4000);
+                track.onended = () => { clearTimeout(safetyTimer); terminateAudioProcess(); };
+                track.onerror = () => { clearTimeout(safetyTimer); terminateAudioProcess(); };
+                track.play().catch(() => { clearTimeout(safetyTimer); terminateAudioProcess(); });
+            }
+        }
+
+        // Voices load asynchronously on some browsers — pre-load them
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
 
         function evaluateChoice(selectedButton, chosenWord) {
-            if (gameState.lockInput) return; // Block actions if inputs are frozen
+            if (gameState.lockInput) return;
             gameState.lockInput = true;
 
             const totalQuestions = gameState.targetWordsList.length;
@@ -898,21 +950,13 @@
 
             gameState.currentIndex++;
             
-            if (gameState.currentIndex < totalQuestions) {
-                // MOBILE RULE 2: Grab and configure the NEXT audio track right now, 
-                // while the browser session is still actively running under this option button's click event.
-                const nextWord = gameState.targetWordsList[gameState.currentIndex];
-                gameAudio.src = getAudioUrl(nextWord);
-                gameAudio.load();
-
-                setTimeout(() => {
+            setTimeout(() => {
+                if (gameState.currentIndex < totalQuestions) {
                     loadQuestion();
-                }, 1400);
-            } else {
-                setTimeout(() => {
+                } else {
                     triggerEndAssessment();
-                }, 1400);
-            }
+                }
+            }, 1400);
         }
 
         function triggerEndAssessment() {
