@@ -267,8 +267,9 @@
 
     const avatarSvg = `<div class="creator-avatar"><svg width="12" height="12" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
 
+    // Modified to yield absolute directory paths instead of files
     function getGameUrl(game) {
-        return game.url || `./${game.category}/${game.id}/index.html`;
+        return game.url || `./${game.category}/${game.id}/`;
     }
 
     function getGameThumbnail(game) {
@@ -401,10 +402,8 @@
         const game = allGames.find(g => g.id === id);
         const fullUrl = getGameUrl(game);
         
-        // Resolves absolute URL pathing for deployment consistency
         const absoluteUrl = new URL(fullUrl, window.location.href).href;
         
-        // Opens game full URL securely in a fresh browser tab
         window.open(absoluteUrl, '_blank', 'noopener,noreferrer');
     }
 
