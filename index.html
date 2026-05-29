@@ -402,13 +402,12 @@
         const fullUrl = getGameUrl(game);
         const absoluteUrl = new URL(fullUrl, window.location.href).href;
 
-        const a = document.createElement('a');
-        a.href = absoluteUrl;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const win = window.open(absoluteUrl, '_blank');
+        if (win) {
+            setTimeout(() => {
+                win.dispatchEvent(new Event('resize'));
+            }, 500);
+        }
     }
 
     init();
