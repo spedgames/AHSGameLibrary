@@ -248,6 +248,22 @@
     background: var(--water-teal);
     box-shadow: 0 0 8px var(--water-teal);
   }
+  /* Sound toggle button */
+  .btn-sound {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--glass-border);
+    background: var(--glass);
+    color: var(--text-light);
+    font-size: 1.05rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.18s, border-color 0.18s, transform 0.12s;
+    flex-shrink: 0;
+  }
+  .btn-sound:hover  { background: rgba(255,255,255,0.14); border-color: var(--water-glow); transform: scale(1.1); }
+  .btn-sound:active { transform: scale(0.95); }
+  .btn-sound.muted  { opacity: 0.45; }
 
   /* Main game layout */
   .game-main {
@@ -439,22 +455,6 @@
     background: rgba(23,160,160,0.12);
   }
   .fish-card:active { transform: translateY(-1px); }
-  .fish-card.sold {
-    opacity: 0.4;
-    pointer-events: none;
-    filter: grayscale(0.7);
-  }
-  .fish-card.sold::after {
-    content: 'SOLD';
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: clamp(0.7rem, 2vw, 0.85rem);
-    font-weight: 800;
-    color: var(--coral);
-    letter-spacing: 2px;
-    background: rgba(0,0,0,0.4);
-    border-radius: var(--radius-md);
-  }
   .fish-card-img {
     width: clamp(44px, 8vw, 64px);
     height: clamp(36px, 6vw, 52px);
@@ -607,11 +607,11 @@
   }
   .money-btn {
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 3px;
+    align-items: center; justify-content: center; gap: 0;
     background: var(--glass);
     border: 2px solid var(--glass-border);
     border-radius: var(--radius-md);
-    padding: clamp(5px, 1vh, 10px) 4px;
+    padding: clamp(4px, 0.6vh, 7px) clamp(4px, 0.6vw, 7px);
     cursor: pointer;
     transition: all 0.15s;
     min-height: clamp(54px, 9vh, 72px);
@@ -635,17 +635,16 @@
     font-size: 10px; font-weight: 800;
     color: var(--mint);
   }
+  /* Image fills almost the entire button */
   .money-img {
-    width: clamp(26px, 5.5vw, 40px);
-    height: clamp(26px, 5.5vw, 40px);
+    width: 90%;
+    height: auto;
+    max-height: calc(100% - 8px);
     object-fit: contain;
+    display: block;
   }
-  .money-label {
-    font-size: clamp(0.58rem, 1.4vw, 0.68rem);
-    font-weight: 700;
-    color: var(--text-light);
-    text-align: center;
-  }
+  /* Label hidden — image is self-explanatory */
+  .money-label { display: none; }
   /* No count badge needed — toggle mode, one selection per denomination */
 
   /* Modal action buttons — always visible, never pushed off screen */
@@ -908,6 +907,7 @@
         <span>My Aquarium:</span>
         <div class="fish-dots" id="fishDots"></div>
       </div>
+      <button class="btn-sound" id="btnSound" title="Toggle sound">🔊</button>
     </div>
     <!-- Main -->
     <div class="game-main">
@@ -1225,16 +1225,14 @@ function renderShop() {
   grid.innerHTML = '';
   state.fishList.forEach(fish => {
     const card = document.createElement('div');
-    card.className = 'fish-card' + (state.boughtFishIds.includes(fish.id) ? ' sold' : '');
+    card.className = 'fish-card';
     card.innerHTML = `
       <img class="fish-card-img" src="${fish.img}" alt="${fish.name}">
       <div class="fish-name">${fish.name}</div>
       <div class="fish-price-tag">${formatPrice(fish.price)}</div>
     `;
-    if (!state.boughtFishIds.includes(fish.id)) {
-      card.addEventListener('click', () => openModal(fish));
-      card.addEventListener('touchend', (e) => { e.preventDefault(); openModal(fish); }, {passive:false});
-    }
+    card.addEventListener('click', () => openModal(fish));
+    card.addEventListener('touchend', (e) => { e.preventDefault(); openModal(fish); }, {passive:false});
     grid.appendChild(card);
   });
 }
@@ -1255,6 +1253,7 @@ function openModal(fish) {
   updateSelectedTotal();
 
   document.getElementById('modalOverlay').classList.remove('hidden');
+  SFX.open();
 }
 
 function closeModal() {
@@ -1286,11 +1285,13 @@ function buildMoneyButtons() {
         // Deselect: remove this denomination from selectedMoney
         btn.classList.remove('selected');
         state.selectedMoney = state.selectedMoney.filter(m => m.value !== denom.value);
+        SFX.deselect();
       } else {
         // Select: add this denomination (replace any existing one of same value)
         state.selectedMoney = state.selectedMoney.filter(m => m.value !== denom.value);
         state.selectedMoney.push(denom);
         btn.classList.add('selected');
+        SFX.coin();
       }
       updateSelectedTotal();
     }
@@ -1344,6 +1345,7 @@ function attemptPay() {
     modal.classList.remove('shake');
     void modal.offsetWidth;
     modal.classList.add('shake');
+    SFX.wrong();
     showToast('Not the right amount! Try again.');
     return;
   }
@@ -1353,11 +1355,12 @@ function attemptPay() {
   addFishToAquarium(fish);
   renderShop();
   renderHUD();
+  SFX.success();
   showToast(`${fish.name} is now swimming in your aquarium! 🐠`);
 
   // Check win
   if (state.boughtFishIds.length >= 5) {
-    setTimeout(showWinScreen, 1200);
+    setTimeout(() => { SFX.win(); showWinScreen(); }, 1200);
   }
 }
 
@@ -1477,6 +1480,94 @@ function initGame() {
 }
 
 /* =================================================================
+   SOUND SYSTEM (Web Audio API — no external files needed)
+================================================================= */
+const SFX = (() => {
+  let ctx = null;
+  let muted = false;
+
+  // Lazily create AudioContext on first interaction (browser policy)
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  // Core: play a simple synthesised sound
+  // type: oscillator waveType, freqs: [Hz,...], durations: [s,...], vol: 0-1
+  function play(notes, vol = 0.35) {
+    if (muted) return;
+    const c = getCtx();
+    notes.forEach(({ freq, dur, type = 'sine', delay = 0 }) => {
+      const osc  = c.createOscillator();
+      const gain = c.createGain();
+      osc.connect(gain);
+      gain.connect(c.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, c.currentTime + delay);
+      gain.gain.setValueAtTime(0, c.currentTime + delay);
+      gain.gain.linearRampToValueAtTime(vol, c.currentTime + delay + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + dur);
+      osc.start(c.currentTime + delay);
+      osc.stop(c.currentTime + delay + dur + 0.02);
+    });
+  }
+
+  return {
+    // Tap a money button — soft blip
+    coin: () => play([
+      { freq: 880,  dur: 0.06, type: 'sine' },
+      { freq: 1320, dur: 0.05, type: 'sine', delay: 0.04 },
+    ], 0.2),
+
+    // Deselect / clear — descending blip
+    deselect: () => play([
+      { freq: 660, dur: 0.07, type: 'sine' },
+      { freq: 440, dur: 0.07, type: 'sine', delay: 0.05 },
+    ], 0.15),
+
+    // Correct payment — cheerful rising arpeggio
+    success: () => play([
+      { freq: 523,  dur: 0.12, type: 'triangle' },
+      { freq: 659,  dur: 0.12, type: 'triangle', delay: 0.10 },
+      { freq: 784,  dur: 0.12, type: 'triangle', delay: 0.20 },
+      { freq: 1047, dur: 0.22, type: 'triangle', delay: 0.30 },
+    ], 0.3),
+
+    // Wrong amount — low buzzy thud
+    wrong: () => play([
+      { freq: 200, dur: 0.15, type: 'sawtooth' },
+      { freq: 150, dur: 0.18, type: 'sawtooth', delay: 0.12 },
+    ], 0.25),
+
+    // Win fanfare — bright ascending chord burst
+    win: () => {
+      play([
+        { freq: 523,  dur: 0.18, type: 'triangle' },
+        { freq: 659,  dur: 0.18, type: 'triangle', delay: 0.14 },
+        { freq: 784,  dur: 0.18, type: 'triangle', delay: 0.28 },
+        { freq: 1047, dur: 0.28, type: 'triangle', delay: 0.42 },
+        { freq: 1319, dur: 0.40, type: 'triangle', delay: 0.56 },
+      ], 0.32);
+    },
+
+    // Open modal — soft whoosh shimmer
+    open: () => play([
+      { freq: 600,  dur: 0.08, type: 'sine' },
+      { freq: 900,  dur: 0.10, type: 'sine', delay: 0.06 },
+      { freq: 1200, dur: 0.10, type: 'sine', delay: 0.12 },
+    ], 0.15),
+
+    isMuted: () => muted,
+
+    toggle: () => {
+      muted = !muted;
+      return muted;
+    },
+  };
+})();
+
+/* =================================================================
    EVENT LISTENERS
 ================================================================= */
 document.getElementById('btnPlay').addEventListener('click', initGame);
@@ -1489,6 +1580,21 @@ document.getElementById('btnModalClose').addEventListener('click', closeModal);
 document.getElementById('btnClear').addEventListener('click',      clearSelection);
 document.getElementById('btnPay').addEventListener('click',        attemptPay);
 document.getElementById('btnPay').addEventListener('touchend', (e) => { e.preventDefault(); attemptPay(); }, {passive:false});
+
+// Sound toggle
+(function() {
+  const btn = document.getElementById('btnSound');
+  function updateBtn() {
+    const m = SFX.isMuted();
+    btn.textContent = m ? '🔇' : '🔊';
+    btn.classList.toggle('muted', m);
+    btn.title = m ? 'Sound off — tap to turn on' : 'Sound on — tap to turn off';
+  }
+  function toggle() { SFX.toggle(); updateBtn(); }
+  btn.addEventListener('click', toggle);
+  btn.addEventListener('touchend', (e) => { e.preventDefault(); toggle(); }, {passive:false});
+  updateBtn();
+})();
 
 // Close modal tapping overlay background
 document.getElementById('modalOverlay').addEventListener('click', (e) => {
