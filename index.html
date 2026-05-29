@@ -177,10 +177,6 @@
         .qr-area { text-align: center; border-left: 1px solid #f1f5f9; padding-left: 30px; }
         .qr-code { width: 150px; height: 150px; border-radius: 10px; margin-bottom: 10px; }
 
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 4000; }
-        .close-btn { position: absolute; top: 15px; right: 15px; background: #1e293b; color: white; border-radius: 50%; width: 44px; height: 44px; border: none; cursor: pointer; z-index: 4001; }
-        iframe { width: 100%; height: 100%; border: none; }
-
         @media (max-width: 650px) {
             body { padding-top: 110px; }
             nav { justify-content: flex-start; padding-left: 10px; }
@@ -264,11 +260,6 @@
     </div>
 </div>
 
-<div id="modal">
-    <button class="close-btn" onclick="closeGame()">✕</button>
-    <iframe id="game-frame" src=""></iframe>
-</div>
-
 <script>
     let allGames = [];
     let currentCategory = 'Home';
@@ -276,7 +267,6 @@
 
     const avatarSvg = `<div class="creator-avatar"><svg width="12" height="12" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
 
-    // Helpers to resolve platforms dynamically (Now targets category subfolders)
     function getGameUrl(game) {
         return game.url || `./${game.category}/${game.id}/index.html`;
     }
@@ -285,7 +275,6 @@
         return game.thumbnail || `./${game.category}/${game.id}/preview.png`;
     }
 
-    // Helper to evaluate if a game is less than 30 days old
     function checkIsNew(uploadDateStr) {
         if (!uploadDateStr) return false;
         const uploadDate = new Date(uploadDateStr);
@@ -300,7 +289,6 @@
             const response = await fetch('games.json?v=' + Date.now());
             allGames = await response.json();
             
-            // Sort games globally by upload date descending (Newest on top)
             allGames.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
             
             renderContent();
@@ -334,11 +322,9 @@
             list = filtered;
             header.style.display = 'none';
         } else if (currentCategory === 'Home') {
-            // Evaluates dynamically if it is less than 30 days old
             list = allGames.filter(g => checkIsNew(g.uploadDate));
             header.style.display = 'block';
         } else {
-            // Filters based on chosen category tab. Naturally inherits chronological sort order.
             list = allGames.filter(g => g.category === currentCategory);
             header.style.display = 'none';
         }
@@ -393,7 +379,6 @@
         const g = allGames.find(game => game.id === id);
         const fullUrl = getGameUrl(g);
         
-        // Ensure the QR code generator gets an absolute URL, even if the game URL is relative
         const absoluteUrl = new URL(fullUrl, window.location.href).href;
         
         document.getElementById('detail-title').innerText = g.title;
@@ -414,15 +399,13 @@
     
     function playGame(id) { 
         const game = allGames.find(g => g.id === id);
-        document.getElementById('game-frame').src = getGameUrl(game); 
-        document.getElementById('modal').style.display = 'block'; 
-        document.body.style.overflow = 'hidden';
-    }
-    
-    function closeGame() { 
-        document.getElementById('modal').style.display = 'none'; 
-        document.getElementById('game-frame').src = ''; 
-        if (document.getElementById('detail-view').style.display !== 'block') document.body.style.overflow = 'auto';
+        const fullUrl = getGameUrl(game);
+        
+        // Resolves absolute URL pathing for deployment consistency
+        const absoluteUrl = new URL(fullUrl, window.location.href).href;
+        
+        // Opens game full URL securely in a fresh browser tab
+        window.open(absoluteUrl, '_blank', 'noopener,noreferrer');
     }
 
     init();
