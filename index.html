@@ -400,10 +400,40 @@
     function playGame(id) { 
         const game = allGames.find(g => g.id === id);
         const fullUrl = getGameUrl(game);
-        
         const absoluteUrl = new URL(fullUrl, window.location.href).href;
-        
-        window.open(absoluteUrl, '_blank', 'noopener,noreferrer');
+
+        const wrapperHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>${game.title}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    iframe {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <iframe src="${absoluteUrl}" allowfullscreen allow="autoplay; fullscreen"></iframe>
+</body>
+</html>`;
+
+        const blob = new Blob([wrapperHtml], { type: 'text/html' });
+        const blobUrl = URL.createObjectURL(blob);
+        const win = window.open(blobUrl, '_blank');
+
+        // Revoke the blob URL shortly after the window opens to free memory
+        if (win) {
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+        }
     }
 
     init();
