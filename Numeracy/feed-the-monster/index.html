@@ -229,7 +229,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 .play-again-btn:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 12px 32px rgba(167,139,250,.5)}
 .play-again-btn:active{transform:scale(.97)}
 
-/* ===== OVERLAYS ===== */
+/* ===== SOUND TOGGLE BUTTON ===== */
+#soundBtn{
+  position:fixed;top:clamp(10px,2vh,18px);right:clamp(10px,2vw,18px);
+  z-index:300;
+  width:44px;height:44px;border-radius:50%;
+  border:none;cursor:pointer;
+  background:var(--white);box-shadow:var(--shadow);
+  font-size:1.3rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s;
+  outline:none;-webkit-tap-highlight-color:transparent;
+}
+#soundBtn:hover{transform:scale(1.12);box-shadow:var(--shadow-lg)}
+#soundBtn:active{transform:scale(.92)}
+#soundBtn.muted{opacity:.6}
 #confetti-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999}
 .next-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);
   z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -325,10 +339,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 
     <!-- Instruction: "Feed it MORE!" with image -->
     <div class="instruction-cue">
-      <span class="instruction-text">Feed it MORE!</span>
+      <span class="instruction-text">Feed it</span>
       <img class="instruction-more-img" src="assets/more.png" alt="MORE!"
         onerror="this.style.display='none';document.getElementById('moreFallback').style.display='inline-block'">
-      <span class="instruction-more-fallback" id="moreFallback" style="display:none">!</span>
+      <span class="instruction-more-fallback" id="moreFallback" style="display:none">MORE!</span>
     </div>
 
     <!-- ===== SVG MONSTER ===== -->
@@ -508,6 +522,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 
 <canvas id="confetti-canvas"></canvas>
 <div class="next-overlay" id="nextOverlay"></div>
+<!-- Sound toggle — fixed, visible on all screens -->
+<button id="soundBtn" onclick="toggleSound()" aria-label="Toggle sound">🔊</button>
 
 <script>
 // =============================================
@@ -526,11 +542,21 @@ let firstTry = true;  // tracks whether this round has had a wrong guess yet
 // Generates a crunchy "nom" sound procedurally.
 // =============================================
 let audioCtx = null;
+let soundOn = true;
+
+function toggleSound() {
+  soundOn = !soundOn;
+  const btn = document.getElementById('soundBtn');
+  btn.textContent = soundOn ? '🔊' : '🔇';
+  btn.classList.toggle('muted', !soundOn);
+}
+
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
 function playEatSound() {
+  if (!soundOn) return; // respect mute
   try {
     const ctx = getAudioCtx();
     // Layer 1: short noise burst (crunch texture)
