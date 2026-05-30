@@ -102,18 +102,20 @@
         #rotateOverlay p  { margin: 0; font-size: 16px; opacity: 0.75; line-height: 1.5; }
 
         /* Mobile landscape scaling */
-        @media (max-width: 768px) {
+        @media (max-width: 900px) and (orientation: landscape) {
             body { background: #000; }
             #gameWrapper {
                 padding: 0; border-radius: 0; box-shadow: none; border: none;
-                flex-direction: column; width: 100vw; height: 100vh;
-                justify-content: center; align-items: center;
+                flex-direction: row; width: 100vw; height: 100vh;
+                justify-content: center; align-items: center; gap: 0;
             }
-            #canvasContainer {
-                border-radius: 0;
-            }
+            #canvasContainer { border-radius: 0; flex-shrink: 0; }
             #controls {
-                margin-left: 0; margin-top: 8px; gap: 8px;
+                margin-left: 0; flex-shrink: 0;
+                display: grid;
+                grid-template-areas: ". u ." "l . r" ". d .";
+                gap: 8px;
+                padding: 0 16px;
             }
             .ctrl-btn { width: 52px; height: 52px; font-size: 22px; }
         }
@@ -526,15 +528,15 @@ function scaleMobileLayout() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // Leave room for the d-pad below the canvas
-    const dpadH = 52 + 8 + 8 + 8; // ctrl-btn height + gaps + padding
-    const availH = vh - dpadH - 16; // small breathing room
-    const availW = vw;
+    // D-pad sits to the right: 3 cols × 52px btn + 2 gaps × 8px + 2 × 16px padding
+    const dpadW = 3 * 52 + 2 * 8 + 2 * 16;
+    const availW = vw - dpadW;
+    const availH = vh;
 
     // Maintain the canvas 600×500 aspect ratio
     const scaleByW = availW / 600;
     const scaleByH = availH / 500;
-    const scale = Math.min(scaleByW, scaleByH, 1); // never upscale past 1× on big tablets
+    const scale = Math.min(scaleByW, scaleByH, 1);
 
     const cw = Math.floor(600 * scale);
     const ch = Math.floor(500 * scale);
