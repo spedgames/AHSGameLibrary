@@ -1620,6 +1620,21 @@ preloadAssets();
 buildMenu();
 initStartScreen();
 initSoundToggle();
+
+/* =============================================
+   CHROME MOBILE/IPAD VIEWPORT BUGFIX
+============================================= */
+window.addEventListener('load', () => {
+  // Give Chrome two rapid intervals to finalize viewport sizes on a new tab
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 400);
+});
+
+// Forces layout recalculation if the user switches tabs and returns
+window.addEventListener('pageshow', () => {
+  window.dispatchEvent(new Event('resize'));
+});
+
 </script>
 
 </body>
