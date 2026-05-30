@@ -592,8 +592,6 @@
     renderLearnScreen();
     startScreen.classList.remove('active');
     learnScreen.classList.add('active');
-    // Speak on entry
-    setTimeout(() => speak(n), 400);
   }
 
   function showStartScreen() {
@@ -682,13 +680,11 @@
   nextBtn.addEventListener('click', () => {
     foodIndex++;
     renderEmojis();
-    speak(currentNumber);
   });
 
   prevBtn.addEventListener('click', () => {
     foodIndex = (foodIndex - 1 + FOODS.length) % FOODS.length;
     renderEmojis();
-    speak(currentNumber);
   });
 
   backBtn.addEventListener('click', showStartScreen);
