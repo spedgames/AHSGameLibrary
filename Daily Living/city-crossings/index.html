@@ -161,6 +161,9 @@
 </div>
 
 <script>
+window.addEventListener('focus', () => {
+    window.dispatchEvent(new Event('resize'));
+});
 const COLS = 15, ROWS = 12;
 const BOARD_BORDER = 8;   // 4px * 2 sides
 const LAYOUT_PAD   = 24;  // 12px * 2 sides
