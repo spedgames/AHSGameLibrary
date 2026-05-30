@@ -1,1024 +1,381 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Days of the Week – Letter Sound Game</title>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-  /* ===== CSS VARIABLES – LIGHT THEME ===== */
-  :root {
-    --bg: #f0f6ff;
-    --surface: #ffffff;
-    --surface2: #dde8f5;
-    --accent: #1a8fe3;
-    --accent2: #e84d9e;
-    --accent3: #7c4ddb;
-    --success: #16a34a;
-    --error: #dc2626;
-    --text: #1e293b;
-    --text-muted: #64748b;
-    --radius: 18px;
-    --radius-sm: 10px;
-    --shadow: 0 6px 28px rgba(30,80,160,0.12);
-    --transition: 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Days of the Week</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #0055FF;
+            --primary-red: #FF3B30;
+            --primary-yellow: #FFCC00;
+            --bg-gray: #F2F2F7;
+            --font-main: 'Montserrat', sans-serif;
+        }
 
-  /* ===== RESET & BASE ===== */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    background: var(--bg);
-    font-family: 'Nunito', sans-serif;
-    color: var(--text);
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
+        * { box-sizing: border-box; }
 
-  /* ===== SOFT CLOUD BACKGROUND ===== */
-  #bg-blobs {
-    position: fixed; inset: 0; z-index: 0;
-    pointer-events: none;
-    overflow: hidden;
-  }
-  .blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(60px);
-    opacity: 0.35;
-    animation: blobFloat ease-in-out infinite alternate;
-  }
-  .blob1 { width: 420px; height: 320px; background: #bae0ff; top: -80px; left: -80px; animation-duration: 9s; }
-  .blob2 { width: 340px; height: 340px; background: #e0ccff; bottom: -60px; right: -60px; animation-duration: 11s; }
-  .blob3 { width: 260px; height: 220px; background: #fce0f5; top: 40%; left: 55%; animation-duration: 8s; }
-  @keyframes blobFloat {
-    from { transform: translate(0, 0) scale(1); }
-    to   { transform: translate(18px, 14px) scale(1.06); }
-  }
+        body { 
+            font-family: var(--font-main);
+            background: var(--bg-gray);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none;
+        }
 
-  /* ===== SCREENS ===== */
-  .screen {
-    position: fixed; inset: 0; z-index: 10;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 16px;
-    transition: opacity 0.4s ease, transform 0.4s ease;
-  }
-  .screen.hidden {
-    opacity: 0; pointer-events: none; transform: scale(0.96);
-    visibility: hidden;
-  }
+        .screen {
+            position: fixed;
+            inset: 0;
+            background: var(--primary-blue);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
 
-  /* ===== START SCREEN ===== */
-  .logo-area {
-    text-align: center;
-    margin-bottom: 28px;
-  }
-  .logo-icon {
-    font-size: clamp(3rem, 10vw, 5rem);
-    line-height: 1;
-    margin-bottom: 8px;
-    animation: float 3s ease-in-out infinite;
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-  .logo-title {
-    font-size: clamp(1.6rem, 5vw, 2.8rem);
-    font-weight: 900;
-    background: linear-gradient(135deg, var(--accent), var(--accent3));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1.2;
-  }
-  .logo-sub {
-    font-size: clamp(0.85rem, 2.5vw, 1rem);
-    color: var(--text-muted);
-    margin-top: 6px;
-    font-weight: 600;
-  }
+        h1 { font-weight: 900; letter-spacing: -1px; margin-bottom: 20px; text-transform: uppercase; }
 
-  .mode-label {
-    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
-    font-weight: 700;
-    color: var(--text-muted);
-    margin-bottom: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-  .mode-cards {
-    display: flex;
-    gap: 14px;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .mode-card {
-    background: var(--surface);
-    border: 3px solid var(--surface2);
-    border-radius: var(--radius);
-    padding: 18px 24px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-    min-width: 130px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-  }
-  .mode-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(26,143,227,0.1), rgba(124,77,219,0.1));
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .mode-card.active {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(26,143,227,0.2), var(--shadow);
-  }
-  .mode-card.active::before { opacity: 1; }
-  .mode-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-  .mode-card-letters {
-    font-size: clamp(1.4rem, 4vw, 1.9rem);
-    font-weight: 900;
-    background: linear-gradient(135deg, var(--accent), var(--accent3));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    position: relative; z-index: 1;
-  }
-  .mode-card-desc {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    margin-top: 4px;
-    position: relative; z-index: 1;
-  }
-  .mode-card.active .mode-card-desc { color: var(--accent); }
+        .setting-section { margin-bottom: 25px; width: 100%; max-width: 350px; }
+        .ref-label { margin-bottom: 12px; font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
 
-  .btn-play {
-    background: linear-gradient(135deg, var(--accent), var(--accent3));
-    color: #fff;
-    border: none;
-    border-radius: 50px;
-    padding: 16px 52px;
-    font-family: 'Nunito', sans-serif;
-    font-size: clamp(1.1rem, 3vw, 1.3rem);
-    font-weight: 900;
-    cursor: pointer;
-    transition: transform var(--transition), box-shadow 0.2s;
-    box-shadow: 0 4px 20px rgba(26,143,227,0.35);
-    min-height: 56px;
-  }
-  .btn-play:hover { transform: scale(1.05); box-shadow: 0 6px 28px rgba(26,143,227,0.5); }
-  .btn-play:active { transform: scale(0.97); }
+        .btn-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 10px; 
+            margin-bottom: 10px;
+        }
 
-  /* ===== GAME SCREEN ===== */
-  .game-header {
-    width: 100%; max-width: 540px;
-    margin-bottom: clamp(10px, 2vh, 20px);
-  }
-  /* Numbered progress bar */
-  .progress-bar-wrap {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    width: 100%;
-  }
-  .progress-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    flex: 1;
-  }
-  .progress-step-num {
-    font-size: 0.7rem;
-    font-weight: 800;
-    color: var(--text-muted);
-    line-height: 1;
-    transition: color 0.3s;
-  }
-  .progress-step.current .progress-step-num { color: var(--accent); }
-  .progress-step.done    .progress-step-num { color: var(--success); }
-  .progress-step-track {
-    width: 100%;
-    height: 8px;
-    border-radius: 99px;
-    background: var(--surface2);
-    overflow: hidden;
-    position: relative;
-  }
-  .progress-step-fill {
-    position: absolute; inset: 0;
-    border-radius: 99px;
-    background: var(--surface2);
-    transition: background 0.3s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
-    transform: scaleX(0);
-    transform-origin: left;
-  }
-  .progress-step.done    .progress-step-fill { background: var(--success); transform: scaleX(1); }
-  .progress-step.current .progress-step-fill { background: var(--accent);  transform: scaleX(1); }
-  /* SFX toggle button */
-  .btn-sfx {
-    position: fixed;
-    top: 14px; right: 14px;
-    z-index: 100;
-    display: flex; align-items: center; gap: 6px;
-    background: var(--surface);
-    border: 2px solid var(--surface2);
-    border-radius: 50px;
-    padding: 7px 14px;
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 800;
-    color: var(--text-muted);
-    cursor: pointer;
-    box-shadow: var(--shadow);
-    transition: all 0.2s ease;
-    min-height: 44px;
-    white-space: nowrap;
-  }
-  .btn-sfx:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-sfx.on { border-color: var(--accent); color: var(--accent); background: #eaf4ff; }
-  .btn-sfx .sfx-icon { font-size: 1.1rem; line-height: 1; }
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
 
-  /* Day card */
-  .day-card {
-    background: var(--surface);
-    border-radius: clamp(16px, 3vw, 28px);
-    padding: clamp(20px, 4vh, 36px) clamp(24px, 5vw, 48px);
-    text-align: center;
-    width: 100%; max-width: 480px;
-    box-shadow: var(--shadow);
-    margin-bottom: clamp(16px, 3vh, 28px);
-    position: relative;
-    overflow: hidden;
-  }
-  .day-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 4px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
-  }
+        /* Base Button Styles */
+        button {
+            font-family: var(--font-main);
+            padding: 18px 24px;
+            font-weight: 900;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.1s;
+            font-size: 1rem;
+        }
 
-  .day-label {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 10px;
-  }
-  .day-display {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    margin-bottom: 14px;
-  }
-  .day-blank {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: clamp(44px, 10vw, 66px);
-    height: clamp(54px, 12vw, 78px);
-    border-radius: var(--radius-sm);
-    border: 3px dashed var(--accent);
-    font-size: clamp(1.8rem, 6vw, 3rem);
-    font-weight: 900;
-    color: var(--accent);
-    background: rgba(26,143,227,0.07);
-    transition: all 0.3s ease;
-    line-height: 1;
-  }
-  .day-blank.filled {
-    border-style: solid;
-    background: rgba(22,163,74,0.08);
-    border-color: var(--success);
-    color: var(--success);
-    animation: fillPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .day-blank.wrong {
-    border-color: var(--error);
-    background: rgba(220,38,38,0.07);
-    color: var(--error);
-    animation: shake 0.4s ease;
-  }
-  @keyframes fillPop {
-    0% { transform: scale(0.7); }
-    100% { transform: scale(1); }
-  }
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-6px); }
-    40% { transform: translateX(6px); }
-    60% { transform: translateX(-4px); }
-    80% { transform: translateX(4px); }
-  }
+        button:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.2) !important; }
 
-  .day-rest {
-    font-size: clamp(1.8rem, 6vw, 3rem);
-    font-weight: 900;
-    color: var(--text);
-    line-height: 1;
-  }
+        /* Small Setting Buttons */
+        .ref-btn, .opt-btn {
+            padding: 12px 5px;
+            font-size: 0.85rem;
+            background: white;
+            color: var(--primary-blue);
+            box-shadow: 0 4px 0 #DDD;
+            flex: 1;
+        }
 
-  /* ===== LISTEN BUTTON (ARASAAC) ===== */
-  .btn-listen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    background: #eaf4ff;
-    border: 2.5px solid #b3d9f7;
-    border-radius: var(--radius);
-    padding: 10px 20px;
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 800;
-    color: var(--accent);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-height: 44px;
-    margin: 0 auto;
-  }
-  .btn-listen:hover { background: #d0eaff; border-color: var(--accent); transform: scale(1.04); }
-  .btn-listen:active { transform: scale(0.97); }
-  .btn-listen.speaking {
-    background: #d0eaff;
-    border-color: var(--accent);
-    animation: listenPulse 0.9s ease-in-out infinite;
-  }
-  @keyframes listenPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(26,143,227,0.3); }
-    50% { box-shadow: 0 0 0 7px rgba(26,143,227,0); }
-  }
-  .pictogram-img {
-    width: 54px;
-    height: 54px;
-    object-fit: contain;
-    border-radius: 8px;
-    display: block;
-    /* Fallback hidden until loaded */
-  }
-  .listen-label {
-    line-height: 1;
-  }
+        .ref-btn.active, .opt-btn.active {
+            background: var(--primary-yellow);
+            color: #000;
+            box-shadow: 0 4px 0 #CCA300;
+        }
 
-  /* Answer buttons */
-  .answer-grid {
-    display: grid;
-    gap: clamp(10px, 2vw, 14px);
-    width: 100%; max-width: 480px;
-    margin-top: clamp(16px, 3vh, 24px);
-    /* Reserve space so the card above never shifts position */
-    min-height: 80px;
-    align-content: center;
-    /* Hidden until word has been spoken – opacity only, no movement */
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.35s ease;
-  }
-  .answer-grid.visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  .answer-grid.mode1 { grid-template-columns: repeat(5, 1fr); }
-  .answer-grid.mode2 { grid-template-columns: repeat(2, 1fr); }
+        /* Large Action Buttons */
+        .main-action-btn {
+            width: 100%;
+            max-width: 350px;
+            font-size: 1.4rem;
+            background: var(--primary-yellow);
+            color: #000;
+            box-shadow: 0 8px 0 #CCA300;
+            margin-top: 10px;
+        }
 
-  .btn-answer {
-    background: var(--surface);
-    border: 3px solid var(--surface2);
-    border-radius: var(--radius);
-    padding: clamp(12px, 3vw, 18px) 8px;
-    font-family: 'Nunito', sans-serif;
-    font-size: clamp(1.4rem, 5vw, 2rem);
-    font-weight: 900;
-    color: var(--text);
-    cursor: pointer;
-    transition: all var(--transition);
-    min-height: 64px;
-    box-shadow: 0 2px 8px rgba(30,80,160,0.08);
-  }
-  .btn-answer:hover:not(:disabled) {
-    border-color: var(--accent);
-    background: #eaf4ff;
-    transform: translateY(-3px) scale(1.04);
-    box-shadow: 0 6px 20px rgba(26,143,227,0.2);
-  }
-  .btn-answer:active:not(:disabled) { transform: scale(0.96); }
-  .btn-answer:disabled { cursor: default; }
-  .btn-answer.correct {
-    border-color: var(--success);
-    background: rgba(22,163,74,0.08);
-    color: var(--success);
-    transform: scale(1.08);
-    box-shadow: 0 0 0 3px rgba(22,163,74,0.2);
-  }
-  .btn-answer.wrong {
-    border-color: var(--error);
-    background: rgba(220,38,38,0.07);
-    color: var(--error);
-  }
+        #success-screen button {
+            background: white;
+            color: #34C759;
+            font-size: 1.4rem;
+            padding: 25px 50px;
+            box-shadow: 0 8px 0 #28a745;
+        }
 
-  /* ===== COMPLETE SCREEN ===== */
-  .complete-card {
-    background: var(--surface);
-    border-radius: clamp(20px, 4vw, 32px);
-    padding: clamp(28px, 5vh, 52px) clamp(28px, 6vw, 52px);
-    text-align: center;
-    max-width: 440px;
-    width: 100%;
-    box-shadow: var(--shadow);
-    position: relative;
-    overflow: hidden;
-  }
-  .complete-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 5px;
-    background: linear-gradient(90deg, var(--success), var(--accent), var(--accent3));
-  }
-  .complete-emoji {
-    font-size: clamp(3rem, 10vw, 5rem);
-    margin-bottom: 12px;
-    display: block;
-    animation: bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  @keyframes bounce {
-    0% { transform: scale(0); }
-    100% { transform: scale(1); }
-  }
-  .complete-title {
-    font-size: clamp(1.6rem, 5vw, 2.4rem);
-    font-weight: 900;
-    background: linear-gradient(135deg, var(--success), var(--accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 8px;
-  }
-  .complete-score {
-    font-size: clamp(1rem, 3vw, 1.2rem);
-    color: var(--text-muted);
-    font-weight: 700;
-    margin-bottom: 28px;
-  }
-  .complete-score span {
-    color: var(--accent);
-    font-size: clamp(1.3rem, 4vw, 1.6rem);
-  }
-  .complete-days {
-    display: flex; flex-wrap: wrap; gap: 8px;
-    justify-content: center;
-    margin-bottom: 28px;
-  }
-  .day-chip {
-    background: rgba(22,163,74,0.08);
-    border: 2px solid var(--success);
-    border-radius: 50px;
-    padding: 6px 16px;
-    font-size: 0.85rem;
-    font-weight: 800;
-    color: var(--success);
-  }
-  .btn-again {
-    background: linear-gradient(135deg, var(--accent), var(--accent3));
-    color: #fff;
-    border: none;
-    border-radius: 50px;
-    padding: 16px 48px;
-    font-family: 'Nunito', sans-serif;
-    font-size: clamp(1rem, 3vw, 1.2rem);
-    font-weight: 900;
-    cursor: pointer;
-    transition: transform var(--transition), box-shadow 0.2s;
-    box-shadow: 0 4px 20px rgba(26,143,227,0.35);
-    min-height: 54px;
-    width: 100%;
-  }
-  .btn-again:hover { transform: scale(1.04); box-shadow: 0 6px 28px rgba(26,143,227,0.5); }
-  .btn-again:active { transform: scale(0.97); }
+        /* Game Elements */
+        #game-container {
+            width: 95vw;
+            max-width: 1000px;
+            height: 90vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 10px;
+        }
 
-  /* Confetti */
-  .confetti-piece {
-    position: fixed;
-    width: 10px; height: 10px;
-    border-radius: 2px;
-    pointer-events: none;
-    z-index: 999;
-    animation: confettiFall 3s ease-in forwards;
-  }
-  @keyframes confettiFall {
-    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-  }
+        .panel {
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            border: 5px solid var(--primary-blue);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+        }
 
-  /* Feedback toast */
-  .toast {
-    position: fixed;
-    top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
-    background: var(--surface);
-    border-radius: 50px;
-    padding: 10px 24px;
-    font-weight: 800;
-    font-size: 1rem;
-    box-shadow: var(--shadow);
-    z-index: 200;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    border: 2px solid var(--surface2);
-    white-space: nowrap;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.success { border-color: var(--success); color: var(--success); }
-  .toast.error   { border-color: var(--error);   color: var(--error); }
+        #source-panel { display: flex; flex-direction: column; justify-content: space-around; }
+        .slot { flex: 1; display: flex; align-items: center; justify-content: center; }
 
-  /* Responsive */
-  @media (max-width: 380px) {
-    .answer-grid.mode1 { gap: 6px; }
-    .btn-answer { min-height: 56px; font-size: 1.2rem; }
-    .day-blank, .day-rest { font-size: 1.5rem; }
-    .day-blank { min-width: 40px; height: 52px; }
-    .pictogram-img { width: 42px; height: 42px; }
-  }
-  @media (max-height: 620px) {
-    .logo-icon { font-size: 2.4rem; margin-bottom: 4px; }
-    .logo-title { font-size: 1.4rem; }
-    .mode-cards { margin-bottom: 16px; }
-    .mode-card { padding: 12px 18px; }
-    .pictogram-img { width: 40px; height: 40px; }
-  }
-</style>
+        .day-card {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: clamp(16px, 2.8vh, 26px);
+            font-weight: 900;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: grab;
+            touch-action: none;
+            border: 3px solid #f0f0f0;
+            width: 85%;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .red { color: var(--primary-red); }
+        .black { color: #000; }
+
+        .drop-zone {
+            flex: 1;
+            border: 3px dashed #D1D1D6;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: clamp(14px, 2.2vh, 20px);
+            color: #C7C7CC;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .drop-active { border-color: var(--primary-yellow); background: rgba(255, 204, 0, 0.1); }
+        .drop-correct { background: var(--primary-yellow); color: #000; border: 3px solid var(--primary-yellow); }
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            #game-container { grid-template-columns: 1fr; height: 95vh; gap: 10px; }
+            .panel { padding: 10px; border-width: 3px; }
+            .main-action-btn { font-size: 1.1rem; }
+        }
+    </style>
 </head>
 <body>
 
-<!-- Soft blobs background -->
-<div id="bg-blobs">
-  <div class="blob blob1"></div>
-  <div class="blob blob2"></div>
-  <div class="blob blob3"></div>
-</div>
+    <div id="start-screen" class="screen">
+        <h1 style="font-size: clamp(2rem, 6vw, 3rem);">Days of the Week</h1>
+        
+        <div class="setting-section">
+            <p class="ref-label">Include reference words for:</p>
+            <div class="btn-grid" id="reference-toggles"></div>
+        </div>
 
-<!-- SFX toggle (fixed, always visible) -->
-<button class="btn-sfx on" id="sfxBtn" onclick="toggleSfx()" aria-label="Toggle sound effects">
-  <span class="sfx-icon" id="sfxIcon">🔊</span>
-  <span id="sfxLabel">SFX On</span>
-</button>
+        <div class="setting-section">
+            <p class="ref-label">Initial Letter:</p>
+            <div class="toggle-group">
+                <button id="opt-highlight" class="opt-btn active" onclick="setHighlight(true)">Highlight</button>
+                <button id="opt-no-highlight" class="opt-btn" onclick="setHighlight(false)">No Highlight</button>
+            </div>
+        </div>
 
-<!-- Toast feedback -->
-<div class="toast" id="toast"></div>
-
-<!-- ===== START SCREEN ===== -->
-<div class="screen" id="startScreen">
-  <div class="logo-area">
-    <div class="logo-icon">📅</div>
-    <div class="logo-title">Days of the Week</div>
-    <div class="logo-sub">First Letter Sound Game</div>
-  </div>
-
-  <div class="mode-label">Choose your challenge</div>
-  <div class="mode-cards">
-    <div class="mode-card active" id="mode1Card" onclick="selectMode(1)">
-      <div class="mode-card-letters">S M T W F</div>
-      <div class="mode-card-desc">First Letter</div>
-    </div>
-    <div class="mode-card" id="mode2Card" onclick="selectMode(2)">
-      <div class="mode-card-letters">Su Mo Tu…</div>
-      <div class="mode-card-desc">First Two Letters</div>
-    </div>
-  </div>
-
-  <button class="btn-play" onclick="startGame()">▶ &nbsp;Let's Play!</button>
-</div>
-
-<!-- ===== GAME SCREEN ===== -->
-<div class="screen hidden" id="gameScreen">
-  <div class="game-header">
-    <div class="progress-bar-wrap" id="progressBar"></div>
-  </div>
-
-  <div class="day-card">
-    <div class="day-label">What day is this?</div>
-    <div class="day-display">
-      <div class="day-blank" id="blankBox">_</div>
-      <div class="day-rest" id="dayRest"></div>
+        <button class="main-action-btn" onclick="initGame()">Start Game</button>
     </div>
 
-    <!-- Listen button with ARASAAC pictogram ID 2381 (listen/ear) -->
-    <button class="btn-listen" id="listenBtn" onclick="speakCurrent()" aria-label="Listen to the word">
-      <img
-        class="pictogram-img"
-        id="pictogramImg"
-        src="https://static.arasaac.org/pictograms/2381/2381_300.png"
-        alt="Listen"
-        onerror="this.style.display='none'; document.getElementById('listenFallback').style.display='block';"
-      />
-      <!-- Fallback SVG speaker icon if ARASAAC is unavailable -->
-      <svg id="listenFallback" style="display:none;width:40px;height:40px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-      </svg>
-      <span class="listen-label">Listen</span>
-    </button>
-  </div>
+    <div id="success-screen" class="screen hidden" style="background: #34C759;">
+        <h1 style="font-size: 4rem; margin-bottom: 30px;">PERFECT!</h1>
+        <button onclick="resetToMenu()">PLAY AGAIN</button>
+    </div>
 
-  <div class="answer-grid mode1" id="answerGrid"></div>
-</div>
-
-<!-- ===== COMPLETE SCREEN ===== -->
-<div class="screen hidden" id="completeScreen">
-  <div class="complete-card">
-    <span class="complete-emoji" id="completeEmoji">🎉</span>
-    <div class="complete-title" id="completeTitle">Amazing!</div>
-    <div class="complete-score">Score: <span id="finalScore">0</span> / 7</div>
-    <div class="complete-days" id="completeDays"></div>
-    <button class="btn-again" onclick="playAgain()">🔄 &nbsp;Play Again</button>
-  </div>
-</div>
+    <div id="game-container" class="hidden">
+        <div class="panel" id="source-panel"></div>
+        <div class="panel" id="target-panel">
+            <div class="drop-zone" data-day="Sunday" data-index="0"></div>
+            <div class="drop-zone" data-day="Monday" data-index="1"></div>
+            <div class="drop-zone" data-day="Tuesday" data-index="2"></div>
+            <div class="drop-zone" data-day="Wednesday" data-index="3"></div>
+            <div class="drop-zone" data-day="Thursday" data-index="4"></div>
+            <div class="drop-zone" data-day="Friday" data-index="5"></div>
+            <div class="drop-zone" data-day="Saturday" data-index="6"></div>
+        </div>
+    </div>
 
 <script>
-// ===== GAME DATA =====
-const DAYS = [
-  { name: 'Sunday',    letter1: 'S', letters2: 'Su' },
-  { name: 'Monday',    letter1: 'M', letters2: 'Mo' },
-  { name: 'Tuesday',   letter1: 'T', letters2: 'Tu' },
-  { name: 'Wednesday', letter1: 'W', letters2: 'We' },
-  { name: 'Thursday',  letter1: 'T', letters2: 'Th' },
-  { name: 'Friday',    letter1: 'F', letters2: 'Fr' },
-  { name: 'Saturday',  letter1: 'S', letters2: 'Sa' },
-];
+    const daysData = [
+        { name: "Sunday", red: 2 }, { name: "Monday", red: 1 }, 
+        { name: "Tuesday", red: 2 }, { name: "Wednesday", red: 1 },
+        { name: "Thursday", red: 2 }, { name: "Friday", red: 1 }, 
+        { name: "Saturday", red: 2 }
+    ];
 
-const OPTIONS_MODE1    = ['S', 'M', 'T', 'W', 'F'];
-const OPTIONS_MODE2_ALL = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+    let solved = 0;
+    let audioUnlocked = false;
+    let preferredVoice = null;
+    let referenceSelections = {};
+    let isHighlightEnabled = true;
 
-// ===== STATE =====
-let mode = 1;
-let currentIndex = 0;
-let score = 0;
-let answered = false;
-let speaking = false;
-let sfxOn = true;  // sound effects toggle (voice unaffected)
-const speechSynthSupported = 'speechSynthesis' in window;
-
-// ===== MODE SELECTION =====
-function selectMode(m) {
-  mode = m;
-  document.getElementById('mode1Card').classList.toggle('active', m === 1);
-  document.getElementById('mode2Card').classList.toggle('active', m === 2);
-}
-
-// ===== SPEECH =====
-/**
- * Speaks the day name with emphasis on the first letter(s):
- * - Inserts a short SSML-style pause after the opening sound
- * - Uses a slow rate (0.68) for clarity
- * - Falls back to plain utterance if SSML not supported
- *
- * Strategy: speak the initial letter(s) separately at a very slow rate,
- * pause briefly, then speak the full word slowly.
- */
-function speak(dayName, onEnd) {
-  if (!speechSynthSupported) { if (onEnd) onEnd(); return; }
-  window.speechSynthesis.cancel();
-
-  // Pick the best available English voice
-  const voices = window.speechSynthesis.getVoices();
-  const preferred = voices.find(v =>
-    v.lang.startsWith('en') &&
-    (v.name.includes('Samantha') || v.name.includes('Google') ||
-     v.name.includes('Karen')    || v.name.includes('Daniel') ||
-     v.name.includes('Moira')    || v.name.includes('Fiona'))
-  ) || voices.find(v => v.lang.startsWith('en-'));
-
-  // Speak the full word clearly at a slow, child-friendly pace
-  const u = new SpeechSynthesisUtterance(dayName);
-  u.rate   = 0.70;
-  u.pitch  = 1.05;
-  u.volume = 1;
-  if (preferred) u.voice = preferred;
-
-  speaking = true;
-  const listenBtn = document.getElementById('listenBtn');
-  if (listenBtn) listenBtn.classList.add('speaking');
-
-  const finish = () => {
-    speaking = false;
-    if (listenBtn) listenBtn.classList.remove('speaking');
-    if (onEnd) onEnd();
-  };
-  u.onend  = finish;
-  u.onerror = finish;
-
-  window.speechSynthesis.speak(u);
-}
-
-function speakCurrent() {
-  if (speaking) return;
-  speak(DAYS[currentIndex].name);
-}
-
-// ===== GAME FLOW =====
-function startGame() {
-  currentIndex = 0;
-  score = 0;
-  answered = false;
-  showScreen('gameScreen');
-  buildProgress();
-  loadRound();
-}
-
-function showScreen(id) {
-  ['startScreen', 'gameScreen', 'completeScreen'].forEach(s => {
-    document.getElementById(s).classList.toggle('hidden', s !== id);
-  });
-}
-
-function buildProgress() {
-  const bar = document.getElementById('progressBar');
-  bar.innerHTML = '';
-  DAYS.forEach((_, i) => {
-    const step = document.createElement('div');
-    step.className = 'progress-step' + (i === 0 ? ' current' : '');
-    step.id = 'pstep' + i;
-    step.innerHTML = `
-      <div class="progress-step-num">${i + 1}</div>
-      <div class="progress-step-track">
-        <div class="progress-step-fill"></div>
-      </div>`;
-    bar.appendChild(step);
-  });
-}
-
-function updateProgress() {
-  DAYS.forEach((_, i) => {
-    const step = document.getElementById('pstep' + i);
-    if (!step) return;
-    step.className = 'progress-step';
-    if (i < currentIndex)       step.classList.add('done');
-    else if (i === currentIndex) step.classList.add('current');
-  });
-}
-
-function loadRound() {
-  answered = false;
-  updateProgress();
-  const day = DAYS[currentIndex];
-
-  // Set blank & rest text
-  const blank = document.getElementById('blankBox');
-  blank.className = 'day-blank';
-  blank.textContent = mode === 1 ? '_' : '__';
-
-  const skipLen = mode === 1 ? 1 : 2;
-  document.getElementById('dayRest').textContent = day.name.slice(skipLen);
-
-  const grid = document.getElementById('answerGrid');
-
-  // 1. Hide the grid and wipe old buttons immediately
-  grid.classList.remove('visible');
-  grid.innerHTML = '';
-
-  // 2. After the CSS transition finishes (350ms), build the new buttons,
-  //    then speak — only revealing when speech ends.
-  setTimeout(() => {
-    buildOptions();
-    // Buttons are revealed immediately — player must press Listen to hear the word
-    grid.classList.add('visible');
-  }, 350);
-}
-
-function buildOptions() {
-  const grid = document.getElementById('answerGrid');
-  grid.innerHTML = '';
-  const day = DAYS[currentIndex];
-
-  if (mode === 1) {
-    grid.className = 'answer-grid mode1';
-    // Shuffle the 5 fixed options randomly each round
-    const opts = [...OPTIONS_MODE1];
-    for (let i = opts.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [opts[i], opts[j]] = [opts[j], opts[i]];
+    function setHighlight(val) {
+        isHighlightEnabled = val;
+        document.getElementById('opt-highlight').classList.toggle('active', val);
+        document.getElementById('opt-no-highlight').classList.toggle('active', !val);
     }
-    opts.forEach(opt => grid.appendChild(makeOptionBtn(opt, opt === day.letter1)));
-  } else {
-    grid.className = 'answer-grid mode2';
-    const correct = day.letters2;
-    const pool = OPTIONS_MODE2_ALL.filter(o => o !== correct);
-    // Shuffle and pick 3 distractors
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
+
+    function setupStartScreen() {
+        const grid = document.getElementById('reference-toggles');
+        daysData.forEach(day => {
+            const shortName = day.name.substring(0, 3);
+            referenceSelections[day.name] = false;
+            const btn = document.createElement('button');
+            btn.className = 'ref-btn';
+            btn.innerText = shortName;
+            btn.onclick = () => {
+                referenceSelections[day.name] = !referenceSelections[day.name];
+                btn.classList.toggle('active');
+            };
+            grid.appendChild(btn);
+        });
     }
-    const options = [correct, ...pool.slice(0, 3)];
-    // Shuffle final options
-    for (let i = options.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [options[i], options[j]] = [options[j], options[i]];
+
+    function loadVoices() {
+        const voices = window.speechSynthesis.getVoices();
+        preferredVoice = voices.find(v => v.name.includes('Google US English')) || 
+                         voices.find(v => v.name.includes('Samantha')) || 
+                         voices.find(v => v.lang.startsWith('en-US')) ||
+                         voices[0];
     }
-    options.forEach(opt => grid.appendChild(makeOptionBtn(opt, opt === correct)));
-  }
-}
 
-function makeOptionBtn(label, isCorrect) {
-  const btn = document.createElement('button');
-  btn.className = 'btn-answer';
-  btn.textContent = label;
-  btn.setAttribute('aria-label', label);
-  btn.addEventListener('click', () => handleAnswer(btn, isCorrect, label));
-  return btn;
-}
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+    setupStartScreen();
 
-// ===== SFX TOGGLE =====
-function toggleSfx() {
-  sfxOn = !sfxOn;
-  const btn   = document.getElementById('sfxBtn');
-  const icon  = document.getElementById('sfxIcon');
-  const label = document.getElementById('sfxLabel');
-  if (sfxOn) {
-    btn.classList.add('on');
-    icon.textContent  = '🔊';
-    label.textContent = 'SFX On';
-  } else {
-    btn.classList.remove('on');
-    icon.textContent  = '🔇';
-    label.textContent = 'SFX Off';
-  }
-}
-
-// ===== CORRECT ANSWER CHIME – Ascending Sine Triad C5–E5–G5 =====
-function playCorrectChime(onEnd) {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // Notes: C5 = 523.25 Hz, E5 = 659.25 Hz, G5 = 783.99 Hz
-    const notes = [523.25, 659.25, 783.99];
-    const noteGap    = 0.10;  // seconds between note onsets
-    const noteDur    = 0.28;  // how long each note rings
-    const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0.45, ctx.currentTime);
-    masterGain.connect(ctx.destination);
-
-    notes.forEach((freq, i) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      osc.connect(gain);
-      gain.connect(masterGain);
-
-      const start  = ctx.currentTime + i * noteGap;
-      const end    = start + noteDur;
-
-      // Smooth envelope: quick attack, gentle release
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(1, start + 0.018);
-      gain.gain.setValueAtTime(1, end - 0.06);
-      gain.gain.linearRampToValueAtTime(0, end);
-
-      osc.start(start);
-      osc.stop(end);
-    });
-
-    // Fire callback after all notes finish
-    const totalDur = noteGap * (notes.length - 1) + noteDur;
-    setTimeout(() => {
-      ctx.close();
-      if (onEnd) onEnd();
-    }, (totalDur + 0.05) * 1000);
-
-  } catch (e) {
-    // Web Audio not available – skip straight to callback
-    if (onEnd) onEnd();
-  }
-}
-
-function handleAnswer(btn, isCorrect, label) {
-  if (answered) return;
-  answered = true;
-
-  const blank = document.getElementById('blankBox');
-
-  if (isCorrect) {
-    score++;
-    blank.textContent = label;
-    blank.classList.add('filled');
-    btn.classList.add('correct');
-    disableAllOptions();
-    showToast('🌟 Correct!', 'success');
-    // Play ascending chime (if SFX enabled), then advance
-    if (sfxOn) {
-      playCorrectChime(() => setTimeout(nextRound, 300));
-    } else {
-      setTimeout(nextRound, 300);
+    function resetToMenu() {
+        solved = 0;
+        document.getElementById('success-screen').classList.add('hidden');
+        document.getElementById('game-container').classList.add('hidden');
+        document.getElementById('start-screen').classList.remove('hidden');
+        document.getElementById('source-panel').innerHTML = "";
+        document.querySelectorAll('.drop-zone').forEach(z => {
+            z.innerText = "";
+            z.classList.remove('drop-correct');
+        });
+        interact('.day-card').unset();
+        interact('.drop-zone').unset();
     }
-  } else {
-    blank.classList.add('wrong');
-    btn.classList.add('wrong');
-    btn.disabled = true;
-    showToast('Try again! 💪', 'error');
-    setTimeout(() => {
-      blank.classList.remove('wrong');
-      answered = false;
-    }, 500);
-  }
-}
 
-function disableAllOptions() {
-  document.querySelectorAll('.btn-answer').forEach(b => b.disabled = true);
-}
+    function initGame() {
+        if (!audioUnlocked) {
+            const silent = new SpeechSynthesisUtterance("");
+            window.speechSynthesis.speak(silent);
+            audioUnlocked = true;
+        }
 
-function nextRound() {
-  currentIndex++;
-  if (currentIndex >= DAYS.length) showComplete();
-  else loadRound();
-}
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-container').classList.remove('hidden');
+        
+        document.querySelectorAll('.drop-zone').forEach(z => {
+            const dayName = z.getAttribute('data-day');
+            z.innerText = referenceSelections[dayName] ? dayName : "";
+        });
 
-// ===== COMPLETE =====
-function showComplete() {
-  document.getElementById('finalScore').textContent = score;
+        const source = document.getElementById('source-panel');
+        const shuffled = [...daysData].sort(() => Math.random() - 0.5);
 
-  const pct = score / DAYS.length;
-  let emoji = '🎉', title = 'Amazing!';
-  if (pct < 0.5)  { emoji = '💪'; title = 'Keep Practising!'; }
-  else if (pct < 0.85) { emoji = '⭐'; title = 'Great Job!'; }
-  document.getElementById('completeEmoji').textContent = emoji;
-  document.getElementById('completeTitle').textContent = title;
+        shuffled.forEach(day => {
+            const slot = document.createElement('div');
+            slot.className = 'slot';
+            const card = document.createElement('div');
+            card.className = 'day-card';
+            card.setAttribute('data-day', day.name);
 
-  const chipsEl = document.getElementById('completeDays');
-  chipsEl.innerHTML = '';
-  DAYS.forEach(d => {
-    const chip = document.createElement('div');
-    chip.className = 'day-chip';
-    chip.textContent = d.name;
-    chipsEl.appendChild(chip);
-  });
+            if (isHighlightEnabled) {
+                const r = day.name.substring(0, day.red);
+                const b = day.name.substring(day.red);
+                card.innerHTML = `<span class="red">${r}</span><span class="black">${b}</span>`;
+            } else {
+                card.innerHTML = `<span class="black">${day.name}</span>`;
+            }
 
-  showScreen('completeScreen');
-  if (pct >= 0.85) launchConfetti();
-}
-
-function playAgain() {
-  document.querySelectorAll('.confetti-piece').forEach(el => el.remove());
-  showScreen('startScreen');
-}
-
-// ===== CONFETTI =====
-function launchConfetti() {
-  const colors = ['#1a8fe3','#e84d9e','#7c4ddb','#16a34a','#f59e0b','#f97316'];
-  for (let i = 0; i < 80; i++) {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'confetti-piece';
-      el.style.cssText = `
-        left: ${Math.random()*100}vw;
-        background: ${colors[Math.floor(Math.random()*colors.length)]};
-        width: ${6 + Math.random()*8}px;
-        height: ${6 + Math.random()*8}px;
-        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
-        animation-duration: ${2.5 + Math.random()*2}s;
-        animation-delay: ${Math.random()*1.5}s;
-      `;
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 5000);
-    }, i * 30);
-  }
-}
-
-// ===== TOAST =====
-let toastTimer;
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show ' + type;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = 'toast'; }, 1600);
-}
-
-// ===== KEYBOARD SUPPORT =====
-document.addEventListener('keydown', e => {
-  if (document.getElementById('gameScreen').classList.contains('hidden')) return;
-  if (answered) return;
-  const key = e.key.toUpperCase();
-  if (mode === 1) {
-    const map = { 'S': 0, 'M': 1, 'T': 2, 'W': 3, 'F': 4 };
-    if (key in map) {
-      const btns = document.querySelectorAll('.btn-answer');
-      if (btns[map[key]] && !btns[map[key]].disabled) btns[map[key]].click();
+            slot.appendChild(card);
+            source.appendChild(slot);
+            setupDraggable(card);
+        });
+        setupDropZones();
     }
-  }
-  if (e.key === 'r' || e.key === 'R') speakCurrent();
-});
 
-// Preload voices (some browsers need this trigger)
-if (speechSynthSupported) {
-  window.speechSynthesis.getVoices();
-  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-}
+    function setupDraggable(target) {
+        let pos = { x: 0, y: 0 };
+        interact(target).draggable({
+            listeners: {
+                start(e) { e.target.style.zIndex = 1000; },
+                move(e) {
+                    pos.x += e.dx; pos.y += e.dy;
+                    e.target.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+                },
+                end(e) {
+                    if (!e.relatedTarget) {
+                        pos = { x: 0, y: 0 };
+                        e.target.style.transform = `translate(0px, 0px)`;
+                        e.target.style.zIndex = 10;
+                    }
+                }
+            }
+        });
+    }
+
+    function setupDropZones() {
+        interact('.drop-zone').dropzone({
+            accept: '.day-card',
+            overlap: 0.5,
+            ondropactivate: (e) => e.target.classList.add('drop-active'),
+            ondropdeactivate: (e) => e.target.classList.remove('drop-active'),
+            ondrop: function (e) {
+                const day = e.relatedTarget.getAttribute('data-day');
+                const zone = e.target;
+                if (day === zone.getAttribute('data-day')) {
+                    e.relatedTarget.classList.add('hidden');
+                    zone.innerText = day;
+                    zone.classList.add('drop-correct');
+                    speak(day);
+                    solved++;
+                    if (solved === 7) {
+                        setTimeout(() => {
+                            document.getElementById('success-screen').classList.remove('hidden');
+                        }, 500);
+                    }
+                } else {
+                    e.relatedTarget.style.transform = `translate(0px, 0px)`;
+                }
+            }
+        });
+    }
+
+    function speak(t) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(t);
+            if (preferredVoice) msg.voice = preferredVoice;
+            msg.pitch = 1.0; msg.rate = 0.9; msg.volume = 1.0; 
+            window.speechSynthesis.speak(msg);
+        }
+    }
 </script>
 </body>
 </html>
