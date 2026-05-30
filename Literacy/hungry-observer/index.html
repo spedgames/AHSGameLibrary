@@ -29,8 +29,36 @@
             display: flex; justify-content: center; align-items: center;
         }
 
+        /* SOUND CONTROLLER (TOP RIGHT) */
+        .sound-control-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .sound-btn {
+            font-family: 'Bangers', cursive;
+            font-size: 1.2rem;
+            padding: 0.5rem 1rem;
+            background: #fff;
+            border: 3px solid #000;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.1s;
+        }
+
+        .sound-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 2px 2px 0px #000;
+        }
+
         .screen {
-            position: absolute; width: 95%; max-width: 900px; height: 90%;
+            position: absolute; width: 95%; max-width: 900px; height: 85%;
             background: white; border: var(--comic-border); box-shadow: var(--shadow);
             display: none; flex-direction: column; align-items: center; justify-content: center;
             padding: 1.5rem; text-align: center; border-radius: 25px;
@@ -42,22 +70,21 @@
 
         h1 { font-family: 'Bangers', cursive; font-size: 4.5rem; color: var(--secondary); margin: 0; -webkit-text-stroke: 2px black; }
 
-        /* UPGRADED TEXT SIZE SECTION */
         #sentence-display {
-            font-size: 4rem; /* Increased from 2rem */
+            font-size: 4rem;
             font-weight: 800;
             margin: 1.5rem 0;
             letter-spacing: 4px;
             min-height: 5rem;
             line-height: 1.2;
             word-spacing: 10px;
-            text-transform: uppercase; /* Comic books usually use caps! */
-            font-family: 'Bangers', cursive; /* Using the comic font for typing too */
+            text-transform: uppercase;
+            font-family: 'Bangers', cursive;
             color: #333;
         }
 
         .char-correct { color: var(--accent); }
-        .char-hint { color: #e0e0e0; } /* Subtle but readable ghost text */
+        .char-hint { color: #e0e0e0; }
         .char-wrong { color: #ff0000; text-decoration: underline; }
 
         #food-display { font-size: 10rem; margin: 0.5rem; transition: all 0.5s; }
@@ -84,12 +111,19 @@
             h1 { font-size: 2.8rem; }
             #sentence-display { font-size: 2.2rem; min-height: 3.5rem; }
             #food-display { font-size: 6rem; }
+            .sound-btn { font-size: 1rem; padding: 0.4rem 0.8rem; }
         }
     </style>
 </head>
 <body>
 
     <div id="game-container">
+        <div class="sound-control-container">
+            <button id="sound-toggle-btn" class="sound-btn" onclick="toggleSound()">
+                <span id="sound-icon">🔊</span> <span id="sound-text">SOUND ON</span>
+            </button>
+        </div>
+
         <div id="start-screen" class="screen active">
             <h1>The Hungry Observer</h1>
             <div style="font-size: 6rem; margin: 10px;">🍽️</div>
@@ -107,12 +141,11 @@
         </div>
 
         <div id="end-screen" class="screen">
-    <h1>FULL BELLY!</h1>
-    <div style="font-size: 6rem; margin: 1rem;">🌟</div>
-    <p id="stats-display" style="font-size: 2rem; font-weight: bold;"></p>
-    <button class="btn" onclick="resetGameEngine()">PLAY AGAIN</button>
-</div>
-
+            <h1>FULL BELLY!</h1>
+            <div style="font-size: 6rem; margin: 1rem;">🌟</div>
+            <p id="stats-display" style="font-size: 2rem; font-weight: bold;"></p>
+            <button class="btn" onclick="resetGameEngine()">PLAY AGAIN</button>
+        </div>
     </div>
 
     <script>
@@ -125,24 +158,79 @@
         ];
 
         let currentLevel = 0, targetSentence = "", userInput = "", hintMode = false, errors = 0, totalKeys = 0;
+        let isMuted = false;
+
+        // Web Audio Context setup
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Master Volume Node to make muting seamless
+        const masterGain = audioCtx.createGain();
+        masterGain.connect(audioCtx.destination);
+        masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
 
         function playSound(f, d, t) {
+            if (isMuted) return; // Cut execution early if muted
+            
+            // Resume context if browser suspended it
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            osc.type = t; osc.frequency.setValueAtTime(f, audioCtx.currentTime);
+            osc.type = t; 
+            osc.frequency.setValueAtTime(f, audioCtx.currentTime);
             g.gain.setValueAtTime(0.1, audioCtx.currentTime);
             g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + d);
+            
+            osc.connect(g); 
+            g.connect(masterGain); // Route sound through our master volume controller
+            
+            osc.start(); 
+            osc.stop(audioCtx.currentTime + d);
+        }
+
+        function toggleSound() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('sound-icon');
+            const text = document.getElementById('sound-text');
+            const btn = document.getElementById('sound-toggle-btn');
+
+            if (isMuted) {
+                icon.innerText = "🔇";
+                text.innerText = "SOUND OFF";
+                btn.style.background = "#ffcccc";
+                masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            } else {
+                icon.innerText = "🔊";
+                text.innerText = "SOUND ON";
+                btn.style.background = "#fff";
+                masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
+                // Fire a small confirmation chime when unmuting
+                playSound(300, 0.1, 'sine');
+            }
+            
+            // Refocus typing input if playing so the keyboard doesn't disappear
+            if (document.getElementById('game-screen').classList.contains('active')) {
+                document.getElementById('hidden-input').focus();
+            }
         }
 
         function startGame() {
+            // Unlock audio context for mobile/iOS user interactions
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
             hintMode = document.getElementById('hint-toggle').checked;
             document.getElementById('start-screen').classList.remove('active');
             document.getElementById('game-screen').classList.add('active');
             loadLevel();
-            document.getElementById('hidden-input').focus();
+            
+            setTimeout(() => {
+                const input = document.getElementById('hidden-input');
+                input.focus();
+                input.click();
+            }, 300);
         }
 
         function loadLevel() {
@@ -152,53 +240,13 @@
                 document.getElementById('stats-display').innerText = `Accuracy: ${Math.round(((totalKeys-errors)/totalKeys)*100)}%`;
                 return;
             }
-            targetSentence = `I EAT ${foods[currentLevel].name.toUpperCase()}`;
+            targetSentence = `I SEE ${foods[currentLevel].name.toUpperCase()}`;
             userInput = "";
             document.getElementById('food-display').innerText = foods[currentLevel].icon;
             document.getElementById('food-display').classList.remove('eaten');
             document.getElementById('progress-fill').style.width = `${(currentLevel/foods.length)*100}%`;
             renderDisplay();
         }
-      
-      // Add this specific reset function to your <script> section
-function resetGameEngine() {
-    // 1. Reset all game variables
-    currentLevel = 0;
-    errors = 0;
-    totalKeys = 0;
-    userInput = "";
-    
-    // 2. Clear the input field
-    const inputField = document.getElementById('hidden-input');
-    inputField.value = "";
-    
-    // 3. Reset the Progress Bar
-    document.getElementById('progress-fill').style.width = "0%";
-    
-    // 4. Reset UI visibility
-    document.getElementById('end-screen').classList.remove('active');
-    document.getElementById('start-screen').classList.add('active');
-    
-    // 5. Ensure Hint Mode checkbox is still accessible
-    document.getElementById('hint-toggle').checked = hintMode;
-}
-
-// Add this to ensure the input field refocuses correctly on all devices
-function startGame() {
-    hintMode = document.getElementById('hint-toggle').checked;
-    document.getElementById('start-screen').classList.remove('active');
-    document.getElementById('game-screen').classList.add('active');
-    
-    loadLevel();
-    
-    // Crucial for iPad/Tablet: 
-    // Wait for the transition to finish before forcing focus
-    setTimeout(() => {
-        const input = document.getElementById('hidden-input');
-        input.focus();
-        input.click(); // Some mobile browsers need a 'click' to trigger the OS keyboard
-    }, 300);
-}
 
         function renderDisplay() {
             let html = "";
@@ -225,8 +273,23 @@ function startGame() {
             }
         });
 
-        // Ensure focus stays on mobile
-        document.body.addEventListener('click', () => document.getElementById('hidden-input').focus());
+        function resetGameEngine() {
+            currentLevel = 0;
+            errors = 0;
+            totalKeys = 0;
+            userInput = "";
+            document.getElementById('hidden-input').value = "";
+            document.getElementById('progress-fill').style.width = "0%";
+            document.getElementById('end-screen').classList.remove('active');
+            document.getElementById('start-screen').classList.add('active');
+        }
+
+        // Keep input focused when clicking screen body (ignoring the sound control)
+        document.body.addEventListener('click', (e) => {
+            if (!e.target.closest('.sound-control-container') && document.getElementById('game-screen').classList.contains('active')) {
+                document.getElementById('hidden-input').focus();
+            }
+        });
     </script>
 </body>
 </html>
