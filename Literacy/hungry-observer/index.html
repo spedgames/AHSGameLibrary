@@ -85,7 +85,6 @@
 
         .char-correct { color: var(--accent); }
         .char-hint { color: #e0e0e0; }
-        .char-wrong { color: #ff0000; text-decoration: underline; }
 
         #food-display { font-size: 10rem; margin: 0.5rem; transition: all 0.5s; }
         .eaten { transform: scale(0) rotate(360deg); opacity: 0; }
@@ -160,21 +159,14 @@
         let currentLevel = 0, targetSentence = "", userInput = "", hintMode = false, errors = 0, totalKeys = 0;
         let isMuted = false;
 
-        // Web Audio Context setup
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Master Volume Node to make muting seamless
         const masterGain = audioCtx.createGain();
         masterGain.connect(audioCtx.destination);
         masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
 
         function playSound(f, d, t) {
-            if (isMuted) return; // Cut execution early if muted
-            
-            // Resume context if browser suspended it
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (isMuted) return; 
+            if (audioCtx.state === 'suspended') audioCtx.resume();
 
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
@@ -184,7 +176,7 @@
             g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
             
             osc.connect(g); 
-            g.connect(masterGain); // Route sound through our master volume controller
+            g.connect(masterGain); 
             
             osc.start(); 
             osc.stop(audioCtx.currentTime + d);
@@ -206,21 +198,16 @@
                 text.innerText = "SOUND ON";
                 btn.style.background = "#fff";
                 masterGain.gain.setValueAtTime(1, audioCtx.currentTime);
-                // Fire a small confirmation chime when unmuting
                 playSound(300, 0.1, 'sine');
             }
             
-            // Refocus typing input if playing so the keyboard doesn't disappear
             if (document.getElementById('game-screen').classList.contains('active')) {
                 document.getElementById('hidden-input').focus();
             }
         }
 
         function startGame() {
-            // Unlock audio context for mobile/iOS user interactions
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             hintMode = document.getElementById('hint-toggle').checked;
             document.getElementById('start-screen').classList.remove('active');
             document.getElementById('game-screen').classList.add('active');
@@ -237,11 +224,15 @@
             if (currentLevel >= foods.length) {
                 document.getElementById('game-screen').classList.remove('active');
                 document.getElementById('end-screen').classList.add('active');
-                document.getElementById('stats-display').innerText = `Accuracy: ${Math.round(((totalKeys-errors)/totalKeys)*100)}%`;
+                
+                // Absolute safeguard against dividing by zero if an empty state occurs
+                const finalAccuracy = totalKeys > 0 ? Math.max(0, Math.round(((totalKeys - errors) / totalKeys) * 100)) : 100;
+                document.getElementById('stats-display').innerText = `Accuracy: ${finalAccuracy}%`;
                 return;
             }
             targetSentence = `I SEE ${foods[currentLevel].name.toUpperCase()}`;
             userInput = "";
+            document.getElementById('hidden-input').value = "";
             document.getElementById('food-display').innerText = foods[currentLevel].icon;
             document.getElementById('food-display').classList.remove('eaten');
             document.getElementById('progress-fill').style.width = `${(currentLevel/foods.length)*100}%`;
@@ -252,7 +243,7 @@
             let html = "";
             for (let i = 0; i < targetSentence.length; i++) {
                 if (i < userInput.length) {
-                    html += `<span class="${userInput[i] === targetSentence[i] ? 'char-correct' : 'char-wrong'}">${targetSentence[i] === " " ? "&nbsp;" : targetSentence[i]}</span>`;
+                    html += `<span class="char-correct">${targetSentence[i] === " " ? "&nbsp;" : targetSentence[i]}</span>`;
                 } else {
                     html += `<span class="char-hint">${hintMode ? targetSentence[i] : (targetSentence[i] === " " ? "&nbsp;" : "_")}</span>`;
                 }
@@ -261,15 +252,29 @@
         }
 
         document.getElementById('hidden-input').addEventListener('input', (e) => {
-            userInput = e.target.value.toUpperCase();
+            const currentInputValue = e.target.value.toUpperCase();
             totalKeys++;
-            if (userInput[userInput.length-1] !== targetSentence[userInput.length-1]) errors++;
-            playSound(150, 0.05, 'square');
-            renderDisplay();
-            if (userInput === targetSentence) {
-                playSound(100, 0.2, 'triangle');
-                document.getElementById('food-display').classList.add('eaten');
-                setTimeout(() => { currentLevel++; e.target.value = ""; loadLevel(); }, 800);
+
+            // Check if the newly entered character matches the exact position in the target sentence
+            const expectedChar = targetSentence[userInput.length];
+            const typedChar = currentInputValue[currentInputValue.length - 1];
+
+            if (typedChar === expectedChar) {
+                // Correct letter! Append it to our verified userInput string
+                userInput += typedChar;
+                playSound(150, 0.05, 'square');
+                renderDisplay();
+
+                if (userInput === targetSentence) {
+                    playSound(100, 0.2, 'triangle');
+                    document.getElementById('food-display').classList.add('eaten');
+                    setTimeout(() => { currentLevel++; loadLevel(); }, 800);
+                }
+            } else {
+                // Mistake! Log the error, but keep the input field locked to the last valid state
+                errors++;
+                playSound(150, 0.05, 'square'); 
+                e.target.value = userInput; 
             }
         });
 
@@ -284,7 +289,6 @@
             document.getElementById('start-screen').classList.add('active');
         }
 
-        // Keep input focused when clicking screen body (ignoring the sound control)
         document.body.addEventListener('click', (e) => {
             if (!e.target.closest('.sound-control-container') && document.getElementById('game-screen').classList.contains('active')) {
                 document.getElementById('hidden-input').focus();
