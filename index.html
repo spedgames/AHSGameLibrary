@@ -397,18 +397,14 @@
     function closeDetails() { document.getElementById('detail-view').style.display = 'none'; document.body.style.overflow = 'auto'; }
     function handleBackdropClick(e) { if (e.target.id === 'detail-view') closeDetails(); }
     
-    function playGame(id) { 
-        const game = allGames.find(g => g.id === id);
-        const fullUrl = getGameUrl(game);
-        const absoluteUrl = new URL(fullUrl, window.location.href).href;
+function playGame(id) { 
+    const game = allGames.find(g => g.id === id);
+    const fullUrl = getGameUrl(game);
+    const absoluteUrl = new URL(fullUrl, window.location.href).href;
 
-        const win = window.open(absoluteUrl, '_blank');
-        if (win) {
-            setTimeout(() => {
-                win.dispatchEvent(new Event('resize'));
-            }, 2000);
-        }
-    }
+    // Simply open the game in a new tab and exit
+    window.open(absoluteUrl, '_blank');
+}
 
     init();
 </script>
