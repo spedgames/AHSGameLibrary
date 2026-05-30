@@ -223,6 +223,30 @@
   }
   .progress-step.done    .progress-step-fill { background: var(--success); transform: scaleX(1); }
   .progress-step.current .progress-step-fill { background: var(--accent);  transform: scaleX(1); }
+  /* SFX toggle button */
+  .btn-sfx {
+    position: fixed;
+    top: 14px; right: 14px;
+    z-index: 100;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface);
+    border: 2px solid var(--surface2);
+    border-radius: 50px;
+    padding: 7px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: all 0.2s ease;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  .btn-sfx:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sfx.on { border-color: var(--accent); color: var(--accent); background: #eaf4ff; }
+  .btn-sfx .sfx-icon { font-size: 1.1rem; line-height: 1; }
+
   /* Day card */
   .day-card {
     background: var(--surface);
@@ -538,6 +562,12 @@
   <div class="blob blob3"></div>
 </div>
 
+<!-- SFX toggle (fixed, always visible) -->
+<button class="btn-sfx on" id="sfxBtn" onclick="toggleSfx()" aria-label="Toggle sound effects">
+  <span class="sfx-icon" id="sfxIcon">🔊</span>
+  <span id="sfxLabel">SFX On</span>
+</button>
+
 <!-- Toast feedback -->
 <div class="toast" id="toast"></div>
 
@@ -631,6 +661,7 @@ let currentIndex = 0;
 let score = 0;
 let answered = false;
 let speaking = false;
+let sfxOn = true;  // sound effects toggle (voice unaffected)
 const speechSynthSupported = 'speechSynthesis' in window;
 
 // ===== MODE SELECTION =====
@@ -755,9 +786,8 @@ function loadRound() {
   //    then speak — only revealing when speech ends.
   setTimeout(() => {
     buildOptions();
-    speak(day.name, () => {
-      grid.classList.add('visible');
-    });
+    // Buttons are revealed immediately — player must press Listen to hear the word
+    grid.classList.add('visible');
   }, 350);
 }
 
@@ -801,6 +831,23 @@ function makeOptionBtn(label, isCorrect) {
   btn.setAttribute('aria-label', label);
   btn.addEventListener('click', () => handleAnswer(btn, isCorrect, label));
   return btn;
+}
+
+// ===== SFX TOGGLE =====
+function toggleSfx() {
+  sfxOn = !sfxOn;
+  const btn   = document.getElementById('sfxBtn');
+  const icon  = document.getElementById('sfxIcon');
+  const label = document.getElementById('sfxLabel');
+  if (sfxOn) {
+    btn.classList.add('on');
+    icon.textContent  = '🔊';
+    label.textContent = 'SFX On';
+  } else {
+    btn.classList.remove('on');
+    icon.textContent  = '🔇';
+    label.textContent = 'SFX Off';
+  }
 }
 
 // ===== CORRECT ANSWER CHIME – Ascending Sine Triad C5–E5–G5 =====
@@ -863,8 +910,12 @@ function handleAnswer(btn, isCorrect, label) {
     btn.classList.add('correct');
     disableAllOptions();
     showToast('🌟 Correct!', 'success');
-    // Play ascending chime, then advance
-    playCorrectChime(() => setTimeout(nextRound, 300));
+    // Play ascending chime (if SFX enabled), then advance
+    if (sfxOn) {
+      playCorrectChime(() => setTimeout(nextRound, 300));
+    } else {
+      setTimeout(nextRound, 300);
+    }
   } else {
     blank.classList.add('wrong');
     btn.classList.add('wrong');
