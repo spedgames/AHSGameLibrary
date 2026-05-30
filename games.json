@@ -10,6 +10,16 @@
     "uploadDate": "2026-01-15"
   },
   {
+    "id": "phonics-words",
+    "title": "Phonics Word Practice",
+    "description": "Listen and tap or spell the CVC, CVCC, or CCVC word.",
+    "creatorName": "Teacher Carmina",
+    "category": "Literacy",
+    "compatibility": ["desktop", "tablet", "mobile"],
+    "tags": ["phonics", "coding", "dictation"],
+    "uploadDate": "2026-05-30"
+  },
+  {
     "id": "typing-game-people-in-my-neighbourhood",
     "title": "People in My Neighbourhood Typing Game",
     "description": "Name the people in your neighbourhood by typing.",
