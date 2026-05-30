@@ -1032,8 +1032,10 @@ body::before {
 </div>
 
 <script>
-window.addEventListener('focus', () => {
-    window.dispatchEvent(new Event('resize'));
+   document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        window.dispatchEvent(new Event('resize'));
+    }
 });
 /* =============================================
    ASSETS PATH
