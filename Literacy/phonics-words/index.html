@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Phonics Word Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ===== CSS VARIABLES ===== */
+  :root {
+    --bg: #f0f4ff;
+    --card: #ffffff;
+    --primary: #5b6ef5;
+    --primary-dark: #3d52e8;
+    --secondary: #ff7eb3;
+    --accent: #ffcc44;
+    --accent2: #44d9a2;
+    --text: #1a1d2e;
+    --text-light: #6b7280;
+    --shadow: 0 4px 24px rgba(91,110,245,0.13);
+    --shadow-sm: 0 2px 8px rgba(91,110,245,0.10);
+    --radius: 20px;
+    --radius-sm: 12px;
+    --transition: 0.2s cubic-bezier(.4,0,.2,1);
+    --correct: #44d9a2;
+    --wrong: #ff6b6b;
+    --btn-h: 56px;
+  }
+
+  /* ===== RESET ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* ===== BACKGROUND BLOBS ===== */
+  .bg-blobs {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    overflow: hidden;
+  }
+  .bg-blobs span {
+    position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.18;
+  }
+  .bg-blobs span:nth-child(1) { width: 400px; height: 400px; background: var(--primary); top: -100px; left: -80px; }
+  .bg-blobs span:nth-child(2) { width: 350px; height: 350px; background: var(--secondary); bottom: -80px; right: -60px; }
+  .bg-blobs span:nth-child(3) { width: 280px; height: 280px; background: var(--accent); bottom: 20%; left: 30%; }
+
+  /* ===== SCREEN SYSTEM ===== */
+  .screen {
+    position: fixed; inset: 0; z-index: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s ease;
+    overflow: hidden;
+  }
+  .screen.active { opacity: 1; pointer-events: all; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: var(--btn-h); min-width: 120px;
+    padding: 0 24px; border: none; border-radius: 999px;
+    font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: var(--transition);
+    text-decoration: none; user-select: none;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: var(--primary); color: #fff;
+    box-shadow: 0 4px 14px rgba(91,110,245,0.35);
+  }
+  .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(91,110,245,0.4); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-secondary {
+    background: #fff; color: var(--primary);
+    border: 2.5px solid var(--primary);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-secondary:hover { background: #f0f4ff; }
+  .btn-sm { height: 44px; font-size: 0.875rem; padding: 0 18px; }
+  .btn-accent { background: var(--accent); color: var(--text); box-shadow: 0 4px 14px rgba(255,204,68,0.35); }
+  .btn-accent:hover { filter: brightness(1.05); transform: translateY(-2px); }
+  .btn-danger { background: var(--wrong); color: #fff; }
+
+  /* ===== START SCREEN ===== */
+  #start-screen .logo {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    text-align: center; margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  #start-screen .subtitle {
+    text-align: center; color: var(--text-light); font-size: 0.9rem;
+    margin-bottom: 22px;
+  }
+
+  /* Section labels */
+  .section-label {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-light); margin-bottom: 8px;
+  }
+
+  /* Word Format Toggle */
+  .toggle-group {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .toggle-btn {
+    flex: 1; min-width: 80px;
+    height: 44px; border: 2.5px solid #e5e7eb;
+    background: #fff; border-radius: 12px;
+    font-family: 'Poppins', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: var(--transition); color: var(--text-light);
+  }
+  .toggle-btn.selected {
+    border-color: var(--primary); background: var(--primary); color: #fff;
+    box-shadow: 0 2px 10px rgba(91,110,245,0.3);
+  }
+  .toggle-btn:hover:not(.selected) { border-color: var(--primary); color: var(--primary); }
+
+  /* Mode Toggle */
+  .mode-toggle {
+    display: flex; background: #f3f4f6; border-radius: 12px;
+    padding: 4px; gap: 4px; margin-bottom: 18px;
+  }
+  .mode-btn {
+    flex: 1; height: 40px; border: none; border-radius: 9px;
+    font-family: 'Poppins', sans-serif; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: var(--transition); color: var(--text-light);
+    background: transparent;
+  }
+  .mode-btn.selected { background: #fff; color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+  /* Choose Letters button row */
+  .start-actions {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  /* ===== LETTER PICKER MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-card {
+    background: #fff; border-radius: var(--radius);
+    width: 100%; max-width: 480px;
+    max-height: 85vh; overflow-y: auto;
+    padding: 24px; box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+    transform: scale(0.95); transition: transform 0.25s ease;
+  }
+  .modal-overlay.open .modal-card { transform: scale(1); }
+  .modal-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+  .modal-sub { font-size: 0.82rem; color: var(--text-light); margin-bottom: 16px; }
+
+  .letter-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 8px; margin-bottom: 16px;
+  }
+  .letter-chip {
+    height: 48px; border: 2.5px solid #e5e7eb;
+    background: #fff; border-radius: 10px;
+    font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: var(--transition); color: var(--text-light);
+  }
+  .letter-chip.selected {
+    border-color: var(--primary); background: var(--primary); color: #fff;
+  }
+  .letter-chip:hover:not(.selected) { border-color: var(--primary); color: var(--primary); }
+
+  .blend-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 8px; margin-bottom: 16px;
+  }
+  .blend-chip {
+    height: 48px; border: 2.5px solid #e5e7eb;
+    background: #fff; border-radius: 10px;
+    font-family: 'Poppins', sans-serif; font-size: 0.9rem; font-weight: 700;
+    cursor: pointer; transition: var(--transition); color: var(--text-light);
+  }
+  .blend-chip.selected {
+    border-color: var(--secondary); background: var(--secondary); color: #fff;
+  }
+  .blend-chip:hover:not(.selected) { border-color: var(--secondary); color: var(--secondary); }
+
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+  .chip-select-all {
+    font-size: 0.75rem; font-weight: 600; color: var(--primary);
+    cursor: pointer; text-decoration: underline; margin-bottom: 10px; display: inline-block;
+  }
+
+  /* ===== GAME SCREEN ===== */
+  #game-screen {
+    padding: 12px 16px;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  /* Top bar */
+  .game-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 520px; margin-bottom: 10px;
+  }
+  .score-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: #fff; border-radius: 999px;
+    padding: 6px 14px; font-weight: 700;
+    box-shadow: var(--shadow-sm); font-size: 0.9rem;
+  }
+  .score-badge .star { font-size: 1rem; }
+  .score-num { color: var(--primary); }
+
+  .progress-bar-wrap {
+    flex: 1; margin: 0 12px;
+    background: #e5e7eb; border-radius: 999px; height: 10px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 999px; transition: width 0.45s ease;
+  }
+
+  .btn-home {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #fff; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm); font-size: 1.1rem;
+    transition: var(--transition);
+  }
+  .btn-home:hover { transform: scale(1.1); }
+
+  /* Word Display */
+  .word-display-area {
+    display: flex; flex-direction: column; align-items: center;
+    width: 100%; max-width: 520px; margin-bottom: 14px;
+  }
+
+  /* Audio Button (ARASAAC pictogram) */
+  .audio-btn {
+    width: 88px; height: 88px; border-radius: 50%;
+    border: 3px solid var(--primary); cursor: pointer;
+    background: #fff;
+    box-shadow: 0 6px 24px rgba(91,110,245,0.25);
+    display: flex; align-items: center; justify-content: center;
+    transition: var(--transition); margin-bottom: 10px;
+    overflow: hidden; padding: 6px;
+    position: relative;
+  }
+  .audio-btn img {
+    width: 100%; height: 100%; object-fit: contain;
+  }
+  .audio-btn:hover { transform: scale(1.05); box-shadow: 0 8px 30px rgba(91,110,245,0.4); border-color: var(--primary-dark); }
+  .audio-btn:active { transform: scale(0.96); }
+  .audio-btn.playing {
+    box-shadow: 0 0 0 6px rgba(91,110,245,0.2), 0 0 24px rgba(91,110,245,0.45);
+    border-color: var(--primary-dark);
+  }
+
+  /* Speed control */
+  .speed-control {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border-radius: 999px; padding: 6px 16px;
+    box-shadow: var(--shadow-sm); margin-bottom: 14px;
+  }
+  .speed-label { font-size: 0.75rem; font-weight: 600; color: var(--text-light); white-space: nowrap; }
+  .speed-val { font-size: 0.8rem; font-weight: 700; color: var(--primary); min-width: 36px; text-align: center; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    height: 6px; border-radius: 3px;
+    background: #e5e7eb; outline: none; cursor: pointer;
+    width: 120px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--primary); cursor: pointer;
+    box-shadow: 0 2px 6px rgba(91,110,245,0.4);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--primary); cursor: pointer; border: none;
+  }
+
+  /* ===== MODE: CHOOSE FROM 4 ===== */
+  .options-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; width: 100%; max-width: 520px;
+  }
+  .option-btn {
+    height: 64px; border: 3px solid #e5e7eb;
+    background: #fff; border-radius: 16px;
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(1.2rem, 4vw, 1.8rem); font-weight: 800;
+    cursor: pointer; transition: var(--transition);
+    color: var(--text); letter-spacing: 0.08em;
+    box-shadow: var(--shadow-sm);
+  }
+  .option-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+  .option-btn:active:not(:disabled) { transform: translateY(0); }
+  .option-btn.correct { border-color: var(--correct); background: var(--correct); color: #fff; animation: pop 0.3s ease; }
+  .option-btn.wrong { border-color: var(--wrong); background: var(--wrong); color: #fff; animation: shake 0.4s ease; }
+  @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+  /* ===== MODE: SPELL IT ===== */
+  .spell-display {
+    display: flex; gap: 8px; margin-bottom: 16px;
+    justify-content: center; flex-wrap: wrap;
+  }
+  .spell-slot {
+    width: 52px; height: 60px; border-radius: 12px;
+    border: 3px solid #e5e7eb; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; font-weight: 800; color: var(--text);
+    transition: var(--transition); position: relative;
+    box-shadow: var(--shadow-sm);
+  }
+  .spell-slot.filled { border-color: var(--primary); background: #f0f4ff; color: var(--primary); }
+  .spell-slot.correct-slot { border-color: var(--correct); background: var(--correct); color: #fff; animation: pop 0.3s ease; }
+  .spell-slot.wrong-slot { border-color: var(--wrong); background: #fff5f5; animation: shake 0.4s ease; }
+  /* Wider slot for 2-char blends */
+  .spell-slot-blend { width: 72px; font-size: 1.3rem; letter-spacing: 0.04em; }
+
+  .letter-choices {
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+    width: 100%; max-width: 520px;
+  }
+  .letter-choice-btn {
+    width: 58px; height: 58px; border-radius: 14px;
+    border: 3px solid #e5e7eb; background: #fff;
+    font-family: 'Poppins', sans-serif; font-size: 1.4rem; font-weight: 800;
+    cursor: pointer; transition: var(--transition); color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+  .letter-choice-btn:hover:not(:disabled) { border-color: var(--primary); background: #f0f4ff; color: var(--primary); transform: translateY(-2px); }
+  .letter-choice-btn:active:not(:disabled) { transform: translateY(0); }
+  .letter-choice-btn:disabled, .letter-choice-btn.used { opacity: 0.25; cursor: not-allowed; transform: none; }
+  /* Wider tile for 2-char blend choices */
+  .letter-choice-blend { width: 76px; font-size: 1.15rem; letter-spacing: 0.04em; }
+
+  .spell-actions { display: flex; gap: 10px; margin-top: 12px; }
+
+  /* ===== FEEDBACK MESSAGE ===== */
+  .feedback-msg {
+    font-size: 1.1rem; font-weight: 700; text-align: center;
+    min-height: 28px; margin-bottom: 8px; transition: var(--transition);
+    letter-spacing: 0.02em;
+  }
+  .feedback-msg.correct-msg { color: var(--correct); }
+  .feedback-msg.wrong-msg { color: var(--wrong); }
+
+  /* ===== RESULTS SCREEN ===== */
+  #results-screen .results-card {
+    max-width: 400px; text-align: center;
+  }
+  .results-emoji { font-size: clamp(3rem, 10vw, 5rem); margin-bottom: 8px; animation: pop 0.5s ease; }
+  .results-title { font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; margin-bottom: 4px; }
+  .results-score { font-size: 2.5rem; font-weight: 900; color: var(--primary); margin: 8px 0; }
+  .results-label { font-size: 0.9rem; color: var(--text-light); margin-bottom: 20px; }
+  .results-actions { display: flex; flex-direction: column; gap: 10px; }
+
+  /* ===== ROUND COUNTER / WORD LABEL ===== */
+  .round-info {
+    font-size: 0.8rem; font-weight: 600; color: var(--text-light);
+    margin-bottom: 6px; letter-spacing: 0.04em;
+  }
+
+  /* Stars animation */
+  .star-burst {
+    position: fixed; pointer-events: none; z-index: 200;
+    font-size: 1.8rem; animation: star-fly 0.8s ease forwards;
+  }
+  @keyframes star-fly {
+    0% { transform: scale(0) translateY(0); opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: scale(1.5) translateY(-80px); opacity: 0; }
+  }
+
+  /* Loading / spinner */
+  .spinner {
+    width: 32px; height: 32px; border: 4px solid #e5e7eb;
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-height: 700px) {
+    .card { padding: 18px 20px; }
+    .audio-btn { width: 72px; height: 72px; }
+    .audio-btn img { width: 54px; height: 54px; }
+    .option-btn { height: 54px; font-size: 1.3rem; }
+    .spell-slot { width: 46px; height: 54px; font-size: 1.4rem; }
+    .letter-choice-btn { width: 52px; height: 52px; font-size: 1.3rem; }
+    .speed-control { padding: 4px 12px; margin-bottom: 8px; }
+    .word-display-area { margin-bottom: 8px; }
+  }
+  @media (max-width: 400px) {
+    .options-grid { gap: 8px; }
+    .option-btn { font-size: 1.1rem; height: 56px; }
+    .spell-slot { width: 42px; height: 50px; font-size: 1.2rem; }
+    .letter-choice-btn { width: 48px; height: 48px; font-size: 1.2rem; }
+  }
+  @media (min-width: 600px) {
+    .speed-control input[type=range] { width: 160px; }
+  }
+
+  /* Divider */
+  .divider { height: 1px; background: #f0f0f0; margin: 12px 0; }
+
+  /* Scrollbar styling for modal */
+  .modal-card::-webkit-scrollbar { width: 6px; }
+  .modal-card::-webkit-scrollbar-track { background: #f0f0f0; border-radius: 3px; }
+  .modal-card::-webkit-scrollbar-thumb { background: #c0c0c0; border-radius: 3px; }
+
+  /* Hint: correct word reveal */
+  .word-reveal {
+    font-size: 1.4rem; font-weight: 800; color: var(--text);
+    letter-spacing: 0.1em; margin-top: 6px; text-align: center;
+  }
+
+  /* Next button after answer */
+  .next-btn-wrap { margin-top: 12px; width: 100%; max-width: 520px; display: flex; justify-content: center; }
+
+  /* Tag for format type */
+  .format-tag {
+    display: inline-block; padding: 3px 12px; border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    color: #fff; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
+    margin-bottom: 6px; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- Background decoration -->
+<div class="bg-blobs">
+  <span></span><span></span><span></span>
+</div>
+
+<!-- ===========================
+     SCREEN 1: START
+=========================== -->
+<div class="screen active" id="start-screen">
+  <div class="card">
+    <div class="logo">📖 Phonics Words</div>
+    <div class="subtitle">Phonics Practice — Decode &amp; Spell!</div>
+
+    <!-- Word Format -->
+    <div class="section-label">Word Format</div>
+    <div class="toggle-group" id="format-group">
+      <button class="toggle-btn selected" data-format="CVC">C-V-C</button>
+      <button class="toggle-btn" data-format="CVCC">C-V-C-C</button>
+      <button class="toggle-btn" data-format="CCVC">C-C-V-C</button>
+    </div>
+
+    <!-- Game Mode -->
+    <div class="section-label">Game Mode</div>
+    <div class="mode-toggle">
+      <button class="mode-btn selected" data-mode="choose">🔊 Choose the Word</button>
+      <button class="mode-btn" data-mode="spell">✏️ Spell It Out</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Actions -->
+    <div class="start-actions">
+      <button class="btn btn-secondary btn-sm" id="open-letters-btn">🔡 Choose Letters &amp; Blends</button>
+      <button class="btn btn-primary" id="start-btn">▶ Start Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================
+     LETTER PICKER MODAL
+=========================== -->
+<div class="modal-overlay" id="letter-modal">
+  <div class="modal-card">
+    <div class="modal-title">🔡 Choose Letters &amp; Blends</div>
+    <div class="modal-sub">Select which letters and blends to include in the game.</div>
+
+    <div class="section-label">Vowels</div>
+    <div class="letter-grid" id="vowel-grid"></div>
+
+    <div class="section-label">Consonants</div>
+    <span class="chip-select-all" id="cons-select-all">Select all</span>
+    <div class="letter-grid" id="consonant-grid"></div>
+
+    <div id="blend-section" style="display:none">
+      <div class="section-label" style="margin-top:8px">Consonant Blends</div>
+      <span class="chip-select-all" id="blend-select-all">Select all</span>
+      <div class="blend-grid" id="blend-grid"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" id="modal-cancel">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===========================
+     SCREEN 2: GAME
+=========================== -->
+<div class="screen" id="game-screen">
+
+  <!-- Top Bar -->
+  <div class="game-topbar">
+    <div class="score-badge">
+      <span class="star">⭐</span>
+      <span class="score-num" id="score-display">0</span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <span id="round-num" style="font-size:0.8rem;font-weight:700;color:var(--text-light);min-width:40px;text-align:right"></span>
+    <button class="btn-home" id="home-btn" title="Home">🏠</button>
+  </div>
+
+  <!-- Format tag -->
+  <div style="width:100%;max-width:520px;margin-bottom:4px">
+    <span class="format-tag" id="format-tag">C-V-C</span>
+  </div>
+
+  <!-- Audio section -->
+  <div class="word-display-area">
+    <div class="round-info" id="round-info">Listen and choose the word</div>
+    <button class="audio-btn" id="audio-btn" title="Play word">
+      <img id="audio-img" src="https://static.arasaac.org/pictograms/2381/2381_300.png" alt="Play sound">
+    </button>
+    <!-- Speed control -->
+    <div class="speed-control">
+      <span class="speed-label">Speed</span>
+      <input type="range" id="speed-slider" min="0.3" max="1.0" step="0.1" value="0.8">
+      <span class="speed-val" id="speed-val">0.8x</span>
+    </div>
+  </div>
+
+  <!-- Feedback -->
+  <div class="feedback-msg" id="feedback-msg"></div>
+
+  <!-- MODE A: Choose from 4 -->
+  <div id="choose-mode-ui" style="width:100%;max-width:520px">
+    <div class="options-grid" id="options-grid"></div>
+    <div class="next-btn-wrap" id="next-wrap-choose" style="display:none">
+      <button class="btn btn-primary" id="next-btn-choose">Next Word →</button>
+    </div>
+  </div>
+
+  <!-- MODE B: Spell it -->
+  <div id="spell-mode-ui" style="display:none;width:100%;max-width:520px">
+    <div class="spell-display" id="spell-slots"></div>
+    <div class="letter-choices" id="letter-choices"></div>
+    <div class="spell-actions">
+      <button class="btn btn-secondary btn-sm" id="spell-clear-btn">⌫ Clear</button>
+      <button class="btn btn-primary btn-sm" id="spell-check-btn">✓ Check</button>
+    </div>
+    <div class="next-btn-wrap" id="next-wrap-spell" style="display:none">
+      <button class="btn btn-primary" id="next-btn-spell">Next Word →</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===========================
+     SCREEN 3: RESULTS
+=========================== -->
+<div class="screen" id="results-screen">
+  <div class="card results-card">
+    <div class="results-emoji" id="results-emoji">🎉</div>
+    <div class="results-title" id="results-title">Well Done!</div>
+    <div class="results-score" id="results-score">0/10</div>
+    <div class="results-label" id="results-label">Keep practising!</div>
+    <div class="results-actions">
+      <button class="btn btn-primary" id="play-again-btn">🔄 Play Again</button>
+      <button class="btn btn-secondary" id="change-settings-btn">⚙️ Change Settings</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   NONSENSE WORD PHONICS GAME
+   Full game logic — clean, commented for educators
+   ============================================================ */
+
+// ---- CONSTANTS ----
+const VOWELS = ['a','e','i','o','u'];
+
+// X and Q removed — X is TTS-ambiguous, Q needs U and breaks CVC patterns.
+// J and Y have position rules enforced in the word generator.
+const ALL_CONSONANTS = ['b','c','d','f','g','h','j','k','l','m','n','p','r','s','t','v','w','y','z'];
+
+// Common initial blends (for C-C-V-C)
+const INITIAL_BLENDS = ['bl','br','cl','cr','dr','fl','fr','gl','gr','pl','pr','sc','sk','sl','sm','sn','sp','st','sw','tr','tw'];
+// Common final blends (for C-V-C-C). 'xt' removed — X removed from pool.
+const FINAL_BLENDS = ['ck','ff','ll','mp','nd','ng','nk','nt','pt','sk','sp','ss','st'];
+
+const TOTAL_ROUNDS = 10;
+
+// ---- STATE ----
+let state = {
+  format: 'CVC',       // CVC | CVCC | CCVC
+  mode: 'choose',      // choose | spell
+  selectedVowels: [...VOWELS],
+  selectedConsonants: [...ALL_CONSONANTS], // defaults to full pool (no X, Q)
+  selectedInitialBlends: [...INITIAL_BLENDS],
+  selectedFinalBlends: [...FINAL_BLENDS],
+  speed: 0.8,
+  currentWord: '',
+  round: 0,
+  score: 0,
+  answered: false,
+  wordChunks: [],      // phoneme chunks of currentWord (e.g. ['bl','a','t'])
+  usedWords: [],       // words already shown this game session
+  spellInput: [],      // chunks tapped so far in spell mode
+  spellChoices: [],    // 5 letter options shown
+};
+
+// Temp state for modal (not committed until Save)
+let modalTemp = {};
+
+// ---- UTILITY ----
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ---- BLEND DETECTION (for spell-mode slots only) ----
+// Splits a word into phoneme chunks, treating known 2-char blends as one unit.
+// Used purely for building spell slots — not for speech.
+const ALL_BLENDS = new Set([
+  'bl','br','cl','cr','dr','fl','fr','gl','gr','pl','pr',
+  'sc','sk','sl','sm','sn','sp','st','sw','tr','tw',   // initial
+  'ck','ff','ll','mp','nd','ng','nk','nt','pt','ss' // final (xt removed — X not in pool)
+]);
+function wordToPhonemes(word) {
+  const chunks = [];
+  let i = 0;
+  while (i < word.length) {
+    if (i + 1 < word.length && ALL_BLENDS.has(word[i] + word[i+1])) {
+      chunks.push(word[i] + word[i+1]); i += 2;
+    } else {
+      chunks.push(word[i]); i++;
+    }
+  }
+  return chunks;
+}
+
+// ---- WORD LISTS ----
+// Each word is tagged with its format and its component letters/blends
+// so we can filter by the player's selected letters at runtime.
+//
+// Format: { w: 'word', v: 'vowel', i: 'initial', f: 'final' }
+// For CVCC: f is the final blend (2 chars). For CCVC: i is the initial blend.
+
+const WORD_LIST = {
+  CVC: [
+    // a
+    {w:'bad',v:'a',i:'b',f:'d'},{w:'bag',v:'a',i:'b',f:'g'},{w:'ban',v:'a',i:'b',f:'n'},
+    {w:'bat',v:'a',i:'b',f:'t'},{w:'cab',v:'a',i:'c',f:'b'},{w:'can',v:'a',i:'c',f:'n'},
+    {w:'cap',v:'a',i:'c',f:'p'},{w:'cat',v:'a',i:'c',f:'t'},{w:'dad',v:'a',i:'d',f:'d'},
+    {w:'dam',v:'a',i:'d',f:'m'},{w:'dab',v:'a',i:'d',f:'b'},{w:'fan',v:'a',i:'f',f:'n'},
+    {w:'fat',v:'a',i:'f',f:'t'},{w:'gap',v:'a',i:'g',f:'p'},{w:'gas',v:'a',i:'g',f:'s'},
+    {w:'had',v:'a',i:'h',f:'d'},{w:'ham',v:'a',i:'h',f:'m'},{w:'has',v:'a',i:'h',f:'s'},
+    {w:'hat',v:'a',i:'h',f:'t'},{w:'jab',v:'a',i:'j',f:'b'},{w:'jam',v:'a',i:'j',f:'m'},
+    {w:'jar',v:'a',i:'j',f:'r'},{w:'lap',v:'a',i:'l',f:'p'},{w:'lad',v:'a',i:'l',f:'d'},
+    {w:'lag',v:'a',i:'l',f:'g'},{w:'man',v:'a',i:'m',f:'n'},{w:'map',v:'a',i:'m',f:'p'},
+    {w:'mat',v:'a',i:'m',f:'t'},{w:'nab',v:'a',i:'n',f:'b'},{w:'nap',v:'a',i:'n',f:'p'},
+    {w:'pad',v:'a',i:'p',f:'d'},{w:'pan',v:'a',i:'p',f:'n'},{w:'pat',v:'a',i:'p',f:'t'},
+    {w:'ram',v:'a',i:'r',f:'m'},{w:'ran',v:'a',i:'r',f:'n'},{w:'rat',v:'a',i:'r',f:'t'},
+    {w:'sad',v:'a',i:'s',f:'d'},{w:'sap',v:'a',i:'s',f:'p'},{w:'sat',v:'a',i:'s',f:'t'},
+    {w:'tab',v:'a',i:'t',f:'b'},{w:'tan',v:'a',i:'t',f:'n'},{w:'tap',v:'a',i:'t',f:'p'},
+    {w:'van',v:'a',i:'v',f:'n'},{w:'vat',v:'a',i:'v',f:'t'},{w:'wag',v:'a',i:'w',f:'g'},
+    {w:'war',v:'a',i:'w',f:'r'},{w:'was',v:'a',i:'w',f:'s'},{w:'yak',v:'a',i:'y',f:'k'},
+    {w:'yam',v:'a',i:'y',f:'m'},{w:'zap',v:'a',i:'z',f:'p'},
+    // e
+    {w:'bed',v:'e',i:'b',f:'d'},{w:'beg',v:'e',i:'b',f:'g'},{w:'bet',v:'e',i:'b',f:'t'},
+    {w:'den',v:'e',i:'d',f:'n'},{w:'fed',v:'e',i:'f',f:'d'},{w:'fen',v:'e',i:'f',f:'n'},
+    {w:'gel',v:'e',i:'g',f:'l'},{w:'gem',v:'e',i:'g',f:'m'},{w:'get',v:'e',i:'g',f:'t'},
+    {w:'hem',v:'e',i:'h',f:'m'},{w:'hen',v:'e',i:'h',f:'n'},{w:'her',v:'e',i:'h',f:'r'},
+    {w:'jet',v:'e',i:'j',f:'t'},{w:'keg',v:'e',i:'k',f:'g'},{w:'ken',v:'e',i:'k',f:'n'},
+    {w:'led',v:'e',i:'l',f:'d'},{w:'leg',v:'e',i:'l',f:'g'},{w:'let',v:'e',i:'l',f:'t'},
+    {w:'men',v:'e',i:'m',f:'n'},{w:'met',v:'e',i:'m',f:'t'},{w:'net',v:'e',i:'n',f:'t'},
+    {w:'peg',v:'e',i:'p',f:'g'},{w:'pen',v:'e',i:'p',f:'n'},{w:'pet',v:'e',i:'p',f:'t'},
+    {w:'red',v:'e',i:'r',f:'d'},{w:'ref',v:'e',i:'r',f:'f'},{w:'rev',v:'e',i:'r',f:'v'},
+    {w:'set',v:'e',i:'s',f:'t'},{w:'ten',v:'e',i:'t',f:'n'},{w:'vet',v:'e',i:'v',f:'t'},
+    {w:'web',v:'e',i:'w',f:'b'},{w:'wed',v:'e',i:'w',f:'d'},{w:'wet',v:'e',i:'w',f:'t'},
+    {w:'yes',v:'e',i:'y',f:'s'},{w:'yet',v:'e',i:'y',f:'t'},{w:'zed',v:'e',i:'z',f:'d'},
+    // i
+    {w:'bid',v:'i',i:'b',f:'d'},{w:'big',v:'i',i:'b',f:'g'},{w:'bit',v:'i',i:'b',f:'t'},
+    {w:'did',v:'i',i:'d',f:'d'},{w:'dig',v:'i',i:'d',f:'g'},{w:'dim',v:'i',i:'d',f:'m'},
+    {w:'dip',v:'i',i:'d',f:'p'},{w:'fit',v:'i',i:'f',f:'t'},{w:'fig',v:'i',i:'f',f:'g'},
+    {w:'fin',v:'i',i:'f',f:'n'},{w:'hip',v:'i',i:'h',f:'p'},{w:'his',v:'i',i:'h',f:'s'},
+    {w:'hit',v:'i',i:'h',f:'t'},{w:'jig',v:'i',i:'j',f:'g'},{w:'kid',v:'i',i:'k',f:'d'},
+    {w:'kin',v:'i',i:'k',f:'n'},{w:'kit',v:'i',i:'k',f:'t'},{w:'lid',v:'i',i:'l',f:'d'},
+    {w:'lip',v:'i',i:'l',f:'p'},{w:'lit',v:'i',i:'l',f:'t'},{w:'mid',v:'i',i:'m',f:'d'},
+    {w:'nip',v:'i',i:'n',f:'p'},{w:'nit',v:'i',i:'n',f:'t'},
+    {w:'pig',v:'i',i:'p',f:'g'},{w:'pin',v:'i',i:'p',f:'n'},{w:'pit',v:'i',i:'p',f:'t'},
+    {w:'rid',v:'i',i:'r',f:'d'},{w:'rig',v:'i',i:'r',f:'g'},{w:'rim',v:'i',i:'r',f:'m'},
+    {w:'rip',v:'i',i:'r',f:'p'},{w:'sit',v:'i',i:'s',f:'t'},{w:'sip',v:'i',i:'s',f:'p'},
+    {w:'tin',v:'i',i:'t',f:'n'},{w:'tip',v:'i',i:'t',f:'p'},
+    {w:'vim',v:'i',i:'v',f:'m'},{w:'wig',v:'i',i:'w',f:'g'},{w:'win',v:'i',i:'w',f:'n'},
+    {w:'wit',v:'i',i:'w',f:'t'},{w:'zip',v:'i',i:'z',f:'p'},
+    // o
+    {w:'bob',v:'o',i:'b',f:'b'},{w:'bog',v:'o',i:'b',f:'g'},{w:'cob',v:'o',i:'c',f:'b'},
+    {w:'cod',v:'o',i:'c',f:'d'},{w:'cop',v:'o',i:'c',f:'p'},{w:'cot',v:'o',i:'c',f:'t'},
+    {w:'dog',v:'o',i:'d',f:'g'},{w:'dot',v:'o',i:'d',f:'t'},{w:'fog',v:'o',i:'f',f:'g'},
+    {w:'got',v:'o',i:'g',f:'t'},{w:'hob',v:'o',i:'h',f:'b'},{w:'hog',v:'o',i:'h',f:'g'},
+    {w:'hop',v:'o',i:'h',f:'p'},{w:'hot',v:'o',i:'h',f:'t'},{w:'job',v:'o',i:'j',f:'b'},
+    {w:'jot',v:'o',i:'j',f:'t'},{w:'lot',v:'o',i:'l',f:'t'},{w:'mob',v:'o',i:'m',f:'b'},
+    {w:'mod',v:'o',i:'m',f:'d'},{w:'mom',v:'o',i:'m',f:'m'},{w:'mop',v:'o',i:'m',f:'p'},
+    {w:'nob',v:'o',i:'n',f:'b'},{w:'nod',v:'o',i:'n',f:'d'},{w:'pod',v:'o',i:'p',f:'d'},
+    {w:'pop',v:'o',i:'p',f:'p'},{w:'pot',v:'o',i:'p',f:'t'},{w:'rob',v:'o',i:'r',f:'b'},
+    {w:'rod',v:'o',i:'r',f:'d'},{w:'rot',v:'o',i:'r',f:'t'},{w:'sob',v:'o',i:'s',f:'b'},
+    {w:'sod',v:'o',i:'s',f:'d'},{w:'top',v:'o',i:'t',f:'p'},{w:'tot',v:'o',i:'t',f:'t'},
+    {w:'tom',v:'o',i:'t',f:'m'},{w:'von',v:'o',i:'v',f:'n'},{w:'wok',v:'o',i:'w',f:'k'},
+    // u
+    {w:'bud',v:'u',i:'b',f:'d'},{w:'bug',v:'u',i:'b',f:'g'},{w:'bun',v:'u',i:'b',f:'n'},
+    {w:'bus',v:'u',i:'b',f:'s'},{w:'but',v:'u',i:'b',f:'t'},{w:'cub',v:'u',i:'c',f:'b'},
+    {w:'cup',v:'u',i:'c',f:'p'},{w:'cut',v:'u',i:'c',f:'t'},{w:'dug',v:'u',i:'d',f:'g'},
+    {w:'dun',v:'u',i:'d',f:'n'},{w:'fun',v:'u',i:'f',f:'n'},{w:'gut',v:'u',i:'g',f:'t'},
+    {w:'gum',v:'u',i:'g',f:'m'},{w:'gun',v:'u',i:'g',f:'n'},{w:'hub',v:'u',i:'h',f:'b'},
+    {w:'hug',v:'u',i:'h',f:'g'},{w:'hum',v:'u',i:'h',f:'m'},{w:'hut',v:'u',i:'h',f:'t'},
+    {w:'jug',v:'u',i:'j',f:'g'},{w:'lug',v:'u',i:'l',f:'g'},{w:'mud',v:'u',i:'m',f:'d'},
+    {w:'mug',v:'u',i:'m',f:'g'},{w:'nun',v:'u',i:'n',f:'n'},{w:'nut',v:'u',i:'n',f:'t'},
+    {w:'pub',v:'u',i:'p',f:'b'},{w:'pun',v:'u',i:'p',f:'n'},{w:'pup',v:'u',i:'p',f:'p'},
+    {w:'rub',v:'u',i:'r',f:'b'},{w:'rug',v:'u',i:'r',f:'g'},{w:'rum',v:'u',i:'r',f:'m'},
+    {w:'run',v:'u',i:'r',f:'n'},{w:'rut',v:'u',i:'r',f:'t'},{w:'sub',v:'u',i:'s',f:'b'},
+    {w:'sum',v:'u',i:'s',f:'m'},{w:'sun',v:'u',i:'s',f:'n'},{w:'tub',v:'u',i:'t',f:'b'},
+    {w:'tug',v:'u',i:'t',f:'g'},{w:'tun',v:'u',i:'t',f:'n'},{w:'vug',v:'u',i:'v',f:'g'},
+    {w:'zug',v:'u',i:'z',f:'g'},
+  ],
+
+  CVCC: [
+    // a
+    {w:'back',v:'a',i:'b',f:'ck'},{w:'ball',v:'a',i:'b',f:'ll'},{w:'band',v:'a',i:'b',f:'nd'},
+    {w:'bank',v:'a',i:'b',f:'nk'},{w:'bash',v:'a',i:'b',f:'sh'},{w:'bath',v:'a',i:'b',f:'th'},
+    {w:'camp',v:'a',i:'c',f:'mp'},{w:'cant',v:'a',i:'c',f:'nt'},{w:'card',v:'a',i:'c',f:'rd'},
+    {w:'cart',v:'a',i:'c',f:'rt'},{w:'cast',v:'a',i:'c',f:'st'},{w:'damp',v:'a',i:'d',f:'mp'},
+    {w:'dank',v:'a',i:'d',f:'nk'},{w:'dart',v:'a',i:'d',f:'rt'},{w:'dash',v:'a',i:'d',f:'sh'},
+    {w:'fact',v:'a',i:'f',f:'ct'},{w:'fall',v:'a',i:'f',f:'ll'},{w:'fast',v:'a',i:'f',f:'st'},
+    {w:'gall',v:'a',i:'g',f:'ll'},{w:'gash',v:'a',i:'g',f:'sh'},{w:'gasp',v:'a',i:'g',f:'sp'},
+    {w:'hand',v:'a',i:'h',f:'nd'},{w:'hang',v:'a',i:'h',f:'ng'},{w:'hank',v:'a',i:'h',f:'nk'},
+    {w:'hard',v:'a',i:'h',f:'rd'},{w:'harm',v:'a',i:'h',f:'rm'},{w:'harp',v:'a',i:'h',f:'rp'},
+    {w:'hash',v:'a',i:'h',f:'sh'},{w:'hasp',v:'a',i:'h',f:'sp'},{w:'last',v:'a',i:'l',f:'st'},
+    {w:'lamp',v:'a',i:'l',f:'mp'},{w:'land',v:'a',i:'l',f:'nd'},{w:'lank',v:'a',i:'l',f:'nk'},
+    {w:'lash',v:'a',i:'l',f:'sh'},{w:'lath',v:'a',i:'l',f:'th'},{w:'malt',v:'a',i:'m',f:'lt'},
+    {w:'mash',v:'a',i:'m',f:'sh'},{w:'mask',v:'a',i:'m',f:'sk'},{w:'mass',v:'a',i:'m',f:'ss'},
+    {w:'mast',v:'a',i:'m',f:'st'},{w:'pact',v:'a',i:'p',f:'ct'},{w:'palm',v:'a',i:'p',f:'lm'},
+    {w:'pang',v:'a',i:'p',f:'ng'},{w:'pant',v:'a',i:'p',f:'nt'},{w:'park',v:'a',i:'p',f:'rk'},
+    {w:'pass',v:'a',i:'p',f:'ss'},{w:'past',v:'a',i:'p',f:'st'},{w:'path',v:'a',i:'p',f:'th'},
+    {w:'rack',v:'a',i:'r',f:'ck'},{w:'ramp',v:'a',i:'r',f:'mp'},{w:'rang',v:'a',i:'r',f:'ng'},
+    {w:'rank',v:'a',i:'r',f:'nk'},{w:'rant',v:'a',i:'r',f:'nt'},{w:'rash',v:'a',i:'r',f:'sh'},
+    {w:'rasp',v:'a',i:'r',f:'sp'},{w:'salt',v:'a',i:'s',f:'lt'},{w:'sand',v:'a',i:'s',f:'nd'},
+    {w:'sang',v:'a',i:'s',f:'ng'},{w:'sank',v:'a',i:'s',f:'nk'},{w:'sash',v:'a',i:'s',f:'sh'},
+    {w:'tack',v:'a',i:'t',f:'ck'},{w:'tall',v:'a',i:'t',f:'ll'},{w:'tang',v:'a',i:'t',f:'ng'},
+    {w:'tank',v:'a',i:'t',f:'nk'},{w:'task',v:'a',i:'t',f:'sk'},{w:'vast',v:'a',i:'v',f:'st'},
+    {w:'wand',v:'a',i:'w',f:'nd'},{w:'want',v:'a',i:'w',f:'nt'},{w:'warp',v:'a',i:'w',f:'rp'},
+    {w:'wash',v:'a',i:'w',f:'sh'},{w:'wasp',v:'a',i:'w',f:'sp'},
+    // e
+    {w:'bell',v:'e',i:'b',f:'ll'},{w:'belt',v:'e',i:'b',f:'lt'},{w:'bend',v:'e',i:'b',f:'nd'},
+    {w:'deft',v:'e',i:'d',f:'ft'},{w:'dell',v:'e',i:'d',f:'ll'},{w:'dent',v:'e',i:'d',f:'nt'},
+    {w:'desk',v:'e',i:'d',f:'sk'},{w:'felt',v:'e',i:'f',f:'lt'},{w:'fend',v:'e',i:'f',f:'nd'},
+    {w:'fern',v:'e',i:'f',f:'rn'},{w:'fest',v:'e',i:'f',f:'st'},{w:'held',v:'e',i:'h',f:'ld'},
+    {w:'helm',v:'e',i:'h',f:'lm'},{w:'help',v:'e',i:'h',f:'lp'},{w:'hemp',v:'e',i:'h',f:'mp'},
+    {w:'herd',v:'e',i:'h',f:'rd'},{w:'jell',v:'e',i:'j',f:'ll'},{w:'jest',v:'e',i:'j',f:'st'},
+    {w:'kelp',v:'e',i:'k',f:'lp'},{w:'kelt',v:'e',i:'k',f:'lt'},{w:'lend',v:'e',i:'l',f:'nd'},
+    {w:'lens',v:'e',i:'l',f:'ns'},{w:'lent',v:'e',i:'l',f:'nt'},{w:'less',v:'e',i:'l',f:'ss'},
+    {w:'meld',v:'e',i:'m',f:'ld'},{w:'melt',v:'e',i:'m',f:'lt'},{w:'mend',v:'e',i:'m',f:'nd'},
+    {w:'mess',v:'e',i:'m',f:'ss'},{w:'nest',v:'e',i:'n',f:'st'},{w:'pelt',v:'e',i:'p',f:'lt'},
+    {w:'pend',v:'e',i:'p',f:'nd'},{w:'pest',v:'e',i:'p',f:'st'},{w:'rend',v:'e',i:'r',f:'nd'},
+    {w:'rent',v:'e',i:'r',f:'nt'},{w:'rest',v:'e',i:'r',f:'st'},{w:'self',v:'e',i:'s',f:'lf'},
+    {w:'sell',v:'e',i:'s',f:'ll'},{w:'send',v:'e',i:'s',f:'nd'},{w:'sent',v:'e',i:'s',f:'nt'},
+    {w:'tend',v:'e',i:'t',f:'nd'},{w:'tent',v:'e',i:'t',f:'nt'},{w:'test',v:'e',i:'t',f:'st'},
+    {w:'veld',v:'e',i:'v',f:'ld'},{w:'vent',v:'e',i:'v',f:'nt'},{w:'vest',v:'e',i:'v',f:'st'},
+    {w:'weld',v:'e',i:'w',f:'ld'},{w:'well',v:'e',i:'w',f:'ll'},{w:'welt',v:'e',i:'w',f:'lt'},
+    {w:'wend',v:'e',i:'w',f:'nd'},{w:'went',v:'e',i:'w',f:'nt'},{w:'west',v:'e',i:'w',f:'st'},
+    {w:'yell',v:'e',i:'y',f:'ll'},{w:'yelp',v:'e',i:'y',f:'lp'},
+    // i
+    {w:'bill',v:'i',i:'b',f:'ll'},{w:'bilk',v:'i',i:'b',f:'lk'},{w:'bind',v:'i',i:'b',f:'nd'},
+    {w:'dill',v:'i',i:'d',f:'ll'},{w:'dint',v:'i',i:'d',f:'nt'},{w:'disk',v:'i',i:'d',f:'sk'},
+    {w:'fill',v:'i',i:'f',f:'ll'},{w:'film',v:'i',i:'f',f:'lm'},{w:'fist',v:'i',i:'f',f:'st'},
+    {w:'gift',v:'i',i:'g',f:'ft'},{w:'gilt',v:'i',i:'g',f:'lt'},{w:'gist',v:'i',i:'g',f:'st'},
+    {w:'hill',v:'i',i:'h',f:'ll'},{w:'hilt',v:'i',i:'h',f:'lt'},{w:'hint',v:'i',i:'h',f:'nt'},
+    {w:'hiss',v:'i',i:'h',f:'ss'},{w:'jilt',v:'i',i:'j',f:'lt'},{w:'jinx',v:'i',i:'j',f:'nx'},
+    {w:'kill',v:'i',i:'k',f:'ll'},{w:'kiln',v:'i',i:'k',f:'ln'},{w:'kilt',v:'i',i:'k',f:'lt'},
+    {w:'kind',v:'i',i:'k',f:'nd'},{w:'king',v:'i',i:'k',f:'ng'},{w:'kink',v:'i',i:'k',f:'nk'},
+    {w:'lick',v:'i',i:'l',f:'ck'},{w:'lift',v:'i',i:'l',f:'ft'},{w:'limb',v:'i',i:'l',f:'mb'},
+    {w:'limp',v:'i',i:'l',f:'mp'},{w:'link',v:'i',i:'l',f:'nk'},{w:'list',v:'i',i:'l',f:'st'},
+    {w:'milk',v:'i',i:'m',f:'lk'},{w:'mill',v:'i',i:'m',f:'ll'},{w:'mink',v:'i',i:'m',f:'nk'},
+    {w:'mint',v:'i',i:'m',f:'nt'},{w:'miss',v:'i',i:'m',f:'ss'},{w:'mist',v:'i',i:'m',f:'st'},
+    {w:'nick',v:'i',i:'n',f:'ck'},{w:'nill',v:'i',i:'n',f:'ll'},{w:'nint',v:'i',i:'n',f:'nt'},
+    {w:'pick',v:'i',i:'p',f:'ck'},{w:'pill',v:'i',i:'p',f:'ll'},{w:'pink',v:'i',i:'p',f:'nk'},
+    {w:'pint',v:'i',i:'p',f:'nt'},{w:'rick',v:'i',i:'r',f:'ck'},{w:'rift',v:'i',i:'r',f:'ft'},
+    {w:'ring',v:'i',i:'r',f:'ng'},{w:'risk',v:'i',i:'r',f:'sk'},{w:'silk',v:'i',i:'s',f:'lk'},
+    {w:'sill',v:'i',i:'s',f:'ll'},{w:'silt',v:'i',i:'s',f:'lt'},{w:'sing',v:'i',i:'s',f:'ng'},
+    {w:'sink',v:'i',i:'s',f:'nk'},{w:'sist',v:'i',i:'s',f:'st'},{w:'tick',v:'i',i:'t',f:'ck'},
+    {w:'till',v:'i',i:'t',f:'ll'},{w:'tilt',v:'i',i:'t',f:'lt'},{w:'ting',v:'i',i:'t',f:'ng'},
+    {w:'tint',v:'i',i:'t',f:'nt'},{w:'will',v:'i',i:'w',f:'ll'},{w:'wilt',v:'i',i:'w',f:'lt'},
+    {w:'wind',v:'i',i:'w',f:'nd'},{w:'wing',v:'i',i:'w',f:'ng'},{w:'wink',v:'i',i:'w',f:'nk'},
+    {w:'wist',v:'i',i:'w',f:'st'},{w:'wick',v:'i',i:'w',f:'ck'},
+    // o
+    {w:'bond',v:'o',i:'b',f:'nd'},{w:'bong',v:'o',i:'b',f:'ng'},{w:'bonk',v:'o',i:'b',f:'nk'},
+    {w:'bolt',v:'o',i:'b',f:'lt'},{w:'boll',v:'o',i:'b',f:'ll'},{w:'boss',v:'o',i:'b',f:'ss'},
+    {w:'cost',v:'o',i:'c',f:'st'},{w:'colt',v:'o',i:'c',f:'lt'},{w:'cold',v:'o',i:'c',f:'ld'},
+    {w:'cong',v:'o',i:'c',f:'ng'},{w:'conk',v:'o',i:'c',f:'nk'},{w:'doll',v:'o',i:'d',f:'ll'},
+    {w:'fond',v:'o',i:'f',f:'nd'},{w:'folk',v:'o',i:'f',f:'lk'},{w:'ford',v:'o',i:'f',f:'rd'},
+    {w:'form',v:'o',i:'f',f:'rm'},{w:'fort',v:'o',i:'f',f:'rt'},{w:'gong',v:'o',i:'g',f:'ng'},
+    {w:'golf',v:'o',i:'g',f:'lf'},{w:'gold',v:'o',i:'g',f:'ld'},{w:'hold',v:'o',i:'h',f:'ld'},
+    {w:'holt',v:'o',i:'h',f:'lt'},{w:'hong',v:'o',i:'h',f:'ng'},{w:'honk',v:'o',i:'h',f:'nk'},
+    {w:'horn',v:'o',i:'h',f:'rn'},{w:'jolt',v:'o',i:'j',f:'lt'},{w:'long',v:'o',i:'l',f:'ng'},
+    {w:'lord',v:'o',i:'l',f:'rd'},{w:'loft',v:'o',i:'l',f:'ft'},{w:'loll',v:'o',i:'l',f:'ll'},
+    {w:'lost',v:'o',i:'l',f:'st'},{w:'molt',v:'o',i:'m',f:'lt'},{w:'monk',v:'o',i:'m',f:'nk'},
+    {w:'mold',v:'o',i:'m',f:'ld'},{w:'moss',v:'o',i:'m',f:'ss'},{w:'most',v:'o',i:'m',f:'st'},
+    {w:'nond',v:'o',i:'n',f:'nd'},{w:'nong',v:'o',i:'n',f:'ng'},{w:'pond',v:'o',i:'p',f:'nd'},
+    {w:'poll',v:'o',i:'p',f:'ll'},{w:'pong',v:'o',i:'p',f:'ng'},{w:'pont',v:'o',i:'p',f:'nt'},
+    {w:'pork',v:'o',i:'p',f:'rk'},{w:'port',v:'o',i:'p',f:'rt'},{w:'roll',v:'o',i:'r',f:'ll'},
+    {w:'romp',v:'o',i:'r',f:'mp'},{w:'rong',v:'o',i:'r',f:'ng'},{w:'sold',v:'o',i:'s',f:'ld'},
+    {w:'song',v:'o',i:'s',f:'ng'},{w:'sort',v:'o',i:'s',f:'rt'},{w:'soft',v:'o',i:'s',f:'ft'},
+    {w:'tong',v:'o',i:'t',f:'ng'},{w:'told',v:'o',i:'t',f:'ld'},{w:'toll',v:'o',i:'t',f:'ll'},
+    {w:'tolt',v:'o',i:'t',f:'lt'},{w:'wolf',v:'o',i:'w',f:'lf'},{w:'wont',v:'o',i:'w',f:'nt'},
+    // u
+    {w:'buck',v:'u',i:'b',f:'ck'},{w:'buff',v:'u',i:'b',f:'ff'},{w:'bulk',v:'u',i:'b',f:'lk'},
+    {w:'bull',v:'u',i:'b',f:'ll'},{w:'bump',v:'u',i:'b',f:'mp'},{w:'bunk',v:'u',i:'b',f:'nk'},
+    {w:'bunt',v:'u',i:'b',f:'nt'},{w:'burp',v:'u',i:'b',f:'rp'},{w:'bust',v:'u',i:'b',f:'st'},
+    {w:'cult',v:'u',i:'c',f:'lt'},{w:'cuff',v:'u',i:'c',f:'ff'},{w:'dull',v:'u',i:'d',f:'ll'},
+    {w:'dump',v:'u',i:'d',f:'mp'},{w:'dunk',v:'u',i:'d',f:'nk'},{w:'dusk',v:'u',i:'d',f:'sk'},
+    {w:'dust',v:'u',i:'d',f:'st'},{w:'full',v:'u',i:'f',f:'ll'},{w:'fund',v:'u',i:'f',f:'nd'},
+    {w:'funk',v:'u',i:'f',f:'nk'},{w:'gull',v:'u',i:'g',f:'ll'},{w:'gulp',v:'u',i:'g',f:'lp'},
+    {w:'gump',v:'u',i:'g',f:'mp'},{w:'gunk',v:'u',i:'g',f:'nk'},{w:'gust',v:'u',i:'g',f:'st'},
+    {w:'gulf',v:'u',i:'g',f:'lf'},{w:'hull',v:'u',i:'h',f:'ll'},{w:'hump',v:'u',i:'h',f:'mp'},
+    {w:'hung',v:'u',i:'h',f:'ng'},{w:'hunk',v:'u',i:'h',f:'nk'},{w:'hunt',v:'u',i:'h',f:'nt'},
+    {w:'hurl',v:'u',i:'h',f:'rl'},{w:'just',v:'u',i:'j',f:'st'},{w:'junk',v:'u',i:'j',f:'nk'},
+    {w:'jump',v:'u',i:'j',f:'mp'},{w:'lump',v:'u',i:'l',f:'mp'},{w:'lung',v:'u',i:'l',f:'ng'},
+    {w:'lunk',v:'u',i:'l',f:'nk'},{w:'lust',v:'u',i:'l',f:'st'},{w:'muck',v:'u',i:'m',f:'ck'},
+    {w:'muff',v:'u',i:'m',f:'ff'},{w:'mulk',v:'u',i:'m',f:'lk'},{w:'mull',v:'u',i:'m',f:'ll'},
+    {w:'mump',v:'u',i:'m',f:'mp'},{w:'mung',v:'u',i:'m',f:'ng'},{w:'musk',v:'u',i:'m',f:'sk'},
+    {w:'must',v:'u',i:'m',f:'st'},{w:'null',v:'u',i:'n',f:'ll'},{w:'numb',v:'u',i:'n',f:'mb'},
+    {w:'puck',v:'u',i:'p',f:'ck'},{w:'puff',v:'u',i:'p',f:'ff'},{w:'pull',v:'u',i:'p',f:'ll'},
+    {w:'pulp',v:'u',i:'p',f:'lp'},{w:'pump',v:'u',i:'p',f:'mp'},{w:'punk',v:'u',i:'p',f:'nk'},
+    {w:'punt',v:'u',i:'p',f:'nt'},{w:'ruff',v:'u',i:'r',f:'ff'},{w:'rump',v:'u',i:'r',f:'mp'},
+    {w:'rung',v:'u',i:'r',f:'ng'},{w:'runt',v:'u',i:'r',f:'nt'},{w:'rush',v:'u',i:'r',f:'sh'},
+    {w:'rust',v:'u',i:'r',f:'st'},{w:'suck',v:'u',i:'s',f:'ck'},{w:'sulk',v:'u',i:'s',f:'lk'},
+    {w:'sump',v:'u',i:'s',f:'mp'},{w:'sung',v:'u',i:'s',f:'ng'},{w:'sunk',v:'u',i:'s',f:'nk'},
+    {w:'tuck',v:'u',i:'t',f:'ck'},{w:'tuff',v:'u',i:'t',f:'ff'},{w:'tuft',v:'u',i:'t',f:'ft'},
+    {w:'tull',v:'u',i:'t',f:'ll'},{w:'tump',v:'u',i:'t',f:'mp'},{w:'tung',v:'u',i:'t',f:'ng'},
+    {w:'tusk',v:'u',i:'t',f:'sk'},{w:'dusk',v:'u',i:'d',f:'sk'},{w:'luck',v:'u',i:'l',f:'ck'},
+    {w:'lung',v:'u',i:'l',f:'ng'},{w:'funk',v:'u',i:'f',f:'nk'},{w:'wung',v:'u',i:'w',f:'ng'},
+    {w:'yuck',v:'u',i:'y',f:'ck'},{w:'yump',v:'u',i:'y',f:'mp'},
+  ],
+
+  CCVC: [
+    // bl-
+    {w:'blab',v:'a',i:'bl',f:'b'},{w:'blot',v:'o',i:'bl',f:'t'},{w:'blub',v:'u',i:'bl',f:'b'},
+    {w:'blud',v:'u',i:'bl',f:'d'},{w:'blag',v:'a',i:'bl',f:'g'},{w:'bled',v:'e',i:'bl',f:'d'},
+    {w:'blip',v:'i',i:'bl',f:'p'},{w:'blog',v:'o',i:'bl',f:'g'},
+    // br-
+    {w:'brad',v:'a',i:'br',f:'d'},{w:'brat',v:'a',i:'br',f:'t'},{w:'brim',v:'i',i:'br',f:'m'},
+    {w:'brig',v:'i',i:'br',f:'g'},{w:'brob',v:'o',i:'br',f:'b'},{w:'bron',v:'o',i:'br',f:'n'},
+    {w:'brum',v:'u',i:'br',f:'m'},{w:'bren',v:'e',i:'br',f:'n'},
+    // cl-
+    {w:'clad',v:'a',i:'cl',f:'d'},{w:'clam',v:'a',i:'cl',f:'m'},{w:'clap',v:'a',i:'cl',f:'p'},
+    {w:'clip',v:'i',i:'cl',f:'p'},{w:'clod',v:'o',i:'cl',f:'d'},{w:'clop',v:'o',i:'cl',f:'p'},
+    {w:'clot',v:'o',i:'cl',f:'t'},{w:'club',v:'u',i:'cl',f:'b'},{w:'clug',v:'u',i:'cl',f:'g'},
+    // cr-
+    {w:'crab',v:'a',i:'cr',f:'b'},{w:'cram',v:'a',i:'cr',f:'m'},{w:'crap',v:'a',i:'cr',f:'p'},
+    {w:'crib',v:'i',i:'cr',f:'b'},{w:'crop',v:'o',i:'cr',f:'p'},{w:'crud',v:'u',i:'cr',f:'d'},
+    {w:'cred',v:'e',i:'cr',f:'d'},
+    // dr-
+    {w:'drab',v:'a',i:'dr',f:'b'},{w:'drag',v:'a',i:'dr',f:'g'},{w:'dram',v:'a',i:'dr',f:'m'},
+    {w:'drip',v:'i',i:'dr',f:'p'},{w:'drop',v:'o',i:'dr',f:'p'},{w:'drug',v:'u',i:'dr',f:'g'},
+    {w:'drum',v:'u',i:'dr',f:'m'},{w:'dred',v:'e',i:'dr',f:'d'},
+    // fl-
+    {w:'flab',v:'a',i:'fl',f:'b'},{w:'flag',v:'a',i:'fl',f:'g'},{w:'flap',v:'a',i:'fl',f:'p'},
+    {w:'flat',v:'a',i:'fl',f:'t'},{w:'fled',v:'e',i:'fl',f:'d'},{w:'flip',v:'i',i:'fl',f:'p'},
+    {w:'flit',v:'i',i:'fl',f:'t'},{w:'flob',v:'o',i:'fl',f:'b'},{w:'flop',v:'o',i:'fl',f:'p'},
+    {w:'flot',v:'o',i:'fl',f:'t'},{w:'flub',v:'u',i:'fl',f:'b'},{w:'flud',v:'u',i:'fl',f:'d'},
+    // fr-
+    {w:'frag',v:'a',i:'fr',f:'g'},{w:'frat',v:'a',i:'fr',f:'t'},{w:'fred',v:'e',i:'fr',f:'d'},
+    {w:'frig',v:'i',i:'fr',f:'g'},{w:'from',v:'o',i:'fr',f:'m'},{w:'frog',v:'o',i:'fr',f:'g'},
+    // gl-
+    {w:'glad',v:'a',i:'gl',f:'d'},{w:'glag',v:'a',i:'gl',f:'g'},{w:'glob',v:'o',i:'gl',f:'b'},
+    {w:'glop',v:'o',i:'gl',f:'p'},{w:'glot',v:'o',i:'gl',f:'t'},{w:'glug',v:'u',i:'gl',f:'g'},
+    // gr-
+    {w:'grab',v:'a',i:'gr',f:'b'},{w:'gram',v:'a',i:'gr',f:'m'},{w:'grid',v:'i',i:'gr',f:'d'},
+    {w:'grim',v:'i',i:'gr',f:'m'},{w:'grip',v:'i',i:'gr',f:'p'},{w:'grit',v:'i',i:'gr',f:'t'},
+    {w:'grob',v:'o',i:'gr',f:'b'},{w:'grod',v:'o',i:'gr',f:'d'},{w:'grub',v:'u',i:'gr',f:'b'},
+    {w:'grum',v:'u',i:'gr',f:'m'},
+    // pl-
+    {w:'plan',v:'a',i:'pl',f:'n'},{w:'plap',v:'a',i:'pl',f:'p'},{w:'plat',v:'a',i:'pl',f:'t'},
+    {w:'pleb',v:'e',i:'pl',f:'b'},{w:'plod',v:'o',i:'pl',f:'d'},{w:'plop',v:'o',i:'pl',f:'p'},
+    {w:'plot',v:'o',i:'pl',f:'t'},{w:'plug',v:'u',i:'pl',f:'g'},{w:'plum',v:'u',i:'pl',f:'m'},
+    // pr-
+    {w:'pram',v:'a',i:'pr',f:'m'},{w:'prat',v:'a',i:'pr',f:'t'},{w:'prep',v:'e',i:'pr',f:'p'},
+    {w:'prig',v:'i',i:'pr',f:'g'},{w:'prim',v:'i',i:'pr',f:'m'},{w:'prob',v:'o',i:'pr',f:'b'},
+    {w:'prod',v:'o',i:'pr',f:'d'},{w:'prop',v:'o',i:'pr',f:'p'},{w:'prom',v:'o',i:'pr',f:'m'},
+    {w:'prud',v:'u',i:'pr',f:'d'},{w:'prum',v:'u',i:'pr',f:'m'},
+    // sc-
+    {w:'scab',v:'a',i:'sc',f:'b'},{w:'scam',v:'a',i:'sc',f:'m'},{w:'scan',v:'a',i:'sc',f:'n'},
+    {w:'scot',v:'o',i:'sc',f:'t'},{w:'scud',v:'u',i:'sc',f:'d'},{w:'scum',v:'u',i:'sc',f:'m'},
+    // sk-
+    {w:'skid',v:'i',i:'sk',f:'d'},{w:'skim',v:'i',i:'sk',f:'m'},{w:'skip',v:'i',i:'sk',f:'p'},
+    {w:'skit',v:'i',i:'sk',f:'t'},{w:'skob',v:'o',i:'sk',f:'b'},{w:'skug',v:'u',i:'sk',f:'g'},
+    // sl-
+    {w:'slab',v:'a',i:'sl',f:'b'},{w:'slag',v:'a',i:'sl',f:'g'},{w:'slam',v:'a',i:'sl',f:'m'},
+    {w:'slap',v:'a',i:'sl',f:'p'},{w:'slat',v:'a',i:'sl',f:'t'},{w:'sled',v:'e',i:'sl',f:'d'},
+    {w:'slim',v:'i',i:'sl',f:'m'},{w:'slip',v:'i',i:'sl',f:'p'},{w:'slit',v:'i',i:'sl',f:'t'},
+    {w:'slob',v:'o',i:'sl',f:'b'},{w:'slod',v:'o',i:'sl',f:'d'},{w:'slop',v:'o',i:'sl',f:'p'},
+    {w:'slot',v:'o',i:'sl',f:'t'},{w:'slug',v:'u',i:'sl',f:'g'},{w:'slum',v:'u',i:'sl',f:'m'},
+    // sm-
+    {w:'smab',v:'a',i:'sm',f:'b'},{w:'smag',v:'a',i:'sm',f:'g'},{w:'smit',v:'i',i:'sm',f:'t'},
+    {w:'smob',v:'o',i:'sm',f:'b'},{w:'smog',v:'o',i:'sm',f:'g'},{w:'smub',v:'u',i:'sm',f:'b'},
+    {w:'smug',v:'u',i:'sm',f:'g'},
+    // sn-
+    {w:'snag',v:'a',i:'sn',f:'g'},{w:'snap',v:'a',i:'sn',f:'p'},{w:'snob',v:'o',i:'sn',f:'b'},
+    {w:'snod',v:'o',i:'sn',f:'d'},{w:'snot',v:'o',i:'sn',f:'t'},{w:'snub',v:'u',i:'sn',f:'b'},
+    {w:'snug',v:'u',i:'sn',f:'g'},
+    // sp-
+    {w:'span',v:'a',i:'sp',f:'n'},{w:'spat',v:'a',i:'sp',f:'t'},{w:'spec',v:'e',i:'sp',f:'c'},
+    {w:'sped',v:'e',i:'sp',f:'d'},{w:'spin',v:'i',i:'sp',f:'n'},{w:'spit',v:'i',i:'sp',f:'t'},
+    {w:'spob',v:'o',i:'sp',f:'b'},{w:'spot',v:'o',i:'sp',f:'t'},{w:'spud',v:'u',i:'sp',f:'d'},
+    {w:'spun',v:'u',i:'sp',f:'n'},
+    // st-
+    {w:'stab',v:'a',i:'st',f:'b'},{w:'stag',v:'a',i:'st',f:'g'},{w:'stem',v:'e',i:'st',f:'m'},
+    {w:'step',v:'e',i:'st',f:'p'},{w:'stob',v:'o',i:'st',f:'b'},{w:'stop',v:'o',i:'st',f:'p'},
+    {w:'stot',v:'o',i:'st',f:'t'},{w:'stub',v:'u',i:'st',f:'b'},{w:'stud',v:'u',i:'st',f:'d'},
+    {w:'stun',v:'u',i:'st',f:'n'},
+    // sw-
+    {w:'swab',v:'a',i:'sw',f:'b'},{w:'swag',v:'a',i:'sw',f:'g'},{w:'swam',v:'a',i:'sw',f:'m'},
+    {w:'swap',v:'a',i:'sw',f:'p'},{w:'swat',v:'a',i:'sw',f:'t'},{w:'swig',v:'i',i:'sw',f:'g'},
+    {w:'swim',v:'i',i:'sw',f:'m'},{w:'swob',v:'o',i:'sw',f:'b'},{w:'swod',v:'o',i:'sw',f:'d'},
+    {w:'swub',v:'u',i:'sw',f:'b'},{w:'swum',v:'u',i:'sw',f:'m'},
+    // tr-
+    {w:'trad',v:'a',i:'tr',f:'d'},{w:'trap',v:'a',i:'tr',f:'p'},{w:'trek',v:'e',i:'tr',f:'k'},
+    {w:'trim',v:'i',i:'tr',f:'m'},{w:'trip',v:'i',i:'tr',f:'p'},{w:'trod',v:'o',i:'tr',f:'d'},
+    {w:'trog',v:'o',i:'tr',f:'g'},{w:'trop',v:'o',i:'tr',f:'p'},{w:'trug',v:'u',i:'tr',f:'g'},
+    {w:'trum',v:'u',i:'tr',f:'m'},
+    // tw-
+    {w:'twag',v:'a',i:'tw',f:'g'},{w:'twig',v:'i',i:'tw',f:'g'},{w:'twin',v:'i',i:'tw',f:'n'},
+    {w:'twit',v:'i',i:'tw',f:'t'},{w:'twob',v:'o',i:'tw',f:'b'},{w:'twub',v:'u',i:'tw',f:'b'},
+  ],
+};
+
+// ---- WORD PICKER ----
+
+/* Filter the word list for the current format and selected letters/blends,
+   then pick one at random (avoiding repeating the same word twice in a row). */
+function getFilteredWords(format, vowels, consonants, initialBlends, finalBlends) {
+  const vowelSet   = new Set(vowels.length   ? vowels        : VOWELS);
+  const consSet    = new Set(consonants.length ? consonants  : ALL_CONSONANTS);
+  const initSet    = new Set(initialBlends.length ? initialBlends : INITIAL_BLENDS);
+  const finalSet   = new Set(finalBlends.length   ? finalBlends   : FINAL_BLENDS);
+
+  return (WORD_LIST[format] || []).filter(entry => {
+    if (!vowelSet.has(entry.v)) return false;
+    if (format === 'CVC')  return consSet.has(entry.i) && consSet.has(entry.f);
+    if (format === 'CVCC') return consSet.has(entry.i) && finalSet.has(entry.f);
+    if (format === 'CCVC') return initSet.has(entry.i) && consSet.has(entry.f);
+    return false;
+  }).map(e => e.w);
+}
+
+function generateWord(format, vowels, consonants, initialBlends, finalBlends) {
+  const pool = getFilteredWords(format, vowels, consonants, initialBlends, finalBlends);
+  if (!pool.length) return pick(['bat','cat','dog','fun','set']); // safe fallback
+
+  // Prefer words not yet seen this game session
+  const unused = pool.filter(w => !state.usedWords.includes(w));
+  // If all words have been used (small pool), fall back to full pool minus current word
+  const choices = unused.length > 0
+    ? unused
+    : pool.filter(w => w !== state.currentWord);
+
+  const word = pick(choices.length ? choices : pool);
+  state.usedWords.push(word);
+  return word;
+}
+
+// Generate a set of distractor options from the same filtered word pool
+function generateOptions(correct, format, vowels, consonants, initialBlends, finalBlends) {
+  const pool = getFilteredWords(format, vowels, consonants, initialBlends, finalBlends)
+    .filter(w => w !== correct);
+  const distractors = shuffle(pool).slice(0, 3);
+  // If pool is too small, pad with words from the full list
+  if (distractors.length < 3) {
+    const fallback = shuffle((WORD_LIST[format] || []).map(e => e.w))
+      .filter(w => w !== correct && !distractors.includes(w));
+    while (distractors.length < 3 && fallback.length) distractors.push(fallback.shift());
+  }
+  return shuffle([correct, ...distractors]);
+}
+
+// Generate spell choices based on phoneme CHUNKS (not raw chars).
+// For a CCVC word like "blat", chunks = ['bl','a','t'] → 3 slots.
+// We offer those chunks + filler single letters so the player taps
+// the right unit (blends appear as one tile, e.g. "BL").
+function generateSpellChoices(word) {
+  const chunks = wordToPhonemes(word); // e.g. ['bl','a','t']
+  const uniqueChunks = [...new Set(chunks)];
+
+  // Filler: single consonants not already present as chunks
+  const fillerPool = shuffle(
+    ALL_CONSONANTS.filter(l => !chunks.includes(l))
+  );
+
+  const pool = [...uniqueChunks];
+  for (const f of fillerPool) {
+    if (pool.length >= 5) break;
+    pool.push(f);
+  }
+  // Pad with vowels if still short
+  for (const v of VOWELS) {
+    if (pool.length >= 5) break;
+    if (!pool.includes(v)) pool.push(v);
+  }
+
+  return shuffle(pool.slice(0, 5));
+}
+
+// ============================================================
+// SPEECH ENGINE — Smart voice selection + whole-word TTS
+// ============================================================
+
+/* ---- Voice preference list ----
+   Ranked by quality. We try each name in order and take the
+   first match available on the device.
+   GREAT = neural/enhanced (very natural)
+   GOOD  = standard but clear
+   OK    = any English fallback
+*/
+const VOICE_PREFS = [
+  { name: 'Google UK English Female',  tier: 'GREAT' },
+  { name: 'Google UK English Male',    tier: 'GREAT' },
+  { name: 'Google US English',         tier: 'GREAT' },
+  { name: 'Samantha',                  tier: 'GREAT' }, // macOS / iOS
+  { name: 'Samantha (Enhanced)',        tier: 'GREAT' },
+  { name: 'Karen',                     tier: 'GREAT' }, // Australian English, very clear
+  { name: 'Karen (Enhanced)',           tier: 'GREAT' },
+  { name: 'Daniel',                    tier: 'GREAT' }, // macOS UK English
+  { name: 'Moira',                     tier: 'GREAT' }, // macOS Irish English
+  { name: 'Microsoft Aria Online (Natural) - English (United States)', tier: 'GREAT' },
+  { name: 'Microsoft Jenny Online (Natural) - English (United States)', tier: 'GREAT' },
+  { name: 'Microsoft Zira - English (United States)', tier: 'GOOD' },
+  { name: 'Microsoft David - English (United States)', tier: 'GOOD' },
+  { name: 'Microsoft Mark - English (United States)', tier: 'GOOD' },
+];
+
+let selectedVoice = null;
+let voiceTier = 'OK';
+
+function loadVoices() {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return;
+
+  // 1. Ranked preference list
+  for (const pref of VOICE_PREFS) {
+    const match = voices.find(v => v.name === pref.name);
+    if (match) { selectedVoice = match; voiceTier = pref.tier; updateVoiceStatus(); return; }
+  }
+
+  // 2. Any English enhanced/neural voice
+  const enhanced = voices.find(v =>
+    v.lang.startsWith('en') &&
+    /enhanced|neural|natural|premium|wavenet/i.test(v.name)
+  );
+  if (enhanced) { selectedVoice = enhanced; voiceTier = 'GOOD'; updateVoiceStatus(); return; }
+
+  // 3. Any English voice
+  const anyEn = voices.find(v => v.lang.startsWith('en'));
+  if (anyEn) { selectedVoice = anyEn; voiceTier = 'OK'; updateVoiceStatus(); return; }
+
+  // 4. Absolute fallback
+  if (voices[0]) { selectedVoice = voices[0]; voiceTier = 'OK'; updateVoiceStatus(); }
+}
+
+function updateVoiceStatus() {
+  // Voice status display removed — selection still runs silently in background
+}
+
+let isSpeaking = false;
+
+function cancelSpeech() {
+  window.speechSynthesis.cancel();
+  isSpeaking = false;
+  document.getElementById('audio-btn').classList.remove('playing');
+}
+
+/* ---- speak ----
+   Wraps the word in a silent carrier sentence.
+   This forces the TTS engine to treat it as a word within natural
+   speech rather than a standalone string (which triggers spell-out
+   mode for short or unusual combinations like "tof" or "xad"). */
+function speak(word, rate) {
+  cancelSpeech();
+  const btn = document.getElementById('audio-btn');
+
+  // Silent prefix: soft-hyphen + ZWNJ break abbreviation-detection
+  // without adding any audible sound before the word.
+  const prefix = '\u00AD\u200C';
+  const text   = prefix + word + '.';
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate  = rate;
+  utter.pitch = 1.0;
+  utter.lang  = 'en-US';
+  if (selectedVoice) utter.voice = selectedVoice;
+
+  btn.classList.add('playing');
+  isSpeaking = true;
+  utter.onend = () => {
+    btn.classList.remove('playing');
+    isSpeaking = false;
+  };
+  utter.onerror = () => {
+    btn.classList.remove('playing');
+    isSpeaking = false;
+  };
+  window.speechSynthesis.speak(utter);
+}
+
+// ---- SCREEN MANAGER ----
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ---- MODAL ----
+function openModal() {
+  // Copy current state to temp
+  modalTemp = {
+    selectedVowels: [...state.selectedVowels],
+    selectedConsonants: [...state.selectedConsonants],
+    selectedInitialBlends: [...state.selectedInitialBlends],
+    selectedFinalBlends: [...state.selectedFinalBlends],
+  };
+  renderModalGrid();
+  document.getElementById('letter-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('letter-modal').classList.remove('open');
+}
+function saveModal() {
+  // Ensure at least 1 vowel and 2 consonants/blends
+  if (modalTemp.selectedVowels.length === 0) {
+    modalTemp.selectedVowels = [...VOWELS];
+  }
+  if (modalTemp.selectedConsonants.length < 2) {
+    modalTemp.selectedConsonants = [...ALL_CONSONANTS];
+  }
+  state.selectedVowels = [...modalTemp.selectedVowels];
+  state.selectedConsonants = [...modalTemp.selectedConsonants];
+  state.selectedInitialBlends = [...modalTemp.selectedInitialBlends];
+  state.selectedFinalBlends = [...modalTemp.selectedFinalBlends];
+  closeModal();
+}
+
+function renderModalGrid() {
+  // Vowels
+  const vg = document.getElementById('vowel-grid');
+  vg.innerHTML = '';
+  VOWELS.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'letter-chip' + (modalTemp.selectedVowels.includes(v) ? ' selected' : '');
+    btn.textContent = v.toUpperCase();
+    btn.onclick = () => {
+      if (modalTemp.selectedVowels.includes(v)) {
+        if (modalTemp.selectedVowels.length > 1) modalTemp.selectedVowels = modalTemp.selectedVowels.filter(x => x !== v);
+      } else {
+        modalTemp.selectedVowels.push(v);
+      }
+      renderModalGrid();
+    };
+    vg.appendChild(btn);
+  });
+
+  // Consonants
+  const cg = document.getElementById('consonant-grid');
+  cg.innerHTML = '';
+  ALL_CONSONANTS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'letter-chip' + (modalTemp.selectedConsonants.includes(c) ? ' selected' : '');
+    btn.textContent = c.toUpperCase();
+    btn.onclick = () => {
+      if (modalTemp.selectedConsonants.includes(c)) {
+        if (modalTemp.selectedConsonants.length > 2) modalTemp.selectedConsonants = modalTemp.selectedConsonants.filter(x => x !== c);
+      } else {
+        modalTemp.selectedConsonants.push(c);
+      }
+      renderModalGrid();
+    };
+    cg.appendChild(btn);
+  });
+
+  // Blends — show/hide based on format
+  const blendSec = document.getElementById('blend-section');
+  const needsBlends = state.format === 'CVCC' || state.format === 'CCVC';
+  blendSec.style.display = needsBlends ? 'block' : 'none';
+
+  const bg = document.getElementById('blend-grid');
+  bg.innerHTML = '';
+  if (state.format === 'CCVC') {
+    INITIAL_BLENDS.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = 'blend-chip' + (modalTemp.selectedInitialBlends.includes(b) ? ' selected' : '');
+      btn.textContent = b.toUpperCase();
+      btn.onclick = () => {
+        if (modalTemp.selectedInitialBlends.includes(b)) {
+          if (modalTemp.selectedInitialBlends.length > 1) modalTemp.selectedInitialBlends = modalTemp.selectedInitialBlends.filter(x => x !== b);
+        } else {
+          modalTemp.selectedInitialBlends.push(b);
+        }
+        renderModalGrid();
+      };
+      bg.appendChild(btn);
+    });
+  } else if (state.format === 'CVCC') {
+    FINAL_BLENDS.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = 'blend-chip' + (modalTemp.selectedFinalBlends.includes(b) ? ' selected' : '');
+      btn.textContent = b.toUpperCase();
+      btn.onclick = () => {
+        if (modalTemp.selectedFinalBlends.includes(b)) {
+          if (modalTemp.selectedFinalBlends.length > 1) modalTemp.selectedFinalBlends = modalTemp.selectedFinalBlends.filter(x => x !== b);
+        } else {
+          modalTemp.selectedFinalBlends.push(b);
+        }
+        renderModalGrid();
+      };
+      bg.appendChild(btn);
+    });
+  }
+}
+
+// Select all consonants
+document.getElementById('cons-select-all').onclick = () => {
+  modalTemp.selectedConsonants = [...ALL_CONSONANTS];
+  renderModalGrid();
+};
+document.getElementById('blend-select-all').onclick = () => {
+  if (state.format === 'CCVC') modalTemp.selectedInitialBlends = [...INITIAL_BLENDS];
+  else modalTemp.selectedFinalBlends = [...FINAL_BLENDS];
+  renderModalGrid();
+};
+
+// ---- GAME INIT ----
+function startGame() {
+  state.round = 0;
+  state.score = 0;
+  state.usedWords = [];
+  state.answered = false;
+  updateScoreDisplay();
+  updateProgressBar();
+  showScreen('game-screen');
+  updateFormatTag();
+  nextRound();
+}
+
+function updateFormatTag() {
+  const labels = { CVC: 'C-V-C', CVCC: 'C-V-C-C', CCVC: 'C-C-V-C' };
+  document.getElementById('format-tag').textContent = labels[state.format];
+}
+
+function updateScoreDisplay() {
+  document.getElementById('score-display').textContent = state.score;
+}
+function updateProgressBar() {
+  const pct = (state.round / TOTAL_ROUNDS) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('round-num').textContent = state.round + '/' + TOTAL_ROUNDS;
+}
+
+// ---- NEXT ROUND ----
+function nextRound() {
+  if (state.round >= TOTAL_ROUNDS) {
+    showResults();
+    return;
+  }
+  state.round++;
+  state.answered = false;
+  // Progress bar does NOT update here — it updates when the answer is given
+
+  // Generate word
+  state.currentWord = generateWord(
+    state.format,
+    state.selectedVowels,
+    state.selectedConsonants,
+    state.selectedInitialBlends,
+    state.selectedFinalBlends
+  );
+
+  // Clear feedback
+  setFeedback('', '');
+
+  // Setup mode UI
+  if (state.mode === 'choose') {
+    setupChooseMode();
+  } else {
+    setupSpellMode();
+  }
+
+  // Auto-play after short delay
+  setTimeout(() => speak(state.currentWord, state.speed), 400);
+}
+
+// Called after every answer — updates bar and then (if last round) shows results
+function onAnswered() {
+  updateProgressBar();
+  if (state.round >= TOTAL_ROUNDS) {
+    // Wait for the CSS bar transition (400ms) to finish before showing results
+    setTimeout(showResults, 500);
+  }
+}
+
+// ---- CHOOSE MODE ----
+function setupChooseMode() {
+  document.getElementById('choose-mode-ui').style.display = 'block';
+  document.getElementById('spell-mode-ui').style.display = 'none';
+  document.getElementById('round-info').textContent = 'Listen and choose the word 👆';
+
+  const options = generateOptions(
+    state.currentWord, state.format,
+    state.selectedVowels, state.selectedConsonants,
+    state.selectedInitialBlends, state.selectedFinalBlends
+  );
+
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  const nextWrap = document.getElementById('next-wrap-choose');
+  nextWrap.style.display = 'none';
+
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = opt.toUpperCase();
+    btn.onclick = () => handleChooseAnswer(opt, btn, grid, nextWrap);
+    grid.appendChild(btn);
+  });
+}
+
+function handleChooseAnswer(chosen, btn, grid, nextWrap) {
+  if (state.answered) return;
+  state.answered = true;
+
+
+  // Disable all
+  grid.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+
+  if (chosen === state.currentWord) {
+    btn.classList.add('correct');
+    state.score++;
+    updateScoreDisplay();
+    setFeedback('⭐ Correct! Well done!', 'correct-msg');
+    burstStar(btn);
+  } else {
+    btn.classList.add('wrong');
+    setFeedback('✗ Not quite! The word was: ' + state.currentWord.toUpperCase(), 'wrong-msg');
+    grid.querySelectorAll('.option-btn').forEach(b => {
+      if (b.textContent.toLowerCase() === state.currentWord) b.classList.add('correct');
+    });
+  }
+
+  onAnswered();
+  // Only show Next button if there are more rounds
+  if (state.round < TOTAL_ROUNDS) nextWrap.style.display = 'flex';
+}
+
+// ---- SPELL MODE ----
+function setupSpellMode() {
+  document.getElementById('choose-mode-ui').style.display = 'none';
+  document.getElementById('spell-mode-ui').style.display = 'block';
+  document.getElementById('round-info').textContent = 'Listen and spell the word ✏️';
+
+  // Store the phoneme chunks for this word — these are the "correct answer" units
+  state.wordChunks   = wordToPhonemes(state.currentWord); // e.g. ['bl','a','t']
+  state.spellInput   = [];                                  // chunks tapped so far
+  state.spellChoices = generateSpellChoices(state.currentWord);
+
+  renderSpellSlots();
+  renderLetterChoices();
+
+  document.getElementById('next-wrap-spell').style.display = 'none';
+}
+
+function renderSpellSlots() {
+  const container = document.getElementById('spell-slots');
+  container.innerHTML = '';
+  state.wordChunks.forEach((chunk, i) => {
+    const slot = document.createElement('div');
+    const filled = state.spellInput[i] !== undefined;
+    // Blend slots are wider to fit 2 chars
+    const isBlend = chunk.length > 1;
+    slot.className = 'spell-slot' + (filled ? ' filled' : '') + (isBlend ? ' spell-slot-blend' : '');
+    slot.textContent = filled ? state.spellInput[i].toUpperCase() : '';
+    slot.id = 'slot-' + i;
+    container.appendChild(slot);
+  });
+}
+
+function renderLetterChoices() {
+  const container = document.getElementById('letter-choices');
+  container.innerHTML = '';
+
+  // Count how many times each chunk has been used in spellInput
+  const usedCounts = {};
+  state.spellInput.forEach(c => { usedCounts[c] = (usedCounts[c] || 0) + 1; });
+
+  // Count how many times each chunk appears in the correct answer
+  const neededCounts = {};
+  state.wordChunks.forEach(c => { neededCounts[c] = (neededCounts[c] || 0) + 1; });
+
+  state.spellChoices.forEach(chunk => {
+    const btn = document.createElement('button');
+    btn.className = 'letter-choice-btn' + (chunk.length > 1 ? ' letter-choice-blend' : '');
+    btn.textContent = chunk.toUpperCase();
+
+    // Disable if: answer locked, OR this chunk has been tapped as many
+    // times as it appears in the correct word
+    const timesUsed   = usedCounts[chunk]   || 0;
+    const timesNeeded = neededCounts[chunk] || 0;
+    const exhausted   = timesUsed >= Math.max(timesNeeded, 1) || state.answered;
+    if (exhausted) {
+      btn.disabled = true;
+      btn.classList.add('used');
+    } else {
+      btn.onclick = () => handleLetterTap(chunk);
+    }
+    container.appendChild(btn);
+  });
+}
+
+function handleLetterTap(chunk) {
+  if (state.answered) return;
+  if (state.spellInput.length >= state.wordChunks.length) return;
+  state.spellInput.push(chunk);
+  renderSpellSlots();
+  renderLetterChoices();
+}
+
+function clearSpelling() {
+  if (state.answered) return;
+  state.spellInput = [];
+  setFeedback('', '');
+  renderSpellSlots();
+  renderLetterChoices();       // re-enable all buttons
+}
+
+function checkSpelling() {
+  if (state.answered) return;
+  if (state.spellInput.length < state.wordChunks.length) {
+    setFeedback('Fill all the letters first!', 'wrong-msg');
+    return;
+  }
+  state.answered = true;
+
+  // Compare chunk by chunk
+  const correct = state.wordChunks;
+  const attempt = state.spellInput;
+  const allCorrect = attempt.join('') === correct.join('');
+
+  if (allCorrect) {
+    correct.forEach((_, i) => {
+      const slot = document.getElementById('slot-' + i);
+      if (slot) slot.classList.add('correct-slot');
+    });
+    state.score++;
+    updateScoreDisplay();
+    setFeedback('⭐ Perfect spelling!', 'correct-msg');
+    burstStar(document.getElementById('spell-check-btn'));
+  } else {
+    correct.forEach((chunk, i) => {
+      const slot = document.getElementById('slot-' + i);
+      if (slot) slot.classList.add(attempt[i] === chunk ? 'correct-slot' : 'wrong-slot');
+    });
+    setFeedback('✗ It was: ' + state.currentWord.toUpperCase(), 'wrong-msg');
+  }
+
+
+  // Lock choice buttons
+  renderLetterChoices();
+  onAnswered();
+  // Only show Next button if there are more rounds
+  if (state.round < TOTAL_ROUNDS) document.getElementById('next-wrap-spell').style.display = 'flex';
+}
+
+// ---- FEEDBACK ----
+function setFeedback(text, cls) {
+  const el = document.getElementById('feedback-msg');
+  el.textContent = text;
+  el.className = 'feedback-msg ' + (cls || '');
+}
+
+// ---- STAR BURST ----
+function burstStar(anchorEl) {
+  const rect = anchorEl.getBoundingClientRect();
+  const star = document.createElement('div');
+  star.className = 'star-burst';
+  star.textContent = '⭐';
+  star.style.left = (rect.left + rect.width / 2 - 14) + 'px';
+  star.style.top = (rect.top - 10) + 'px';
+  document.body.appendChild(star);
+  setTimeout(() => star.remove(), 900);
+}
+
+// ---- RESULTS ----
+function showResults() {
+  const pct = state.score / TOTAL_ROUNDS;
+  let emoji = '🌟', title = 'Amazing!', label = 'Outstanding phonics work!';
+  if (pct < 0.5) { emoji = '💪'; title = 'Keep Going!'; label = 'Practice makes perfect!'; }
+  else if (pct < 0.8) { emoji = '🎉'; title = 'Well Done!'; label = 'Great phonics skills!'; }
+
+  document.getElementById('results-emoji').textContent = emoji;
+  document.getElementById('results-title').textContent = title;
+  document.getElementById('results-score').textContent = state.score + '/' + TOTAL_ROUNDS;
+  document.getElementById('results-label').textContent = label;
+  showScreen('results-screen');
+}
+
+// ---- EVENT LISTENERS ----
+
+// Format buttons
+document.getElementById('format-group').addEventListener('click', (e) => {
+  const btn = e.target.closest('.toggle-btn');
+  if (!btn) return;
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.format = btn.dataset.format;
+});
+
+// Mode buttons
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    state.mode = btn.dataset.mode;
+  });
+});
+
+// Open letter picker
+document.getElementById('open-letters-btn').addEventListener('click', openModal);
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-save').addEventListener('click', saveModal);
+// Close on overlay click
+document.getElementById('letter-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('letter-modal')) closeModal();
+});
+
+// Start game
+document.getElementById('start-btn').addEventListener('click', startGame);
+
+// Audio button
+document.getElementById('audio-btn').addEventListener('click', () => {
+  speak(state.currentWord, state.speed);
+});
+
+// Speed slider
+document.getElementById('speed-slider').addEventListener('input', (e) => {
+  state.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = state.speed.toFixed(1) + 'x';
+});
+
+// Home button
+document.getElementById('home-btn').addEventListener('click', () => {
+  cancelSpeech();
+  showScreen('start-screen');
+});
+
+// Next buttons
+document.getElementById('next-btn-choose').addEventListener('click', nextRound);
+document.getElementById('next-btn-spell').addEventListener('click', nextRound);
+
+// Spell controls
+document.getElementById('spell-clear-btn').addEventListener('click', clearSpelling);
+document.getElementById('spell-check-btn').addEventListener('click', checkSpelling);
+
+// Results buttons
+document.getElementById('play-again-btn').addEventListener('click', () => {
+  startGame();
+});
+document.getElementById('change-settings-btn').addEventListener('click', () => {
+  showScreen('start-screen');
+});
+
+// Keyboard support (desktop)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    // Re-play sound if in game
+    const gameScreen = document.getElementById('game-screen');
+    if (gameScreen.classList.contains('active') && state.currentWord) {
+      speak(state.currentWord, state.speed);
+    }
+  }
+  // Number keys 1-4 for choose mode
+  if (['1','2','3','4'].includes(e.key) && document.getElementById('choose-mode-ui').style.display !== 'none') {
+    const btns = document.querySelectorAll('.option-btn');
+    const idx = parseInt(e.key) - 1;
+    if (btns[idx] && !btns[idx].disabled) btns[idx].click();
+  }
+});
+
+// Handle ARASAAC image load error — fallback icon
+document.getElementById('audio-img').addEventListener('error', function() {
+  this.style.display = 'none';
+  this.parentElement.innerHTML = '<span style="font-size:2.2rem;">🔊</span>';
+});
+
+// ---- INIT — voice loading ----
+// Voices load asynchronously; try immediately and on the event.
+loadVoices();
+window.speechSynthesis.onvoiceschanged = loadVoices;
+// Some browsers need a small delay
+setTimeout(loadVoices, 200);
+setTimeout(loadVoices, 800);
+
+</script>
+</body>
+</html>
