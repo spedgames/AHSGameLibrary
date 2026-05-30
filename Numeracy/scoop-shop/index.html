@@ -1032,8 +1032,19 @@ body::before {
 </div>
 
 <script>
-window.addEventListener('focus', () => location.reload());
+function init() {
+  preloadAssets();
+  buildMenu();
+  initStartScreen();
+  initSoundToggle();
+}
 
+if (document.hasFocus()) {
+  init();
+} else {
+  window.addEventListener('focus', init, { once: true });
+}
+   
 /* =============================================
    ASSETS PATH
 ============================================= */
