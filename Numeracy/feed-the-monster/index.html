@@ -523,7 +523,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 <canvas id="confetti-canvas"></canvas>
 <div class="next-overlay" id="nextOverlay"></div>
 <!-- Sound toggle — fixed, visible on all screens -->
-<button id="soundBtn" onclick="toggleSound()" aria-label="Toggle sound">🔊</button>
+<button id="soundBtn" onclick="toggleSound()" aria-label="Toggle sound">Sound ON 🔊</button>
 
 <script>
 // =============================================
@@ -547,7 +547,7 @@ let soundOn = true;
 function toggleSound() {
   soundOn = !soundOn;
   const btn = document.getElementById('soundBtn');
-  btn.textContent = soundOn ? '🔊' : '🔇';
+  btn.textContent = soundOn ? 'Sound ON 🔊' : 'Sound OFF 🔇';
   btn.classList.toggle('muted', !soundOn);
 }
 
