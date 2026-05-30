@@ -32,6 +32,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            position: relative; /* Context for screen-wide absolute elements */
         }
 
         #game-container {
@@ -60,6 +61,37 @@
 
         .hidden { display: none !important; }
 
+        /* CHANGED: Fixed to the top right of the entire browser screen window */
+        .global-audio-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000; /* Above all elements, including the container */
+        }
+
+        .btn-audio {
+            background: white;
+            border: 2px solid #2b2d42;
+            color: #2b2d42;
+            border-radius: 30px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+            font-family: 'Nunito', sans-serif;
+            transition: transform 0.1s;
+        }
+
+        .btn-audio:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+        }
+
+        /* Baskets */
         .basket {
             width: 160px;
             height: 140px;
@@ -95,6 +127,7 @@
             margin-top: 25px;
         }
 
+        /* Clothing Cards */
         .clothing-item {
             width: 120px;
             height: 120px;
@@ -131,6 +164,20 @@
 
         .hover-basket { transform: scale(1.1); }
 
+        /* UI Elements */
+        .header-bar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            padding: 15px 30px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(5px);
+        }
+
         .btn {
             background: var(--accent);
             color: white;
@@ -158,10 +205,17 @@
 </head>
 <body>
 
+<div class="global-audio-control">
+    <button id="audio-toggle-btn" class="btn-audio" onclick="toggleAudio()">
+        <span id="audio-icon">🔊</span>
+        <span id="audio-text">Sound On</span>
+    </button>
+</div>
+
 <div id="game-container">
     <div id="start-screen" class="screen">
         <h1 style="font-size: 3.5rem; margin-bottom: 0;">Laundry Day</h1>
-        <p style="font-size: 1.5rem; margin-top: 0;">Sort white and coloured clothes into separate baskets!</p>
+        <p style="font-size: 1.5rem; margin-top: 0;">Sort 8 Whites and 8 Colours!</p>
         <div style="margin: 20px; font-size: 4rem;">🧺🧼</div>
         <div style="margin-bottom: 20px;">
             <input type="checkbox" id="timer-toggle" checked style="transform: scale(1.5);">
@@ -170,8 +224,8 @@
         <button class="btn" onclick="startGame()">Start Sorting</button>
     </div>
 
-    <div id="main-game" class="screen hidden" style="justify-content: space-between; padding: 10px;">
-        <div style="display: flex; justify-content: space-around; width: 100%; padding: 10px;">
+    <div id="main-game" class="screen hidden" style="justify-content: space-between; padding: 70px 10px 10px 10px;">
+        <div class="header-bar">
             <div class="label">Progress: <span id="score">0</span>/16</div>
             <div class="label" id="timer-text">Time: 30s</div>
         </div>
@@ -206,7 +260,7 @@
         { icon: '👕', type: 'white' }, { icon: '🧦', type: 'white' },
         { icon: '👔', type: 'white' }, { icon: '👚', type: 'white' },
         { icon: '🎽', type: 'white' }, { icon: '🧤', type: 'white' },
-        { icon: '🧥', type: 'white' }, { icon: '🧦', type: 'white' }, // Replaced pants with socks
+        { icon: '🧥', type: 'white' }, { icon: '👖', type: 'white' },
         { icon: '👗', type: 'color' }, { icon: '🧣', type: 'color' },
         { icon: '🧢', type: 'color' }, { icon: '🩳', type: 'color' },
         { icon: '👘', type: 'color' }, { icon: '🩰', type: 'color' },
@@ -217,10 +271,13 @@
     let timeLeft = 30;
     let timer;
     let shuffledItems = [];
+    let isSoundMuted = false;
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
     function playSound(freq, type = 'sine', duration = 0.2) {
+        if (isSoundMuted) return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
+        
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = type;
@@ -233,6 +290,21 @@
         osc.stop(audioCtx.currentTime + duration);
     }
 
+    function toggleAudio() {
+        isSoundMuted = !isSoundMuted;
+        const iconEl = document.getElementById('audio-icon');
+        const textEl = document.getElementById('audio-text');
+        
+        if (isSoundMuted) {
+            iconEl.innerText = "🔇";
+            textEl.innerText = "Sound Off";
+        } else {
+            iconEl.innerText = "🔊";
+            textEl.innerText = "Sound On";
+            playSound(440, 'sine', 0.15);
+        }
+    }
+
     function resetToMenu() {
         clearInterval(timer);
         score = 0;
@@ -240,6 +312,7 @@
         document.getElementById('score').innerText = "0";
         document.getElementById('timer-text').innerText = "Time: 30s";
         document.getElementById('play-area').innerHTML = '';
+        
         document.getElementById('end-screen').classList.add('hidden');
         document.getElementById('start-screen').classList.remove('hidden');
     }
