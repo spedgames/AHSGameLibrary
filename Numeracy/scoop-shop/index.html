@@ -1032,13 +1032,9 @@ body::before {
 </div>
 
 <script>
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-        }, 100);
-    }
-});
+window.addEventListener('pageshow', () => {
+        window.dispatchEvent(new Event('resize'));
+    });
 /* =============================================
    ASSETS PATH
 ============================================= */
