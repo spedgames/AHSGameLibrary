@@ -36,6 +36,33 @@
             align-items: center;
             min-height: 100vh;
             overflow: hidden;
+            position: relative;
+        }
+
+        /* Persistent Sound Toggle Top Right */
+        #global-sound-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--white);
+            color: var(--secondary-color);
+            border: 2px solid var(--primary-color);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            min-height: 44px;
+        }
+        #global-sound-btn:hover {
+            background: var(--primary-color);
+            color: var(--white);
         }
 
         #game-container {
@@ -141,6 +168,7 @@
             padding: 20px;
             border-right: 4px solid var(--bg-color);
             min-width: 200px;
+            transition: transform 0.3s ease;
         }
 
         .fraction-display .line {
@@ -160,6 +188,7 @@
             height: 280px;
             filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
             cursor: pointer;
+            transition: transform 0.3s ease;
         }
 
         .slice {
@@ -173,6 +202,46 @@
             fill: var(--accent-color);
         }
 
+        /* Success Splash Overlay */
+        #success-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(224, 247, 250, 0.85); /* Light ocean breeze tint */
+            border-radius: 24px;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 10;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .success-banner {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: var(--success-color);
+            margin: 10px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .success-emoji {
+            font-size: 5rem;
+            animation: bounce 0.6s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-20px); }
+        }
+
         /* Animations */
         .shake { animation: shake 0.5s; }
         @keyframes shake {
@@ -181,16 +250,10 @@
             75% { transform: translateX(10px); }
         }
 
-        .correct-pop { animation: pop 0.5s; }
-        @keyframes pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); color: var(--success-color); }
-            100% { transform: scale(1); }
-        }
-
         /* Mobile Adjustments */
         @media (max-width: 600px) {
             h1 { font-size: 2rem; }
+            #global-sound-btn { top: 10px; right: 10px; padding: 5px 12px; font-size: 0.9rem; }
             .fraction-display { font-size: 4rem; border-right: none; border-bottom: 4px solid var(--bg-color); margin-bottom: 20px; }
             #fraction-circle { width: 200px; height: 200px; }
             .game-main { flex-direction: column; }
@@ -199,25 +262,33 @@
 </head>
 <body>
 
+<button id="global-sound-btn" onclick="toggleSound()">
+    <span id="sound-text">Sound: ON</span> <span id="sound-icon">🔊</span>
+</button>
+
 <div id="game-container">
+    <div id="success-overlay">
+        <div class="success-emoji">🌟</div>
+        <div class="success-banner">CORRECT!</div>
+    </div>
+
     <div id="start-screen" class="screen active">
         <h1>Fraction Fun 🥧</h1>
         <p>Learn numerators! Look at the fraction and tap the correct number of slices in the circle.</p>
         
-        <div style="margin-bottom: 10px;">Select Questions:</div>
+        <div style="margin-bottom: 10px; font-weight: bold;">Select Questions:</div>
         <div class="btn-group">
             <button class="btn btn-opt" onclick="setQuestions(5)">5</button>
             <button class="btn btn-opt selected" onclick="setQuestions(10)">10</button>
             <button class="btn btn-opt" onclick="setQuestions(15)">15</button>
         </div>
 
-        <button class="btn" onclick="toggleSound()" id="sound-btn">Sound: ON 🔊</button>
-        <button class="btn" style="background: var(--success-color);" onclick="startGame()">PLAY GAME</button>
+        <button class="btn" style="background: var(--success-color); margin-top: 20px;" onclick="startGame()">PLAY GAME</button>
     </div>
 
     <div id="game-screen" class="screen">
         <div id="hud">
-            <div id="instr">Select the slices!</div>
+            <div id="instr">Tap the slices!</div>
             <div id="score-display">Score: 0</div>
         </div>
         <div class="progress-container">
@@ -234,7 +305,6 @@
             <div class="visual-area">
                 <svg id="fraction-circle" viewBox="-110 -110 220 220"></svg>
                 <button class="btn" id="check-btn" onclick="checkAnswer()">CHECK</button>
-                <button class="btn" id="next-btn" style="display:none; background: var(--success-color);" onclick="nextQuestion()">NEXT →</button>
             </div>
         </div>
     </div>
@@ -279,8 +349,12 @@
 
     const sounds = {
         tap: () => playTone(440, 'sine', 0.1),
-        success: () => { playTone(523, 'sine', 0.1); setTimeout(() => playTone(659, 'sine', 0.2), 100); },
-        error: () => { playTone(150, 'sawtooth', 0.3); }
+        success: () => { 
+            playTone(523.25, 'sine', 0.15); // C5
+            setTimeout(() => playTone(659.25, 'sine', 0.15), 100); // E5
+            setTimeout(() => playTone(783.99, 'sine', 0.15), 200); // G5
+            setTimeout(() => playTone(1046.50, 'sine', 0.3), 300); // C6
+        }
     };
 
     // UI Logic
@@ -293,7 +367,8 @@
 
     function toggleSound() {
         state.soundEnabled = !state.soundEnabled;
-        document.getElementById('sound-btn').innerText = state.soundEnabled ? "Sound: ON 🔊" : "Sound: OFF 🔇";
+        document.getElementById('sound-text').innerText = state.soundEnabled ? "Sound: ON" : "Sound: OFF";
+        document.getElementById('sound-icon').innerText = state.soundEnabled ? "🔊" : "🔇";
         if(state.soundEnabled) sounds.tap();
     }
 
@@ -301,7 +376,7 @@
         state.currentQuestion = 0;
         state.score = 0;
         showScreen('game-screen');
-        nextQuestion();
+        setupQuestion();
     }
 
     function showScreen(id) {
@@ -309,7 +384,7 @@
         document.getElementById(id).classList.add('active');
     }
 
-    function nextQuestion() {
+    function setupQuestion() {
         if (state.currentQuestion >= state.totalQuestions) {
             endGame();
             return;
@@ -327,9 +402,7 @@
         document.getElementById('numerator').innerText = state.numerator;
         document.getElementById('denominator').innerText = state.denominator;
         document.getElementById('score-display').innerText = `Score: ${state.score}`;
-        document.getElementById('progress-bar').style.width = `${(state.currentQuestion / state.totalQuestions) * 100}%`;
-        document.getElementById('next-btn').style.display = 'none';
-        document.getElementById('check-btn').style.display = 'block';
+        document.getElementById('progress-bar').style.width = `${((state.currentQuestion - 1) / state.totalQuestions) * 100}%`;
         document.getElementById('instr').innerText = "Tap the slices!";
         document.getElementById('instr').style.color = 'inherit';
 
@@ -385,28 +458,35 @@
         if (!state.canInteract) return;
 
         const container = document.getElementById('game-container');
+        const overlay = document.getElementById('success-overlay');
         
         if (state.selectedSlices === state.numerator) {
-            // Correct
+            // Correct State
             state.score++;
             state.canInteract = false;
             sounds.success();
-            document.getElementById('instr').innerText = "Correct! Well done!";
-            document.getElementById('instr').style.color = "var(--success-color)";
-            document.getElementById('check-btn').style.display = 'none';
-            document.getElementById('next-btn').style.display = 'block';
-            document.getElementById('fraction-box').classList.add('correct-pop');
-            setTimeout(() => document.getElementById('fraction-box').classList.remove('correct-pop'), 500);
+            
+            // Instantly update progress bar to include this correct question
+            document.getElementById('progress-bar').style.width = `${(state.currentQuestion / state.totalQuestions) * 100}%`;
+            document.getElementById('score-display').innerText = `Score: ${state.score}`;
+
+            // Show celebratory full splash overlay
+            overlay.style.display = 'flex';
+            
+            // Automatically progress to next question after 1.5 seconds
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                setupQuestion();
+            }, 1500);
+
         } else {
-            // Wrong
-            sounds.error();
+            // Wrong State (No error sound, subtle screen shake, dynamic reset)
             container.classList.add('shake');
             document.getElementById('instr').innerText = "Try again!";
             document.getElementById('instr').style.color = "var(--error-color)";
             
             setTimeout(() => {
                 container.classList.remove('shake');
-                // Reset slices
                 document.querySelectorAll('.slice').forEach(s => s.classList.remove('selected'));
                 state.selectedSlices = 0;
             }, 500);
@@ -418,7 +498,7 @@
         const percent = (state.score / state.totalQuestions) * 100;
         document.getElementById('final-score').innerText = `You got ${state.score} out of ${state.totalQuestions} correct!`;
         
-        let medal = "🥉";
+        let medal = "减";
         let title = "Good Effort!";
         if(percent === 100) { medal = "🏆"; title = "Perfect Score!"; }
         else if(percent >= 70) { medal = "🥈"; title = "Great Job!"; }
