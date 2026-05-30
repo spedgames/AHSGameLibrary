@@ -402,8 +402,15 @@ function playGame(id) {
     const fullUrl = getGameUrl(game);
     const absoluteUrl = new URL(fullUrl, window.location.href).href;
 
-    // Simply open the game in a new tab and exit
-    window.open(absoluteUrl, '_blank');
+    // FIX: Instead of programmatic window.open(), simulate a native HTML link click.
+    // This forces iOS Chrome to open a true foreground tab session with pristine viewport layouts.
+    const link = document.createElement('a');
+    link.href = absoluteUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 }
 
     init();
