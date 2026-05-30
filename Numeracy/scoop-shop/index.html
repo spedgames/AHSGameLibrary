@@ -1032,9 +1032,8 @@ body::before {
 </div>
 
 <script>
-window.addEventListener('pageshow', () => {
-        window.dispatchEvent(new Event('resize'));
-    });
+window.addEventListener('focus', () => location.reload());
+
 /* =============================================
    ASSETS PATH
 ============================================= */
