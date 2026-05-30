@@ -1032,6 +1032,9 @@ body::before {
 </div>
 
 <script>
+window.addEventListener('focus', () => {
+    window.dispatchEvent(new Event('resize'));
+});
 /* =============================================
    ASSETS PATH
 ============================================= */
