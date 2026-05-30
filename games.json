@@ -10,6 +10,18 @@
     "uploadDate": "2026-01-15"
   },
   {
+    "id": "typing-game-people-in-my-neighbourhood",
+    "title": "People in My Neighbourhood Typing Game",
+    "description": "Name the people in your neighbourhood by typing.",
+    "creatorName": "Teacher Joan",
+    "category": "Literacy",
+    "compatibility": ["desktop"],
+    "tags": ["safety", "community living"],
+    "uploadDate": "2026-5-30",
+    "url": "https://scratch.mit.edu/projects/1320444978/",
+    "thumbnail": "https://uploads.scratch.mit.edu/get_image/project/1320444978_480x360.png"
+  },
+  {
     "id": "sight-words-game",
     "title": "Dolch Sight Words Quiz",
     "description": "Listen and guess the Dolch sight word.",
