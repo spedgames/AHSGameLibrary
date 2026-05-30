@@ -1626,18 +1626,42 @@ initStartScreen();
 initSoundToggle();
 
 /* =============================================
-   CHROME MOBILE/IPAD VIEWPORT BUGFIX
+   CRITICAL MOBILE CHROME VIEWPORT BUGFIX
 ============================================= */
-window.addEventListener('load', () => {
-  // Give Chrome two rapid intervals to finalize viewport sizes on a new tab
-  setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
-  setTimeout(() => window.dispatchEvent(new Event('resize')), 400);
-});
+function fixChromeMobileViewport() {
+  const metaViewport = document.querySelector('meta[name="viewport"]');
+  if (metaViewport) {
+    const originalContent = metaViewport.getAttribute('content');
+    
+    // Step 1: Alter the meta-tag content string slightly.
+    // This forces Chrome's native wrapper to completely discard its layout cache
+    metaViewport.setAttribute('content', originalContent + ', interactive-widget=resizes-content');
+    
+    // Step 2: Restore the original tag on the next animation frame to force a recalculation
+    requestAnimationFrame(() => {
+      metaViewport.setAttribute('content', originalContent);
+      window.scrollTo(0, 0);
+      window.dispatchEvent(new Event('resize'));
+    });
+  }
+}
 
-// Forces layout recalculation if the user switches tabs and returns
-window.addEventListener('pageshow', () => {
-  window.dispatchEvent(new Event('resize'));
+// Run immediately across multiple lifecycle windows to catch delayed tab loads
+window.addEventListener('load', () => {
+  setTimeout(fixChromeMobileViewport, 100);
+  setTimeout(fixChromeMobileViewport, 400);
 });
+window.addEventListener('pageshow', fixChromeMobileViewport);
+
+// Fallback: The exact millisecond the student touches the screen to play,
+// instantly recalculate layout parameters before any misalignments cause an issue.
+function triggerFirstTouchFix() {
+  fixChromeMobileViewport();
+  document.removeEventListener('touchstart', triggerFirstTouchFix, { capture: true });
+  document.removeEventListener('pointerdown', triggerFirstTouchFix, { capture: true });
+}
+document.addEventListener('touchstart', triggerFirstTouchFix, { capture: true, passive: true });
+document.addEventListener('pointerdown', triggerFirstTouchFix, { capture: true, passive: true });
 
 </script>
 
