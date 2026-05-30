@@ -250,20 +250,25 @@
   }
   /* Sound toggle button */
   .btn-sound {
-    width: 36px; height: 36px;
-    border-radius: 50%;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 50px;
     border: 1.5px solid var(--glass-border);
     background: var(--glass);
     color: var(--text-light);
-    font-size: 1.05rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
     transition: background 0.18s, border-color 0.18s, transform 0.12s;
     flex-shrink: 0;
+    white-space: nowrap;
   }
-  .btn-sound:hover  { background: rgba(255,255,255,0.14); border-color: var(--water-glow); transform: scale(1.1); }
+  .btn-sound:hover  { background: rgba(255,255,255,0.14); border-color: var(--water-glow); transform: scale(1.05); }
   .btn-sound:active { transform: scale(0.95); }
-  .btn-sound.muted  { opacity: 0.45; }
+  .btn-sound.muted  { opacity: 0.55; border-color: rgba(255,255,255,0.1); }
 
   /* Main game layout */
   .game-main {
@@ -995,8 +1000,8 @@
    GAME DATA & CONFIG
 ================================================================= */
 const FISH_NAMES = [
-  "Goldie","Bubbles","Shimmer","Finn","Nemo",
-  "Splash","Coral","Azure","Dory"
+  "Goldie","Bubbles","Nemo","Dory","Finn",
+  "Splash","Coral","Azure","Shimmer"
 ];
 
 // Dollar & cent denominations (in cents for precision)
@@ -1586,7 +1591,7 @@ document.getElementById('btnPay').addEventListener('touchend', (e) => { e.preven
   const btn = document.getElementById('btnSound');
   function updateBtn() {
     const m = SFX.isMuted();
-    btn.textContent = m ? '🔇' : '🔊';
+    btn.innerHTML = m ? '🔇 Sound OFF' : '🔊 Sound ON';
     btn.classList.toggle('muted', m);
     btn.title = m ? 'Sound off — tap to turn on' : 'Sound on — tap to turn off';
   }
