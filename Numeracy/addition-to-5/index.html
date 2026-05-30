@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Addition Game</title>
+    <title>Math Adventure: Addition to 5</title>
     <style>
         :root {
             --red: #FF595E;
@@ -15,7 +15,7 @@
         }
 
         body {
-            font-family: 'Roboto', 'Chalkboard SE', cursive, sans-serif;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
             background-color: var(--blue);
             display: flex;
             justify-content: center;
@@ -34,12 +34,39 @@
             box-shadow: 0 15px 0px rgba(0,0,0,0.1);
             border: 8px solid var(--yellow);
             text-align: center;
+            position: relative; /* Needed to anchor the sound button */
+        }
+
+        /* Sound Control Button */
+        #sound-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #eee;
+            border: 2px solid #ccc;
+            padding: 6px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.1s;
+        }
+        #sound-toggle:hover {
+            background: #e0e0e0;
+        }
+        #sound-toggle:active {
+            transform: scale(0.95);
         }
 
         .screen { display: block; }
         .hidden { display: none !important; }
 
-        h1 { color: var(--red); margin-top: 0; }
+        h1 { color: var(--red); margin-top: 15px; }
 
         /* Stats & Progress */
         .stats-row {
@@ -48,6 +75,7 @@
             font-weight: bold;
             color: var(--blue);
             margin-bottom: 5px;
+            margin-top: 15px; /* Added padding to clear the sound button */
         }
 
         .progress-container {
@@ -103,6 +131,7 @@
 
         .ans-btn:active:not(.wrong) { transform: translateY(4px); box-shadow: 0 2px 0 #b33e42; }
 
+        /* Wrong Answer State */
         .ans-btn.wrong {
             background-color: #cbd5e0 !important;
             box-shadow: 0 6px 0 #a0aec0 !important;
@@ -136,52 +165,18 @@
         }
         .btn-simple { background-color: var(--blue); }
         .btn-visual { background-color: var(--red); }
-
-        /* Selectors */
-        .selector-label { font-weight: bold; color: #555; margin-bottom: 8px; font-size: 14px; }
-        .selection-row {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .opt-btn {
-            background: #eee;
-            border: 2px solid #ddd;
-            padding: 8px 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            color: #666;
-            transition: 0.2s;
-        }
-        .opt-btn.selected {
-            background: var(--yellow);
-            border-color: #e6b800;
-            color: #333;
-        }
     </style>
 </head>
 <body>
 
 <div id="game-card">
+    <button id="sound-toggle" onclick="toggleSound()">
+        <span id="sound-icon">🔊</span> <span id="sound-text">Sound: On</span>
+    </button>
+
     <div id="start-screen" class="screen">
-        <h1>Addition Game</h1>
-        
-        <div class="selector-label">HOW MANY QUESTIONS?</div>
-        <div class="selection-row">
-            <div class="opt-btn" onclick="setCount(3, this)">3</div>
-            <div class="opt-btn" onclick="setCount(5, this)">5</div>
-            <div class="opt-btn selected" onclick="setCount(10, this)">10</div>
-            <div class="opt-btn" onclick="setCount(12, this)">12</div>
-        </div>
-
-        <div class="selector-label">INCLUDE 0?</div>
-        <div class="selection-row">
-            <div id="zero-on" class="opt-btn selected" onclick="setZero(true)">YES</div>
-            <div id="zero-off" class="opt-btn" onclick="setZero(false)">NO</div>
-        </div>
-
+        <h1>Math Adventure</h1>
+        <p>Ready to add to 5?</p>
         <button class="mode-btn btn-simple" onclick="initGame(false)">Numbers Only</button>
         <button class="mode-btn btn-visual" onclick="initGame(true)">Numbers + Shapes 🔺</button>
     </div>
@@ -228,60 +223,60 @@
     let useVisuals = false;
     let isFirstAttempt = true;
     let questionPool = [];
-    let maxQuestions = 10;
-    let includeZero = true;
+    let soundEnabled = true;
+    const maxQuestions = 10;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        const icon = document.getElementById('sound-icon');
+        const text = document.getElementById('sound-text');
+        
+        if (soundEnabled) {
+            icon.innerText = "🔊";
+            text.innerText = "Sound: On";
+        } else {
+            icon.innerText = "🔇";
+            text.innerText = "Sound: Off";
+        }
+    }
+
     function playSuccessSound() {
+        // Stop right here if the user has muted the sound
+        if (!soundEnabled) return;
+
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
+        
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(261.63, audioCtx.currentTime); 
+        osc.frequency.setValueAtTime(261.63, audioCtx.currentTime); // Low, warm Middle C
+        
         gain.gain.setValueAtTime(0, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.05); 
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6); 
+        gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.05); // Smooth attack
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6); // Gentle decay
+        
         osc.connect(gain);
         gain.connect(audioCtx.destination);
+        
         osc.start();
         osc.stop(audioCtx.currentTime + 0.6);
     }
 
-    function setCount(num, el) {
-        maxQuestions = num;
-        el.parentElement.querySelectorAll('.opt-btn').forEach(opt => opt.classList.remove('selected'));
-        el.classList.add('selected');
-    }
-
-    function setZero(val) {
-        includeZero = val;
-        document.getElementById('zero-on').classList.toggle('selected', val);
-        document.getElementById('zero-off').classList.toggle('selected', !val);
-    }
-
     function generateAllPossibleQuestions() {
         let pairs = [];
-        // Determine starting point based on "includeZero"
-        const startNum = includeZero ? 0 : 1;
-
-        for (let i = startNum; i <= 5; i++) {
-            for (let j = startNum; j <= 5; j++) {
-                // Ensure sum is between 1 and 5
+        for (let i = 0; i <= 5; i++) {
+            for (let j = 0; j <= 5; j++) {
                 if (i + j >= 1 && i + j <= 5) {
                     pairs.push({ n1: i, n2: j });
                 }
             }
         }
-        
-        // Shuffle
         for (let i = pairs.length - 1; i > 0; i--) {
             const k = Math.floor(Math.random() * (i + 1));
             [pairs[i], pairs[k]] = [pairs[k], pairs[i]];
         }
-        
-        // If the filtered pool is smaller than requested maxQuestions, 
-        // we'll just use the full pool.
-        return pairs.slice(0, Math.min(maxQuestions, pairs.length));
+        return pairs.slice(0, maxQuestions);
     }
 
     function initGame(visualMode) {
@@ -292,9 +287,6 @@
         questionsCompleted = 0;
         questionPool = generateAllPossibleQuestions();
         
-        // Adjust maxQuestions if the pool is smaller than selected
-        let actualMax = questionPool.length;
-
         document.getElementById('start-screen').classList.add('hidden');
         document.getElementById('end-screen').classList.add('hidden');
         document.getElementById('play-area').classList.remove('hidden');
@@ -330,13 +322,15 @@
 
         if (choice === currentAnswer) {
             if (isFirstAttempt) score++;
+            
             playSuccessSound();
             document.getElementById('math-display').classList.add('correct-anim');
+            
             questionsCompleted++;
             updateUI();
 
             setTimeout(() => {
-                if (questionsCompleted < questionPool.length) {
+                if (questionsCompleted < maxQuestions) {
                     nextQuestion();
                 } else {
                     showEndScreen();
@@ -349,18 +343,16 @@
     }
 
     function updateUI() {
-        const total = questionPool.length;
         document.getElementById('score-display').innerText = `Score: ${score}`;
-        document.getElementById('count-display').innerText = `Question: ${Math.min(questionsCompleted + 1, total)}/${total}`;
-        const progress = (questionsCompleted / total) * 100;
+        document.getElementById('count-display').innerText = `Question: ${Math.min(questionsCompleted + 1, maxQuestions)}/10`;
+        const progress = (questionsCompleted / maxQuestions) * 100;
         document.getElementById('progress-bar').style.width = progress + '%';
     }
 
     function showEndScreen() {
-        const total = questionPool.length;
         document.getElementById('play-area').classList.add('hidden');
         document.getElementById('end-screen').classList.remove('hidden');
-        document.getElementById('final-score').innerText = `${score} / ${total}`;
+        document.getElementById('final-score').innerText = `${score} / 10`;
     }
 
     function resetToMenu() {
