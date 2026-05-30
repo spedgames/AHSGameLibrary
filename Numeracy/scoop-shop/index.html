@@ -79,6 +79,35 @@ body::before {
 
 .emoji-title { font-size: clamp(1rem, 2.6vw, 1.5rem); }
 
+/* Sound toggle button */
+#sound-toggle {
+  position: absolute;
+  left: 0.7rem;
+  background: rgba(255,255,255,0.22);
+  border: 2px solid rgba(255,255,255,0.45);
+  border-radius: 20px;
+  height: clamp(26px, 4.5vw, 34px);
+  padding: 0 clamp(0.4rem, 1.2vw, 0.7rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(0.55rem, 1.3vw, 0.72rem);
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  transition: background 0.2s ease, transform 0.15s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+#sound-toggle:hover  { background: rgba(255,255,255,0.35); transform: scale(1.05); }
+#sound-toggle:active { transform: scale(0.94); }
+#sound-toggle.muted  { background: rgba(0,0,0,0.18); border-color: rgba(255,255,255,0.25); }
+
 /* Progress dots — sit below the cone label */
 #progress-bar {
   display: flex;
@@ -891,6 +920,7 @@ body::before {
     <span class="emoji-title">🍦</span>
     <h1>Scoop Shop</h1>
     <span class="emoji-title">🍦</span>
+    <button id="sound-toggle" aria-label="Toggle sound"><span id="sound-icon">🔊</span><span id="sound-label">Sound ON</span></button>
   </div>
 
   <!-- GAME AREA -->
@@ -1018,7 +1048,7 @@ const FLAVOURS = [
   { id:'vanilla',          name:'Vanilla',            price:'20c', priceDisplay:'20¢' },
   { id:'cookiescream',     name:'Cookies & Cream',    price:'2d',  priceDisplay:'$2'  },
   { id:'caramel',          name:'Caramel',            price:'50c', priceDisplay:'50¢' },
-  { id:'blueberry',        name:'Rainbow Sprinkles',  price:'2d',  priceDisplay:'$2'  },
+  { id:'blueberry',        name:'Blueberry Fruit',    price:'2d',  priceDisplay:'$2'  },
   { id:'galaxy',           name:'Galaxy Swirl',       price:'10d', priceDisplay:'$10' },
 ];
 
@@ -1068,25 +1098,24 @@ function preloadAssets() {
 }
 
 /* =============================================
-   AUDIO ENGINE
-   Synthesised entirely with Web Audio API —
-   no external sound files needed.
+   AUDIO ENGINE — Web Audio API, no sound files
 ============================================= */
 let audioCtx = null;
+let soundOn  = true;  /* global mute flag */
 
 function getAudioCtx() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  // Resume if suspended (browser autoplay policy)
   if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
 
-/* Utility: play a simple tone envelope */
-function playTone({ freq = 440, type = 'sine', gain = 0.4,
+/* Utility: single tone with ADSR envelope */
+function playTone({ freq = 440, type = 'sine', gain = 0.35,
                     attack = 0.01, decay = 0.1, sustain = 0.2,
                     release = 0.15, duration = 0.4 } = {}) {
+  if (!soundOn) return;
   const ctx = getAudioCtx();
   const osc = ctx.createOscillator();
   const env = ctx.createGain();
@@ -1094,7 +1123,6 @@ function playTone({ freq = 440, type = 'sine', gain = 0.4,
   env.connect(ctx.destination);
   osc.type = type;
   osc.frequency.setValueAtTime(freq, ctx.currentTime);
-  // ADSR-style envelope
   env.gain.setValueAtTime(0, ctx.currentTime);
   env.gain.linearRampToValueAtTime(gain, ctx.currentTime + attack);
   env.gain.linearRampToValueAtTime(gain * sustain, ctx.currentTime + attack + decay);
@@ -1104,22 +1132,18 @@ function playTone({ freq = 440, type = 'sine', gain = 0.4,
   osc.stop(ctx.currentTime + duration);
 }
 
-/* Button press — soft click */
-function sfxButtonPress() {
-  playTone({ freq: 600, type: 'sine', gain: 0.25, attack: 0.005,
-             decay: 0.05, sustain: 0.1, release: 0.08, duration: 0.18 });
-}
-
-/* Wrong answer — low thud */
-function sfxWrong() {
-  playTone({ freq: 180, type: 'sawtooth', gain: 0.3, attack: 0.01,
-             decay: 0.08, sustain: 0.05, release: 0.12, duration: 0.3 });
-}
-
-/* Correct answer — cheerful rising arpeggio */
+/*
+  Correct answer — ascending sine chime C5 → D5 → E5
+  Minimalist, soft, 8-bit inspired: pure sine waves,
+  short equal-length notes, gentle volume, clean decay.
+*/
 function sfxCorrect() {
+  if (!soundOn) return;
   const ctx = getAudioCtx();
-  const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+  const notes = [523.25, 587.33, 659.25]; // C5, D5, E5
+  const noteLen = 0.13;  // each note duration (s)
+  const gap     = 0.11;  // spacing between note starts
+
   notes.forEach((freq, i) => {
     const osc = ctx.createOscillator();
     const env = ctx.createGain();
@@ -1127,46 +1151,50 @@ function sfxCorrect() {
     env.connect(ctx.destination);
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    const t = ctx.currentTime + i * 0.09;
+    const t = ctx.currentTime + i * gap;
     env.gain.setValueAtTime(0, t);
-    env.gain.linearRampToValueAtTime(0.35, t + 0.01);
-    env.gain.linearRampToValueAtTime(0, t + 0.18);
+    env.gain.linearRampToValueAtTime(0.22, t + 0.008); // near-instant attack
+    env.gain.setValueAtTime(0.22, t + noteLen * 0.4);  // short sustain plateau
+    env.gain.linearRampToValueAtTime(0, t + noteLen);  // clean linear decay
     osc.start(t);
-    osc.stop(t + 0.2);
+    osc.stop(t + noteLen + 0.01);
   });
 }
 
-/* Scoop landing — satisfying soft plop */
+/*
+  Scoop landing — soft rounded plop
+*/
 function sfxScoop() {
+  if (!soundOn) return;
   const ctx = getAudioCtx();
-  // Main plop
   const osc = ctx.createOscillator();
   const env = ctx.createGain();
   osc.connect(env);
   env.connect(ctx.destination);
   osc.type = 'sine';
-  osc.frequency.setValueAtTime(300, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.18);
-  env.gain.setValueAtTime(0.45, ctx.currentTime);
+  osc.frequency.setValueAtTime(280, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.18);
+  env.gain.setValueAtTime(0.38, ctx.currentTime);
   env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
   osc.start(ctx.currentTime);
   osc.stop(ctx.currentTime + 0.25);
-  // Soft noise layer
-  const buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
+  // Very light noise texture
+  const buf = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
   const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.12;
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.08;
   const noise = ctx.createBufferSource();
   noise.buffer = buf;
   const nenv = ctx.createGain();
   noise.connect(nenv);
   nenv.connect(ctx.destination);
-  nenv.gain.setValueAtTime(0.3, ctx.currentTime);
-  nenv.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+  nenv.gain.setValueAtTime(0.2, ctx.currentTime);
+  nenv.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
   noise.start(ctx.currentTime);
 }
 
-/* Win jingle — short fanfare */
+/* Win jingle — kept for end screen */
 function sfxWin() {
+  if (!soundOn) return;
   const ctx = getAudioCtx();
   const melody = [523, 659, 784, 659, 1047];
   const times  = [0, 0.12, 0.24, 0.36, 0.5];
@@ -1179,11 +1207,31 @@ function sfxWin() {
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
     const t = ctx.currentTime + times[i];
     env.gain.setValueAtTime(0, t);
-    env.gain.linearRampToValueAtTime(0.4, t + 0.02);
+    env.gain.linearRampToValueAtTime(0.35, t + 0.02);
     env.gain.linearRampToValueAtTime(0, t + 0.22);
     osc.start(t);
     osc.stop(t + 0.25);
   });
+}
+
+/* Toggle sound on/off */
+function initSoundToggle() {
+  const btn = document.getElementById('sound-toggle');
+  btn.addEventListener('click', toggleSound);
+  btn.addEventListener('touchend', e => { e.preventDefault(); toggleSound(); }, { passive: false });
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  const btn   = document.getElementById('sound-toggle');
+  const icon  = document.getElementById('sound-icon');
+  const label = document.getElementById('sound-label');
+  icon.textContent  = soundOn ? '🔊' : '🔇';
+  label.textContent = soundOn ? 'Sound ON' : 'Sound OFF';
+  btn.classList.toggle('muted', !soundOn);
+  if (audioCtx) {
+    soundOn ? audioCtx.resume() : audioCtx.suspend();
+  }
 }
 
 /* =============================================
@@ -1200,7 +1248,6 @@ function initStartScreen() {
   const startBtn = document.getElementById('start-btn');
 
   const dismiss = () => {
-    sfxButtonPress();
     const screen = document.getElementById('start-screen');
     screen.classList.add('hidden');
     screen.addEventListener('animationend', () => {
@@ -1259,10 +1306,9 @@ function buildMenu() {
     card.appendChild(price);
     card.appendChild(check);
 
-    card.addEventListener('click', () => { sfxButtonPress(); onFlavourClick(f.id); });
+    card.addEventListener('click', () => onFlavourClick(f.id));
     card.addEventListener('touchend', e => {
       e.preventDefault();
-      sfxButtonPress();
       onFlavourClick(f.id);
     }, { passive: false });
 
@@ -1344,10 +1390,9 @@ function renderMoneyOptions(options, correctKey) {
       <div class="money-placeholder" style="background:${m.fallbackBg};display:none;">${m.fallbackText}</div>
       <div class="money-label">${m.label}</div>
     `;
-    btn.addEventListener('click', () => { sfxButtonPress(); onMoneyClick(key, correctKey, btn); });
+    btn.addEventListener('click', () => onMoneyClick(key, correctKey, btn));
     btn.addEventListener('touchend', e => {
       e.preventDefault();
-      sfxButtonPress();
       onMoneyClick(key, correctKey, btn);
     }, { passive: false });
     container.appendChild(btn);
@@ -1375,7 +1420,6 @@ function onMoneyClick(chosen, correct, btn) {
       if (purchased.length >= 5) setTimeout(showWinScreen, 950);
     }, 900);
   } else {
-    sfxWrong();
     btn.classList.add('wrong');
     msg.textContent = '❌ Not quite — try again!';
     msg.className = 'wrong-text';
@@ -1539,7 +1583,6 @@ function launchConfetti() {
    RESET / PLAY AGAIN
 ============================================= */
 function resetGame() {
-  sfxButtonPress();
   purchased      = [];
   currentFlavour = null;
   answering      = false;
@@ -1570,6 +1613,7 @@ playBtn.addEventListener('touchend', e => {
 preloadAssets();
 buildMenu();
 initStartScreen();
+initSoundToggle();
 </script>
 
 </body>
