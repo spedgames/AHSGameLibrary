@@ -180,6 +180,21 @@
   }
   .hud-round { font-size: clamp(0.85rem,3vw,1.05rem); font-weight: 800; color: var(--text-dark); }
 
+  /* Sound toggle button */
+  .sound-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--sky); border: none; border-radius: 50px;
+    padding: 6px 12px; cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(0.65rem,2.2vw,0.8rem); font-weight: 700;
+    color: var(--pond-deep); min-height: 34px;
+    transition: background 0.15s, opacity 0.15s;
+    white-space: nowrap;
+  }
+  .sound-btn:active { background: #c8e8f8; }
+  .sound-btn.muted  { opacity: 0.55; }
+  .sound-btn .s-icon { font-size: clamp(0.9rem,3vw,1.1rem); line-height: 1; }
+
   /* Pond Area */
   .pond-container {
     flex: 1; width: 100%;
@@ -458,7 +473,10 @@
   <div class="hud">
     <div class="hud-pill" id="hud-mode">🔢 Guided</div>
     <div class="hud-round" id="hud-round">Round 1 / 10</div>
-    <div class="hud-pill" id="hud-score">⭐ 0</div>
+    <button class="sound-btn" id="sound-btn" onclick="toggleSound()">
+      <span class="s-icon" id="sound-icon">🔊</span>
+      <span id="sound-label">Sound On</span>
+    </button>
   </div>
 
   <!-- Progress dots -->
@@ -511,7 +529,19 @@
    QUACK & COUNT — GAME LOGIC
    =================================================== */
 
-// ---------- AUDIO (Web Audio API — no external files needed) ----------
+// ---------- SOUND ----------
+let soundEnabled = true;
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  const btn   = document.getElementById('sound-btn');
+  const icon  = document.getElementById('sound-icon');
+  const label = document.getElementById('sound-label');
+  icon.textContent  = soundEnabled ? '🔊' : '🔇';
+  label.textContent = soundEnabled ? 'Sound On' : 'Sound Off';
+  btn.classList.toggle('muted', !soundEnabled);
+}
+
 let audioCtx = null;
 
 function getAudioCtx() {
@@ -520,26 +550,23 @@ function getAudioCtx() {
 }
 
 /**
- * Gentle soft UI tap — a short, warm sine tone that fades in and out quickly.
- * Sounds like a soft marimba/xylophone hit. Pitch varies slightly per tap.
+ * Gentle consistent UI tap — same soft sine pluck every time (E5, 659 Hz).
+ * Short attack, smooth decay, ~180ms total.
  */
 function playQuack() {
+  if (!soundEnabled) return;
   try {
-    const ctx = getAudioCtx();
-    const t = ctx.currentTime;
-
-    // Slight pitch variation so repeated taps feel lively but not harsh
-    const freq = 520 + Math.random() * 120; // ~C5–E5 range
+    const ctx  = getAudioCtx();
+    const t    = ctx.currentTime;
+    const freq = 659.25; // E5 — same pitch every tap
 
     const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
 
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, t);
-    // Very slight pitch drop for a "pluck" feel
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.92, t + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.94, t + 0.14);
 
-    // Short soft envelope: quick attack, smooth decay
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(0.22, t + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
@@ -548,22 +575,21 @@ function playQuack() {
     gain.connect(ctx.destination);
     osc.start(t);
     osc.stop(t + 0.2);
-  } catch(e) { /* silently skip if audio unavailable */ }
+  } catch(e) { /* silently skip */ }
 }
 
 /**
  * Success sound: rapid ascending sine triad C5 → E5 → G5.
- * Clean, bright, no extra sparkle — each note fires 80ms apart.
+ * Clean, bright — each note fires 80ms apart.
  */
 function playCorrect() {
+  if (!soundEnabled) return;
   try {
-    const ctx = getAudioCtx();
-    const t = ctx.currentTime;
-
-    // C5, E5, G5 — pure sine, rapid stagger
-    const notes  = [523.25, 659.25, 783.99];
-    const gap    = 0.08; // 80ms between each note
-    const decay  = 0.28; // each note rings for ~280ms
+    const ctx   = getAudioCtx();
+    const t     = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99];
+    const gap   = 0.08;
+    const decay = 0.28;
 
     notes.forEach((freq, i) => {
       const osc  = ctx.createOscillator();
@@ -574,8 +600,8 @@ function playCorrect() {
       osc.frequency.setValueAtTime(freq, s);
 
       gain.gain.setValueAtTime(0.0001, s);
-      gain.gain.exponentialRampToValueAtTime(0.28, s + 0.015); // fast attack
-      gain.gain.exponentialRampToValueAtTime(0.0001, s + decay); // smooth decay
+      gain.gain.exponentialRampToValueAtTime(0.28, s + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, s + decay);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -633,7 +659,6 @@ function nextRound() {
   duckCount = Math.floor(Math.random() * 5) + 1;
 
   document.getElementById('hud-round').textContent = `Round ${round} / ${totalRounds}`;
-  document.getElementById('hud-score').textContent = `⭐ ${score}`;
 
   for (let i = 0; i < totalRounds; i++) {
     const d = document.getElementById('dot-' + i);
