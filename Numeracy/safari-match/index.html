@@ -31,7 +31,25 @@ body {
     border: 6px solid #C5E1A5;
     max-height: 98vh;
     overflow: hidden;
+    position: relative;
 }
+
+/* Sound toggle — top right of container */
+#sound-toggle {
+    position: absolute;
+    top: 12px; right: 14px;
+    display: flex; align-items: center; gap: 5px;
+    background: #F1F8E9; border: 2px solid #DCEDC8;
+    border-radius: 20px; padding: 5px 10px 5px 8px;
+    cursor: pointer; font-size: 0.75rem; font-weight: 700;
+    color: var(--primary); transition: all 0.2s;
+    user-select: none; touch-action: manipulation; z-index: 50;
+    white-space: nowrap;
+}
+#sound-toggle:hover { background: #DCEDC8; }
+#sound-toggle.muted { background: #FFF3E0; border-color: #FFCC80; color: #E65100; }
+#sound-toggle .icon { font-size: 1rem; line-height: 1; }
+
 .screen { display: none; flex-direction: column; animation: fadeIn 0.3s ease-out; }
 .screen.active { display: flex; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -50,10 +68,7 @@ button.selected { background: var(--accent); color: white; border-color: #C37920
     text-align: center; font-size: clamp(0.9rem, 2.5vw, 1.15rem); font-weight: 800; margin-bottom: 14px; flex-shrink: 0;
     border: 2px solid var(--primary);
 }
-.match-area {
-    display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 4vw, 50px);
-    flex-shrink: 0;
-}
+.match-area { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 4vw, 50px); flex-shrink: 0; }
 .drop-column { display: flex; flex-direction: column; align-items: center; gap: clamp(10px, 2vh, 18px); }
 
 .number-card {
@@ -66,7 +81,6 @@ button.selected { background: var(--accent); color: white; border-color: #C37920
 .picture-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 8px; }
 .icon-item { font-size: clamp(1rem, 3vw, 1.5rem); }
 
-/* Default drop zone (tablet/desktop) */
 .drop-zone {
     width: 100%; max-width: 180px;
     height: clamp(70px, 12vw, 100px);
@@ -78,16 +92,12 @@ button.selected { background: var(--accent); color: white; border-color: #C37920
 .drop-zone.hover { background: #F1F8E9; border-color: var(--primary); }
 .drop-zone.filled { border-style: solid; border-color: var(--success); background: #F0FFF4; box-shadow: none; }
 
-/* Default draggables bin (tablet/desktop) */
 .draggables-container {
     display: flex; justify-content: center; align-items: center;
-    gap: clamp(16px, 5vw, 40px);
-    flex-shrink: 0;
+    gap: clamp(16px, 5vw, 40px); flex-shrink: 0;
     margin-top: clamp(6px, 1.5vh, 14px);
     height: clamp(65px, 11vw, 100px);
 }
-
-/* Default draggable item (tablet/desktop) */
 .draggable-item {
     width: clamp(120px, 22vw, 180px);
     height: clamp(65px, 11vw, 100px);
@@ -106,45 +116,43 @@ button.selected { background: var(--accent); color: white; border-color: #C37920
 .success-content { text-align: center; margin: auto; padding: 20px 0; }
 .celebration-emoji { font-size: 5rem; display: block; }
 
+/* Start screen needs top padding so title doesn't hide under sound button */
+#start-screen { padding-top: 28px; }
+
 @media (min-width: 640px) {
     body { align-items: center; }
     #game-container { height: auto; max-height: 92vh; }
     .number-card { max-height: 210px; }
 }
-
-/* ── Mobile overrides ── */
 @media (max-width: 480px) {
     body { padding: 6px; align-items: flex-start; overflow-y: auto; }
     #game-container { max-height: none; border-width: 4px; padding: 12px; }
     .settings-container { gap: 8px; }
     .match-area { gap: 12px; }
     .number-card { aspect-ratio: 1/1; max-height: 150px; }
-
-    /* Drop zone and draggable: same square size, large enough to see the image */
-    .drop-zone {
-        max-width: none;
-        width: 120px;
-        height: 120px;
-        border-radius: 14px;
-    }
-    .draggables-container {
-        height: 120px;
-        gap: 20px;
-        margin-top: 10px;
-    }
-    .draggable-item {
-        width: 120px;
-        height: 120px;
-        border-radius: 14px;
-        font-size: 1.2rem;
-        box-shadow: 0 5px 0 #C37920;
-    }
+    .drop-zone { max-width: none; width: 120px; height: 120px; border-radius: 14px; }
+    .draggables-container { height: 120px; gap: 20px; margin-top: 10px; }
+    .draggable-item { width: 120px; height: 120px; border-radius: 14px; font-size: 1.2rem; box-shadow: 0 5px 0 #C37920; }
     .draggable-item img { height: 90%; width: 90%; }
+    #sound-toggle { top: 10px; right: 10px; font-size: 0.7rem; padding: 4px 8px 4px 6px; }
 }
 </style>
 </head>
 <body>
+
+<!-- Preload images — hidden, loads as soon as page opens -->
+<div style="display:none" aria-hidden="true">
+    <img id="preload-more" src="https://iili.io/BWVP5o7.md.png" alt="">
+    <img id="preload-less" src="https://iili.io/BWVPuN2.md.png" alt="">
+</div>
+
 <div id="game-container">
+
+    <!-- Sound toggle button, always visible -->
+    <div id="sound-toggle" onclick="toggleSound()">
+        <span class="icon" id="sound-icon">🔊</span>
+        <span id="sound-label">Sound On</span>
+    </div>
 
     <div id="start-screen" class="screen active">
         <h1>🦁 Safari Match</h1>
@@ -217,15 +225,28 @@ let settings = { range: 5, rep: 'visuals', mode: 'both', trials: 5 };
 let gameState = { currentTrial: 0, leftVal: 0, rightVal: 0, matches: 0 };
 const icons = ['🦁','🐯','🦒','🐘','🦏','🦓','🐵','🦜'];
 let audioCtx = null;
+let soundEnabled = true;
 let activeDragItem = null;
 let initialX, initialY, startClientX, startClientY;
+
+// Cache preloaded image src so draggables use the already-loaded version
+const IMG_MORE = document.getElementById('preload-more').src;
+const IMG_LESS = document.getElementById('preload-less').src;
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    const btn = document.getElementById('sound-toggle');
+    document.getElementById('sound-icon').textContent = soundEnabled ? '🔊' : '🔇';
+    document.getElementById('sound-label').textContent = soundEnabled ? 'Sound On' : 'Sound Off';
+    btn.classList.toggle('muted', !soundEnabled);
+}
 
 function initAudio() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 function playCorrectSound() {
-    if (!audioCtx) return;
+    if (!soundEnabled || !audioCtx) return;
     const now = audioCtx.currentTime;
     const masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(0, now);
@@ -284,8 +305,9 @@ function resetDraggables() {
     if (settings.rep === 'words') {
         more.innerHTML = 'MORE'; less.innerHTML = 'LESS';
     } else {
-        more.innerHTML = `<img src="https://iili.io/BWVP5o7.md.png" alt="more">`;
-        less.innerHTML = `<img src="https://iili.io/BWVPuN2.md.png" alt="less">`;
+        // Use cached src from preloaded images — no network round-trip
+        more.innerHTML = `<img src="${IMG_MORE}" alt="more">`;
+        less.innerHTML = `<img src="${IMG_LESS}" alt="less">`;
     }
     [more, less].forEach(el => {
         el.style.position = ''; el.style.left = ''; el.style.top = '';
