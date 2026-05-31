@@ -32,8 +32,8 @@
             flex-direction: row; /* desktop: side-by-side */
         }
 
-        /* Touch devices: stack world on top, UI panel below */
-        @media (hover: none) {
+        /* On narrow screens stack world on top, controls below */
+        @media (max-width: 768px) {
             #game-container { flex-direction: column; }
         }
 
@@ -84,7 +84,7 @@
             background-image: radial-gradient(#e0e0e0 1.5px, transparent 1.5px);
             background-size: 30px 30px; overflow: hidden;
         }
-        @media (hover: none) {
+        @media (max-width: 768px) {
             #world { flex: 1 1 auto; min-height: 0; }
         }
 
@@ -152,7 +152,7 @@
             flex: 0 0 230px;
             overflow-y: auto;
         }
-        @media (hover: none) {
+        @media (max-width: 768px) {
             #ui {
                 flex: 0 0 auto;
                 flex-direction: column;
@@ -162,7 +162,7 @@
             #ingame-instructions { font-size: 0.75rem; padding: 6px 8px; }
         }
 
-        #shopping-list { background: var(--paper); padding: 8px 10px; box-shadow: 4px 4px 0px #fbc02d; margin-bottom: 10px; border-radius: 4px; }
+        #shopping-list { background: var(--paper); padding: 8px 10px; box-shadow: 4px 4px 0px #fbc02d; margin-bottom: 10px; border-radius: 4px; flex-shrink: 0; }
         .list-item  { margin: 6px 0; font-weight: bold; font-size: 0.95rem; display: flex; align-items: center; gap: 4px; }
         .checked    { text-decoration: line-through; color: var(--success-green); opacity: 0.5; }
 
@@ -174,34 +174,17 @@
         @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(67,160,71,0.5); } 50%{ box-shadow:0 0 0 10px rgba(67,160,71,0); } }
 
         /* ── Controls ── */
-        /* Desktop: sit at the bottom of the #ui sidebar */
         #controls {
             display: grid;
             grid-template-areas: ". up ." "left action right" ". down .";
             gap: 8px;
             justify-content: center;
-            margin-top: auto;
-            padding-top: 6px;
-        }
-
-        /* Touch devices — phones AND tablets in any orientation.
-           (hover:none) reliably identifies touch screens.
-           Wide breakpoint catches landscape iPad (1024px wide). */
-        @media (hover: none) {
-            #controls {
-                position: fixed;
-                bottom: 36%;
-                left: 50%;
-                transform: translateX(-50%);
-                z-index: 600;
-                margin-top: 0;
-                padding: 10px 16px 12px;
-                background: rgba(255,255,255,0.88);
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
-                border-radius: 20px;
-                box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-            }
+            flex-shrink: 0;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            /* Stick to the bottom of the sidebar so they're always visible */
+            position: sticky;
+            bottom: 16px;
         }
 
         .ctrl {
