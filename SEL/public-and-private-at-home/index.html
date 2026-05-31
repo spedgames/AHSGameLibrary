@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Our House: Public & Private Behaviors</title>
     <style>
         /* --- DESIGN SYSTEM & CSS VARIABLES --- */
@@ -46,9 +46,10 @@
         #game-container {
             width: 100%;
             max-width: 650px;
-            height: 96vh;
-            height: calc(var(--vh, 1vh) * 96);
-            max-height: 850px;
+            /* Scaled down slightly to leave guaranteed space for the mobile address/nav bars */
+            height: 88vh;
+            height: calc(var(--vh, 1vh) * 88);
+            max-height: 800px;
             background: var(--card-bg);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow);
@@ -56,6 +57,8 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            /* Extra safety margin at the absolute bottom inside the container */
+            padding-bottom: env(safe-area-inset-bottom, 10px); 
         }
 
         /* --- GLOBAL UTILITY CONTROLS --- */
@@ -89,7 +92,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            padding: 20px;
+            padding: 20px 20px 12px 20px; /* Tapered bottom padding */
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -176,7 +179,7 @@
             border-bottom: 2px solid #f1f5f9;
             padding-bottom: 6px;
             padding-right: 115px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             flex-shrink: 0;
         }
 
@@ -209,21 +212,22 @@
             justify-content: center;
             flex-grow: 1;
             width: 100%;
-            gap: 12px;
+            gap: 8px;
+            min-height: 0;
         }
 
         .question-text {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 700;
             text-align: center;
             color: var(--text-main);
             flex-shrink: 0;
         }
 
-        /* --- OPTIMIZED PICTOGRAM CARD (FIXED ELONGATION) --- */
+        /* --- RESPONSIVE PICTOGRAM CARD --- */
         .picto-card {
-            width: 90%;
-            max-width: 220px;
+            width: 85%;
+            max-width: 200px;
             background: #f8fafc;
             border: 4px solid #e2e8f0;
             border-radius: var(--radius-lg);
@@ -231,21 +235,23 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 16px; 
+            padding: 14px; 
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-            gap: 12px;
-            flex-grow: 0;   /* Stopped card from aggressively stretching vertically */
+            gap: 8px;
+            flex-grow: 0;   
             flex-shrink: 1; 
+            min-height: 0;
         }
 
         .picto-img {
-            width: 120px;   /* Set clean fixed sizing baselines for the child image */
-            height: 120px;
+            width: 110px;   
+            height: 110px;
             object-fit: contain;
+            flex-shrink: 1;
         }
 
         .picto-label {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             font-weight: 800;
             color: var(--primary-color);
             text-transform: capitalize;
@@ -253,6 +259,7 @@
             line-height: 1.2;
             width: 100%;
             word-wrap: break-word;
+            flex-shrink: 0;
         }
 
         /* --- 2-COLUMN BIG BUTTON GRID --- */
@@ -261,7 +268,8 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             width: 100%;
-            margin-top: 8px;
+            margin-top: 4px;
+            margin-bottom: 8px; /* Adds space away from the screen cutoff barrier */
             flex-shrink: 0; 
         }
 
@@ -275,7 +283,7 @@
             font-weight: 700;
             cursor: pointer;
             transition: var(--transition);
-            height: 76px; 
+            height: 74px; 
             display: flex;
             align-items: center;
             justify-content: flex-start;
@@ -290,8 +298,8 @@
         }
 
         .choice-btn-img {
-            width: 46px;
-            height: 46px;
+            width: 44px;
+            height: 44px;
             object-fit: contain;
             background: white;
             border: 2px solid #e2e8f0;
@@ -378,19 +386,20 @@
         #success-screen { justify-content: center; gap: 16px; text-align: center; }
         .trophy-container { font-size: 4.5rem; }
 
-        /* --- DYNAMIC RESPONSIVE HEIGHT SAFETY INTERFACES --- */
-        @media (max-height: 700px) or (max-width: 420px) {
-            .screen { padding: 12px; }
-            h1 { font-size: 1.4rem; }
-            .game-header { padding-right: 95px; margin-bottom: 4px; }
+        /* --- HARD PROFILE MOBILE OVERRIDES --- */
+        @media (max-height: 740px) or (max-width: 420px) {
+            #game-container { height: 90vh; height: calc(var(--vh, 1vh) * 90); }
+            .screen { padding: 10px 14px 8px 14px; }
+            h1 { font-size: 1.35rem; }
+            .game-header { padding-right: 95px; margin-bottom: 2px; }
             .question-text { font-size: 1.1rem; }
             
             .choice-btn { height: 62px; padding: 6px 10px; font-size: 0.95rem; gap: 8px; }
-            .choice-btn-img { width: 38px; height: 38px; }
-            .choices-grid { gap: 8px; }
+            .choice-btn-img { width: 36px; height: 36px; }
+            .choices-grid { gap: 8px; margin-bottom: 4px; }
             
-            .picto-card { max-width: 160px; padding: 10px; gap: 6px; }
-            .picto-img { width: 90px; height: 90px; }
+            .picto-card { max-width: 135px; padding: 8px; gap: 4px; }
+            .picto-img { width: 80px; height: 80px; }
             .picto-label { font-size: 0.95rem; }
             
             .modal-content { padding: 14px; }
