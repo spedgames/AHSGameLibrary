@@ -20,10 +20,10 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        .screen { display: none; height: 100vh; padding: 20px; box-sizing: border-box; flex-direction: column; }
+        .screen { display: none; height: 100vh; padding: 16px 20px 20px; box-sizing: border-box; flex-direction: column; overflow: hidden; }
         .screen.active { display: flex; }
         
-        .nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; gap: 10px; }
+        .nav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0; gap: 10px; }
 
         #output-area { 
             flex: 1; display: flex; justify-content: center; align-items: center;
@@ -94,13 +94,53 @@
             align-items: center; cursor: pointer; font-weight: 600;
         }
 
-        .input-row { display: flex; align-items: center; gap: 12px; background: white; padding: 12px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 8px; }
-        .btn { padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; }
+        .input-row { display: flex; align-items: center; gap: 10px; background: white; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 6px; }
+        .input-row input { flex: 1; border: none; outline: none; font-size: 15px; min-width: 0; background: transparent; }
+        .btn { padding: 10px 20px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; }
+
+        /* AAC editor grid */
+        #aac-editor-grid {
+            display: grid;
+            gap: 10px;
+            height: 100%;
+            width: 100%;
+        }
+        .aac-editor-cell {
+            background: white;
+            border: 2.5px solid #0f172a;
+            border-radius: 14px;
+            box-shadow: 3px 3px 0px #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 6px 6px;
+            min-height: 0;
+            position: relative;
+        }
+        .aac-editor-cell .cell-thumb {
+            width: 36px; height: 36px; object-fit: contain;
+            display: none; border-radius: 4px;
+        }
+        .aac-editor-cell .cell-thumb.active { display: block; }
+        .aac-editor-cell input {
+            width: 100%; border: none; outline: none;
+            font-size: 13px; font-weight: 700; text-align: center;
+            background: transparent;
+            color: var(--text); min-width: 0; box-sizing: border-box;
+            padding: 0 4px;
+        }
+        .aac-editor-cell .cell-search-btn {
+            background: #f1f5f9; border: 1px solid var(--border);
+            border-radius: 8px; padding: 3px 8px; font-size: 0.75rem;
+            cursor: pointer; flex-shrink: 0; line-height: 1.4;
+        }
         .btn-primary { background: var(--primary); color: white; border: 2px solid #0f172a; box-shadow: 2px 2px 0px #0f172a; }
         .btn-success { background: #22c55e; color: white; border: 2px solid #0f172a; box-shadow: 2px 2px 0px #0f172a; }
         .btn-outline { background: white; border: 2px solid var(--border); }
         
-        #generate-btn { width: 100%; margin-top: 20px; padding: 25px; font-size: 1.8rem; text-transform: uppercase; }
+        #generate-btn { width: 100%; margin-top: 10px; padding: 14px 20px; font-size: 1rem; text-transform: uppercase; flex-shrink: 0; }
         .preview-thumb { width: 40px; height: 40px; object-fit: contain; display: none; border-radius: 4px; border: 1px solid #ddd; }
         .preview-thumb.active { display: block; }
     </style>
@@ -132,9 +172,9 @@
         <h2 id="editor-title">Builder</h2>
         <div style="width:70px"></div>
     </div>
-    <div id="setup-inputs"></div>
-    <div id="content-inputs" style="overflow-y:auto; flex:1; margin-top:15px; -webkit-overflow-scrolling: touch;"></div>
-    <div id="editor-actions"></div>
+    <div id="setup-inputs" style="flex-shrink:0; margin-bottom:4px"></div>
+    <div id="content-inputs" style="overflow-y:auto; flex:1; min-height:0; margin-top:10px; -webkit-overflow-scrolling: touch;"></div>
+    <div id="editor-actions" style="flex-shrink:0"></div>
     <button class="btn btn-primary" id="generate-btn">Preview Result</button>
 </div>
 
@@ -240,7 +280,7 @@
         project.content.forEach((item, index) => {
             if (rows[index]) {
                 const input = rows[index].querySelector('input');
-                const thumb = rows[index].querySelector('.preview-thumb');
+                const thumb = rows[index].querySelector('.preview-thumb, .cell-thumb');
                 input.value = item.text;
                 if (item.imgId) {
                     input.dataset.selectedId = item.imgId;
@@ -268,32 +308,50 @@
         if (mode === 'work') {
             document.getElementById('editor-title').innerText = "Sequence Builder";
             setup.innerHTML = '<label style="font-weight:700">Steps:</label>';
-            for (let i = 0; i < 4; i++) addInputRow();
-            actions.innerHTML = `<button class="btn btn-outline" style="width:100%; margin-top:10px; border-style:dashed" onclick="addInputRow()">+ Add More</button>`;
+            for (let i = 0; i < 4; i++) addInputRow('work');
+            actions.innerHTML = `<button class="btn btn-outline" style="width:100%; margin-top:8px; border-style:dashed; flex-shrink:0" onclick="addInputRow('work')">+ Add More</button>`;
             document.getElementById('generate-btn').onclick = previewCurrent;
         } else {
             document.getElementById('editor-title').innerText = "Grid Builder";
-            setup.innerHTML = `<div style="display:flex; gap:15px"><input type="number" id="cols" value="3" style="width:50%; padding:12px; border-radius:10px; border:1px solid #ccc" onchange="generateAACInputs()"><input type="number" id="rows" value="2" style="width:50%; padding:12px; border-radius:10px; border:1px solid #ccc" onchange="generateAACInputs()"></div>`;
+            setup.innerHTML = `<div style="display:flex; gap:12px; align-items:center"><label style="font-weight:700; white-space:nowrap">Cols:</label><input type="number" id="cols" value="3" min="1" style="width:60px; padding:8px 10px; border-radius:10px; border:1px solid #ccc; font-size:15px" onchange="generateAACInputs()"><label style="font-weight:700; white-space:nowrap">Rows:</label><input type="number" id="rows" value="2" min="1" style="width:60px; padding:8px 10px; border-radius:10px; border:1px solid #ccc; font-size:15px" onchange="generateAACInputs()"></div>`;
             generateAACInputs();
             document.getElementById('generate-btn').onclick = previewCurrent;
         }
     }
 
-    function addInputRow() {
+    function addInputRow(mode) {
         const content = document.getElementById('content-inputs');
         const rowId = 'row-' + Math.random().toString(36).substr(2, 5);
         const div = document.createElement('div');
-        div.className = 'input-row';
-        div.innerHTML = `<img id="prev-${rowId}" class="preview-thumb"><input type="text" id="${rowId}" placeholder="Type word..." style="flex:1; border:none; outline:none; font-size:18px"><button class="btn btn-outline" onclick="openGallery('${rowId}')">🔍</button>`;
+        div.className = 'input-row' + (mode === 'aac' ? ' aac-mode' : '');
+        const placeholder = mode === 'aac' ? 'Word or phrase...' : 'Describe a step...';
+        div.innerHTML = `<img id="prev-${rowId}" class="preview-thumb"><input type="text" id="${rowId}" placeholder="${placeholder}"><button class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem; flex-shrink:0" onclick="openGallery('${rowId}')">🔍</button>`;
         content.appendChild(div);
     }
 
     function generateAACInputs() {
         const content = document.getElementById('content-inputs');
-        const cols = document.getElementById('cols').value || 1;
-        const rows = document.getElementById('rows').value || 1;
+        const cols = parseInt(document.getElementById('cols').value) || 1;
+        const rows = parseInt(document.getElementById('rows').value) || 1;
         content.innerHTML = '';
-        for (let i = 0; i < (cols * rows); i++) addInputRow();
+
+        const grid = document.createElement('div');
+        grid.id = 'aac-editor-grid';
+        grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+
+        for (let i = 0; i < cols * rows; i++) {
+            const rowId = 'row-' + Math.random().toString(36).substr(2, 5);
+            const cell = document.createElement('div');
+            cell.className = 'aac-editor-cell input-row'; // keep input-row class for data collection
+            cell.innerHTML = `
+                <input type="text" id="${rowId}" placeholder="Label…">
+                <img id="prev-${rowId}" class="cell-thumb">
+                <button class="cell-search-btn" onclick="openGallery('${rowId}')">🔍</button>
+            `;
+            grid.appendChild(cell);
+        }
+        content.appendChild(grid);
     }
 
     async function previewCurrent() {
