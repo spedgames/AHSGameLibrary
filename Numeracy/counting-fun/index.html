@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Counting Game Elite</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;900&display=swap" rel="stylesheet">
     <style>
@@ -21,22 +21,29 @@
         body { 
             margin: 0; background: #e0e4e8; 
             display: flex; justify-content: center; align-items: center; 
-            height: 100vh; overflow: hidden; font-family: 'Poppins', sans-serif;
+            /* Fixes the mobile/iPad browser address bar height issue */
+            height: 100vh; height: -webkit-fill-available; 
+            overflow: hidden; font-family: 'Poppins', sans-serif;
         }
 
         #game-viewport {
-            width: 95vw; height: 95vh; max-width: 850px; max-height: 850px;
+            width: 95vw; height: 92vh; max-width: 850px; max-height: 850px;
             background: #ffffff; border-radius: 40px; display: flex; flex-direction: column;
             box-shadow: 0 40px 100px rgba(0,0,0,0.1); overflow: hidden;
-            padding: 15px 20px; transition: all 0.2s ease;
+            padding: 15px 20px 25px; /* Added extra bottom padding */
+            transition: all 0.2s ease;
         }
 
         /* Responsive Layout Overrides */
         #game-viewport.desktop { max-width: 750px; max-height: 750px; }
-        #game-viewport.tablet { max-width: 680px; max-height: 800px; }
+        #game-viewport.tablet { 
+            max-width: 680px; 
+            height: 90vh; /* Reduced height on tablets to prevent bottom cutoff */
+            padding-bottom: 30px; /* Generous bottom padding for iPads */
+        }
         #game-viewport.mobile {
-            width: 100vw; height: 100vh; max-width: 100%; max-height: 100%;
-            border-radius: 0; padding: 10px;
+            width: 100vw; height: 100vh; height: -webkit-fill-available; max-width: 100%; max-height: 100%;
+            border-radius: 0; padding: 10px 10px 35px; /* Added heavy padding for thumb zones & home indicators */
         }
 
         #game-viewport.mobile #stage-container { border-radius: 20px; }
@@ -90,10 +97,10 @@
 
         #controls {
             display: flex; justify-content: center; align-items: center;
-            padding: 5px 0; width: 100%; height: 75px; flex-shrink: 0;
+            padding: 5px 0; width: 100%; min-height: 75px; flex-shrink: 0;
         }
 
-        .button-row { display: flex; gap: 10px; justify-content: center; width: 100%; }
+        .button-row { display: flex; gap: 10px; justify-content: center; width: 100%; flex-wrap: wrap; }
 
         /* WIDER BUTTONS FOR FAT FINGERS */
         .ans-btn {
@@ -102,8 +109,12 @@
             cursor: pointer; box-shadow: 0 5px 0 #2730c7; transition: transform 0.2s, background 0.2s;
         }
 
+        #game-viewport.tablet .ans-btn {
+            width: 85px; height: 55px; font-size: 1.6rem;
+        }
+
         #game-viewport.mobile .ans-btn {
-            width: 72px; height: 52px; font-size: 1.5rem; border-radius: 12px;
+            width: 64px; height: 52px; font-size: 1.4rem; border-radius: 12px;
         }
 
         .ans-btn.correct-highlight {
@@ -136,7 +147,6 @@
 <body>
 
 <div id="game-viewport">
-    <!-- Progress bar starts hidden so it doesn't show over the start screen -->
     <div id="progress-bar" class="progress-track hidden"></div>
 
     <div id="stage-container">
