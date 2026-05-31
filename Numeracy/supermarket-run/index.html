@@ -176,10 +176,6 @@
         @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(67,160,71,0.5); } 50%{ box-shadow:0 0 0 10px rgba(67,160,71,0); } }
 
         /* ── Controls ── */
-        /*
-          On desktop: controls sit at the bottom of the #ui panel.
-          On mobile:  controls float at the bottom of #world (overlay), centred.
-        */
         #controls {
             display: grid;
             grid-template-areas: ". up ." "left action right" ". down .";
@@ -188,19 +184,22 @@
             margin-top: auto;
             padding-top: 6px;
         }
+        /* On mobile: fixed overlay so it's never clipped by overflow:hidden */
         @media (max-width: 768px) {
             #controls {
-                position: absolute;
-                bottom: 12px;
+                position: fixed;
+                bottom: 140px;
+                bottom: calc(140px + env(safe-area-inset-bottom, 0px));
                 left: 50%;
                 transform: translateX(-50%);
-                z-index: 500;
+                z-index: 600;
                 margin-top: 0;
-                /* semi-transparent backing so they show over the world */
-                background: rgba(255,255,255,0.75);
-                backdrop-filter: blur(4px);
-                border-radius: 18px;
-                padding: 10px 14px;
+                background: rgba(255,255,255,0.82);
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+                border-radius: 20px;
+                padding: 10px 16px 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.18);
             }
         }
 
@@ -370,19 +369,24 @@
     let gameActive = false;
     let shelfRects = [];
 
-    // ── Mobile: on narrow screens move #controls into #world ──
-    function repositionControls() {
-        const controls = document.getElementById('controls');
-        const world    = document.getElementById('world');
-        const ui       = document.getElementById('ui');
-        if (window.innerWidth <= 768) {
-            if (controls.parentElement !== world) world.appendChild(controls);
-        } else {
-            if (controls.parentElement !== ui) ui.appendChild(controls);
-        }
-    }
-    repositionControls();
-    window.addEventListener('resize', repositionControls);
+    // Recalculate shelf rects on resize / orientation change
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(() => {
+            const world = document.getElementById('world');
+            if (!world) return;
+            const wRect = world.getBoundingClientRect();
+            shelfRects = [];
+            document.querySelectorAll('.shelf').forEach(div => {
+                const r = div.getBoundingClientRect();
+                shelfRects.push({
+                    x: r.left - wRect.left,
+                    y: r.top  - wRect.top,
+                    w: r.width,
+                    h: r.height
+                });
+            });
+        });
+    });
 
     // ── Input ──
     function setupInput() {
@@ -464,7 +468,7 @@
             {t:65,l:10,w:35},{t:65,l:55,w:35}
         ];
 
-        const wRect = world.getBoundingClientRect();
+        // Append shelves first, then measure after a paint so getBoundingClientRect is accurate
         shelfConfigs.forEach((conf, idx) => {
             const div = document.createElement('div');
             div.className = 'shelf';
@@ -477,12 +481,24 @@
                 div.innerHTML += `<span class="world-item" id="world-${itm.n}">${itm.e}</span>`;
             }
             world.appendChild(div);
-            shelfRects.push({
-                x: (conf.l / 100) * wRect.width,
-                y: (conf.t / 100) * wRect.height,
-                w: (conf.w / 100) * wRect.width,
-                h: 60
+        });
+
+        // Measure after layout — rAF ensures the browser has painted and rects are real
+        requestAnimationFrame(() => {
+            shelfRects = [];
+            const wRect = world.getBoundingClientRect();
+            document.querySelectorAll('.shelf').forEach(div => {
+                const r = div.getBoundingClientRect();
+                shelfRects.push({
+                    x: r.left - wRect.left,
+                    y: r.top  - wRect.top,
+                    w: r.width,
+                    h: r.height
+                });
             });
+            // Place player in the open corridor below the fridge row, left side
+            player.x = 60;
+            player.y = wRect.height * 0.30;
         });
     }
 
