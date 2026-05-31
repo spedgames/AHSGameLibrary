@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Trace & Learn – Shapes and Lines!</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --purple: #7c5cbf;
+    --purple-dark: #5a3fa0;
+    --pink: #f06292;
+    --green: #66bb6a;
+    --teal: #26c6da;
+    --text-dark: #2d1b69;
+    --text-mid: #4a3080;
+    --shadow: 0 8px 32px rgba(100,60,180,0.15);
+    --shadow-btn: 0 4px 16px rgba(100,60,180,0.18);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(145deg, #cec7f0 0%, #ddd5f8 40%, #e8d4f0 75%, #f5d9e8 100%);
+    color: var(--text-dark);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── Screens ── */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 14px 14px 10px;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; transform: scale(0.97); }
+
+  /* ══════ START SCREEN ══════ */
+  #start-screen { z-index: 10; overflow: hidden; }
+
+  .title-badge {
+    background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%);
+    color: #fff;
+    padding: 9px 28px;
+    border-radius: 50px;
+    font-size: clamp(22px, 5.5vw, 42px);
+    font-weight: 900;
+    margin-bottom: 4px;
+    box-shadow: var(--shadow);
+    flex-shrink: 0;
+  }
+  .subtitle {
+    font-size: clamp(13px, 2.8vw, 17px);
+    font-weight: 700;
+    color: var(--text-mid);
+    margin-bottom: 12px;
+    opacity: 0.85;
+    flex-shrink: 0;
+  }
+
+  /* Tab strip */
+  .tab-strip {
+    display: flex; gap: 8px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    font-family: 'Nunito', sans-serif;
+    font-size: clamp(12px, 2.8vw, 15px);
+    font-weight: 800;
+    border: 2px solid rgba(124,92,191,0.28);
+    border-radius: 50px;
+    padding: 7px 18px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.55);
+    color: var(--text-mid);
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+    min-height: 40px;
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: var(--shadow-btn);
+  }
+
+  /* Grid */
+  .shapes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 9px;
+    width: 100%;
+    max-width: 620px;
+    /* Size to content — parent justify-content:center handles vertical centering */
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+    align-content: center;
+    padding-bottom: 4px;
+  }
+  .shapes-grid::-webkit-scrollbar { width: 4px; }
+  .shapes-grid::-webkit-scrollbar-thumb { background: rgba(124,92,191,0.3); border-radius: 4px; }
+
+  .shape-card {
+    background: rgba(255,255,255,0.88);
+    border-radius: 16px;
+    padding: 12px 6px 10px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 7px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    box-shadow: 0 3px 10px rgba(100,60,180,0.09);
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+    min-height: 92px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .shape-card:hover  { transform: translateY(-3px) scale(1.03); box-shadow: 0 8px 22px rgba(100,60,180,0.17); }
+  .shape-card:active { transform: scale(0.97); }
+  .shape-card svg    { width: 44px; height: 44px; display: block; }
+  .card-label        { font-size: clamp(10px, 2.2vw, 13px); font-weight: 800; color: var(--text-dark); text-align: center; line-height: 1.2; }
+
+  /* ══════ GAME SCREEN ══════ */
+  #game-screen { z-index: 10; gap: 0; }
+
+  .game-header {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 620px;
+    margin-bottom: 7px;
+    padding: 0 2px;
+    flex-shrink: 0;
+  }
+  .btn-back {
+    background: rgba(255,255,255,0.88);
+    border: none; border-radius: 50px;
+    padding: 9px 18px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px; font-weight: 800;
+    color: var(--purple-dark);
+    cursor: pointer;
+    box-shadow: var(--shadow-btn);
+    transition: transform 0.14s, background 0.14s;
+    min-height: 44px;
+  }
+  .btn-back:hover  { background: #fff; transform: scale(1.04); }
+  .btn-back:active { transform: scale(0.97); }
+
+  .shape-name-badge {
+    font-size: clamp(14px, 3.5vw, 21px);
+    font-weight: 900; color: #fff;
+    background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%);
+    padding: 7px 18px; border-radius: 50px;
+    box-shadow: var(--shadow-btn);
+  }
+  .progress-label { font-size: 14px; font-weight: 800; color: var(--purple-dark); min-width: 40px; text-align: right; }
+
+  .canvas-wrap {
+    position: relative;
+    flex: 1; width: 100%; max-width: 620px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 1;
+  }
+  #trace-canvas {
+    position: absolute;
+    border-radius: 20px;
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  .hint-bar {
+    margin-top: 7px;
+    font-size: clamp(12px, 2.8vw, 15px);
+    font-weight: 700;
+    color: var(--text-mid);
+    opacity: 0.78;
+    text-align: center;
+    min-height: 20px;
+    flex-shrink: 0;
+  }
+
+  /* ══════ SUCCESS OVERLAY ══════ */
+  #success-overlay {
+    position: fixed; inset: 0;
+    background: rgba(100,70,200,0.16);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  #success-overlay.visible { opacity: 1; pointer-events: all; }
+  .success-card {
+    background: #fff; border-radius: 28px;
+    padding: clamp(22px,5vw,44px) clamp(26px,6vw,58px);
+    text-align: center;
+    box-shadow: 0 16px 50px rgba(100,60,180,0.22);
+    max-width: 320px; width: 90%;
+    transform: scale(0.85);
+    transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  #success-overlay.visible .success-card { transform: scale(1); }
+  .success-star  { font-size: clamp(40px,10vw,68px); margin-bottom: 8px; display: block; }
+  .success-title { font-size: clamp(20px,5.5vw,32px); font-weight: 900; color: var(--purple-dark); margin-bottom: 4px; }
+  .success-shape-name { font-size: clamp(14px,3.8vw,22px); font-weight: 900; color: var(--purple); margin-bottom: 20px; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn-primary {
+    font-family: 'Nunito', sans-serif;
+    font-size: clamp(13px,3.2vw,16px); font-weight: 800;
+    border: none; border-radius: 50px;
+    padding: 12px 24px; cursor: pointer;
+    transition: transform 0.14s;
+    min-height: 48px; min-width: 110px;
+    box-shadow: var(--shadow-btn);
+  }
+  .btn-primary:hover  { transform: scale(1.05); }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-again { background: linear-gradient(135deg, var(--green), var(--teal)); color: #fff; }
+  .btn-menu  { background: linear-gradient(135deg, var(--purple), var(--pink)); color: #fff; }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    .shapes-grid { grid-template-columns: repeat(3, 1fr); }
+    .shape-card { min-height: 82px; }
+  }
+  @media (max-height: 580px) {
+    .title-badge { font-size: 21px; padding: 6px 20px; margin-bottom: 3px; }
+    .subtitle { margin-bottom: 7px; }
+    .shapes-grid { gap: 7px; }
+    .shape-card { min-height: 72px; padding: 8px 4px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ START SCREEN ══ -->
+<div class="screen" id="start-screen">
+  <div class="title-badge">✏️ Trace &amp; Learn</div>
+  <div class="subtitle">Pick something to trace!</div>
+  <div class="tab-strip" id="tabStrip">
+    <button class="tab-btn active" data-tab="shapes">Shapes</button>
+    <button class="tab-btn"        data-tab="lines">Lines</button>
+  </div>
+  <div class="shapes-grid" id="shapeGrid"></div>
+</div>
+
+<!-- ══ GAME SCREEN ══ -->
+<div class="screen hidden" id="game-screen">
+  <div class="game-header">
+    <button class="btn-back" id="backBtn">← Menu</button>
+    <div class="shape-name-badge" id="gameShapeName">Circle</div>
+    <div class="progress-label"   id="progressLabel">0%</div>
+  </div>
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="trace-canvas"></canvas>
+  </div>
+  <div class="hint-bar" id="hintBar">Start at the glowing dot!</div>
+</div>
+
+<!-- ══ SUCCESS OVERLAY ══ -->
+<div id="success-overlay" role="dialog" aria-label="Success">
+  <div class="success-card">
+    <span class="success-star">⭐</span>
+    <div class="success-title">Amazing!</div>
+    <div class="success-shape-name" id="successShapeName">You traced a Circle!</div>
+    <div class="btn-row">
+      <button class="btn-primary btn-again" id="btnAgain">Trace Again!</button>
+      <button class="btn-primary btn-menu"  id="btnMenu">Pick Shape</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   TRACE & LEARN  —  full edition
+   Features:
+   · Shapes tab + Lines tab
+   · Clockwise-only frontier tracing
+   · Direction arrow that fades out on trace start,
+     reappears 2 s after lift-off
+   · Heart starts at the top-centre dip
+   · Subtle gradient background
+   ═══════════════════════════════════════════════════ */
+
+// ── Utility ──────────────────────────────────────────
+function segPts(a, b, n) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / n;
+    out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+  }
+  return out;
+}
+
+// Regular polygon helper (clockwise, starting from top)
+function polyPath(cx, cy, r, sides, rotOffset = 0) {
+  const pts = [];
+  for (let i = 0; i <= sides; i++) {
+    const a = (i / sides) * Math.PI * 2 - Math.PI / 2 + rotOffset;
+    const v = { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+    if (i < sides) {
+      const next = (i + 1);
+      const an   = (next / sides) * Math.PI * 2 - Math.PI / 2 + rotOffset;
+      const vn   = { x: cx + r * Math.cos(an), y: cy + r * Math.sin(an) };
+      pts.push(...segPts(v, vn, 28));
+    }
+  }
+  pts.push({ x: cx + r * Math.cos(-Math.PI / 2 + rotOffset), y: cy + r * Math.sin(-Math.PI / 2 + rotOffset) });
+  return pts;
+}
+
+// ── Shape & Line definitions ──────────────────────────
+// category: 'shape' | 'line'
+// isOpen: true for lines (no closePath on track)
+// arrowAt: index offset (0–1 fraction) along path where direction arrow sits
+const ITEMS = [
+  // ───────── SHAPES ─────────
+  {
+    id:'circle', name:'Circle', category:'shape', color:'#42a5f5',
+    iconSvg:`<circle cx="22" cy="22" r="17" fill="none" stroke="#42a5f5" stroke-width="5"/>`,
+    getParams(w,h){ const r=Math.min(w,h)*0.33; return {cx:w/2,cy:h/2,r}; },
+    getPath({cx,cy,r}){
+      const N=180;
+      // Start at top (12 o'clock), go clockwise
+      return Array.from({length:N+1},(_,i)=>{
+        const a=(i/N)*Math.PI*2 - Math.PI/2;
+        return {x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)};
+      });
+    },
+    arrowFraction: 0.12
+  },
+  {
+    id:'oval', name:'Oval', category:'shape', color:'#26c6da',
+    iconSvg:`<ellipse cx="22" cy="22" rx="20" ry="13" fill="none" stroke="#26c6da" stroke-width="5"/>`,
+    getParams(w,h){ const rx=Math.min(w*0.40,h*0.34); const ry=rx*0.58; return {cx:w/2,cy:h/2,rx,ry}; },
+    getPath({cx,cy,rx,ry}){
+      const N=180;
+      return Array.from({length:N+1},(_,i)=>{
+        const a=(i/N)*Math.PI*2 - Math.PI/2;
+        return {x:cx+rx*Math.cos(a), y:cy+ry*Math.sin(a)};
+      });
+    },
+    arrowFraction: 0.12
+  },
+  {
+    id:'square', name:'Square', category:'shape', color:'#ab47bc',
+    iconSvg:`<rect x="4" y="4" width="36" height="36" rx="2" fill="none" stroke="#ab47bc" stroke-width="5"/>`,
+    getParams(w,h){ const s=Math.min(w,h)*0.31; return {cx:w/2,cy:h/2,s}; },
+    getPath({cx,cy,s}){
+      const tl={x:cx-s,y:cy-s}, tr={x:cx+s,y:cy-s};
+      const br={x:cx+s,y:cy+s}, bl={x:cx-s,y:cy+s};
+      return [...segPts(tl,tr,42),...segPts(tr,br,42),...segPts(br,bl,42),...segPts(bl,tl,42),{...tl}];
+    },
+    arrowFraction: 0.06
+  },
+  {
+    id:'rectangle', name:'Rectangle', category:'shape', color:'#66bb6a',
+    iconSvg:`<rect x="2" y="10" width="40" height="24" rx="2" fill="none" stroke="#66bb6a" stroke-width="5"/>`,
+    getParams(w,h){ const hw=Math.min(w*0.38,h*0.42); const hh=hw*0.56; return {cx:w/2,cy:h/2,hw,hh}; },
+    getPath({cx,cy,hw,hh}){
+      const tl={x:cx-hw,y:cy-hh},tr={x:cx+hw,y:cy-hh};
+      const br={x:cx+hw,y:cy+hh},bl={x:cx-hw,y:cy+hh};
+      return [...segPts(tl,tr,48),...segPts(tr,br,28),...segPts(br,bl,48),...segPts(bl,tl,28),{...tl}];
+    },
+    arrowFraction: 0.05
+  },
+  {
+    id:'triangle', name:'Triangle', category:'shape', color:'#ef5350',
+    iconSvg:`<polygon points="22,3 42,42 2,42" fill="none" stroke="#ef5350" stroke-width="5"/>`,
+    getParams(w,h){
+      const size=Math.min(w,h)*0.62;
+      const apex={x:w/2,              y:h/2-size*0.5};
+      const bl  ={x:w/2-size*0.5,    y:h/2+size*0.33};
+      const br  ={x:w/2+size*0.5,    y:h/2+size*0.33};
+      return {apex,bl,br};
+    },
+    getPath({apex,bl,br}){
+      return [...segPts(apex,br,52),...segPts(br,bl,52),...segPts(bl,apex,52),{...apex}];
+    },
+    arrowFraction: 0.06
+  },
+  {
+    id:'pentagon', name:'Pentagon', category:'shape', color:'#ff7043',
+    iconSvg:`<polygon points="22,3 41,16 34,39 10,39 3,16" fill="none" stroke="#ff7043" stroke-width="5"/>`,
+    getParams(w,h){ const r=Math.min(w,h)*0.33; return {cx:w/2,cy:h/2,r}; },
+    getPath({cx,cy,r}){ return polyPath(cx,cy,r,5); },
+    arrowFraction: 0.06
+  },
+  {
+    id:'hexagon', name:'Hexagon', category:'shape', color:'#7e57c2',
+    iconSvg:`<polygon points="22,2 40,12 40,32 22,42 4,32 4,12" fill="none" stroke="#7e57c2" stroke-width="5"/>`,
+    getParams(w,h){ const r=Math.min(w,h)*0.34; return {cx:w/2,cy:h/2,r}; },
+    getPath({cx,cy,r}){ return polyPath(cx,cy,r,6); },
+    arrowFraction: 0.05
+  },
+  {
+    id:'rhombus', name:'Rhombus', category:'shape', color:'#f06292',
+    iconSvg:`<polygon points="22,2 42,22 22,42 2,22" fill="none" stroke="#f06292" stroke-width="5"/>`,
+    getParams(w,h){
+      const hw=Math.min(w*0.36,h*0.36), hh=Math.min(w*0.36,h*0.36)*0.85;
+      return {cx:w/2,cy:h/2,hw,hh};
+    },
+    getPath({cx,cy,hw,hh}){
+      const top={x:cx,y:cy-hh}, right={x:cx+hw,y:cy};
+      const bot={x:cx,y:cy+hh}, left ={x:cx-hw,y:cy};
+      return [...segPts(top,right,42),...segPts(right,bot,42),...segPts(bot,left,42),...segPts(left,top,42),{...top}];
+    },
+    arrowFraction: 0.06
+  },
+  {
+    id:'trapezoid', name:'Trapezoid', category:'shape', color:'#26a69a',
+    iconSvg:`<polygon points="8,38 36,38 44,10 0,10" fill="none" stroke="#26a69a" stroke-width="5"/>`,
+    getParams(w,h){
+      const hw=Math.min(w*0.38,h*0.40), hh=hw*0.55;
+      const narrow=hw*0.58;
+      const tl={x:w/2-narrow,y:h/2-hh}, tr={x:w/2+narrow,y:h/2-hh};
+      const br={x:w/2+hw,   y:h/2+hh},  bl={x:w/2-hw,    y:h/2+hh};
+      return {tl,tr,br,bl};
+    },
+    getPath({tl,tr,br,bl}){
+      // Clockwise from top-left
+      return [...segPts(tl,tr,38),...segPts(tr,br,30),...segPts(br,bl,42),...segPts(bl,tl,30),{...tl}];
+    },
+    arrowFraction: 0.06
+  },
+  {
+    id:'semicircle', name:'Semi-circle', category:'shape', color:'#ef6c00',
+    iconSvg:`<path d="M4 28 A18 18 0 0 1 40 28 Z" fill="none" stroke="#ef6c00" stroke-width="5"/>`,
+    getParams(w,h){ const r=Math.min(w*0.36,h*0.38); return {cx:w/2,cy:h/2+r*0.1,r}; },
+    getPath({cx,cy,r}){
+      // Flat edge top → right arc → back to left start, clockwise
+      // Start at left end of diameter, arc clockwise (bottom half = semi going down)
+      // We do: left → arc down → right → straight back to left
+      const left ={x:cx-r, y:cy};
+      const right={x:cx+r, y:cy};
+      const N=100;
+      const arc = Array.from({length:N+1},(_,i)=>{
+        const a = Math.PI + (i/N)*Math.PI; // π to 2π (bottom arc, clockwise)
+        return {x:cx+r*Math.cos(a), y:cy-r*Math.sin(a)};
+      });
+      // Straight line back left to right across diameter
+      const line = segPts(right, left, 38);
+      return [...arc,...line,{...left}];
+    },
+    arrowFraction: 0.08
+  },
+  {
+    id:'star', name:'Star', category:'shape', color:'#ffa726',
+    iconSvg:`<polygon points="22,2 26,15 40,15 29,23 33,38 22,29 11,38 15,23 4,15 18,15" fill="none" stroke="#ffa726" stroke-width="4"/>`,
+    getParams(w,h){ const r=Math.min(w,h)*0.29; return {cx:w/2,cy:h/2,r}; },
+    getPath({cx,cy,r}){
+      const outer=r, inner=r*0.42;
+      const pts=Array.from({length:10},(_,i)=>{
+        const a=(i/10)*Math.PI*2 - Math.PI/2;
+        const rad=i%2===0?outer:inner;
+        return {x:cx+rad*Math.cos(a), y:cy+rad*Math.sin(a)};
+      });
+      const path=[];
+      for(let i=0;i<pts.length;i++){
+        path.push(...segPts(pts[i],pts[(i+1)%pts.length],14));
+      }
+      path.push({...pts[0]});
+      return path;
+    },
+    arrowFraction: 0.05
+  },
+  {
+    id:'heart', name:'Heart', category:'shape', color:'#f06292',
+    iconSvg:`<path d="M22 40 C22 40 4 27 4 14 C4 7 10 3 16 5 C19 6 21 9 22 12 C23 9 25 6 28 5 C34 3 40 7 40 14 C40 27 22 40 22 40Z" fill="none" stroke="#f06292" stroke-width="5"/>`,
+    getParams(w,h){
+      const r=Math.min(w*0.27,h*0.27);
+      return {cx:w/2, cy:h/2-r*0.12, r};
+    },
+    getPath({cx,cy,r}){
+      // Parametric heart, start at top-centre dip (t = π/2 maps to top indent)
+      // We want to start exactly at the top-centre dip between the two humps.
+      // In the standard parametric heart: at t=π/2, sin(t)=1, cos terms give top-centre.
+      // hx=16sin³(t), hy=-(13cos(t)-5cos2t-2cos3t-cos4t)
+      // At t=π/2: hx=16*1=16 — that's far right.
+      // The top-centre dip is where hx=0 going down, i.e. t=0 (hx=0, hy=-(13-5-2-1)=-5 → top)
+      // and t=π (hx=0, hy=-(-13-5+2+1)=15 → bottom point).
+      // Top-centre dip is at t=0: hx=0, hy=-(13-5-2-1)= -5 scaled → that IS the dip.
+      const scale=r*0.108, N=160, off=r*0.06;
+      // Start t=0 (top-centre dip), go clockwise (increasing t)
+      return Array.from({length:N+1},(_,i)=>{
+        const t=(i/N)*Math.PI*2; // 0 → 2π
+        const hx=16*Math.pow(Math.sin(t),3);
+        const hy=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
+        return {x:cx+hx*scale, y:cy+hy*scale+off};
+      });
+    },
+    arrowFraction: 0.08
+  },
+
+  // ───────── LINES ─────────
+  {
+    id:'hline', name:'Horizontal Line', category:'line', color:'#29b6f6', isOpen:true,
+    iconSvg:`<line x1="3" y1="22" x2="41" y2="22" stroke="#29b6f6" stroke-width="6" stroke-linecap="round"/>`,
+    getParams(w,h){ const margin=w*0.14; return {x0:margin,y0:h/2,x1:w-margin,y1:h/2}; },
+    getPath({x0,y0,x1,y1}){ return segPts({x:x0,y:y0},{x:x1,y:y1},120); },
+    arrowFraction: 0.18
+  },
+  {
+    id:'vline', name:'Vertical Line', category:'line', color:'#66bb6a', isOpen:true,
+    iconSvg:`<line x1="22" y1="3" x2="22" y2="41" stroke="#66bb6a" stroke-width="6" stroke-linecap="round"/>`,
+    getParams(w,h){ const margin=h*0.12; return {x0:w/2,y0:margin,x1:w/2,y1:h-margin}; },
+    getPath({x0,y0,x1,y1}){ return segPts({x:x0,y:y0},{x:x1,y:y1},120); },
+    arrowFraction: 0.18
+  },
+  {
+    id:'diagline', name:'Diagonal Line', category:'line', color:'#ab47bc', isOpen:true,
+    iconSvg:`<line x1="5" y1="5" x2="39" y2="39" stroke="#ab47bc" stroke-width="6" stroke-linecap="round"/>`,
+    getParams(w,h){ const m=Math.min(w,h)*0.13; return {x0:m,y0:m,x1:w-m,y1:h-m}; },
+    getPath({x0,y0,x1,y1}){ return segPts({x:x0,y:y0},{x:x1,y:y1},120); },
+    arrowFraction: 0.18
+  },
+  {
+    id:'zigzag', name:'Zigzag Line', category:'line', color:'#ef5350', isOpen:true,
+    iconSvg:`<polyline points="2,30 11,14 20,30 29,14 38,30 44,14" fill="none" stroke="#ef5350" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`,
+    getParams(w,h){
+      const margin=w*0.09, cy=h/2, amp=Math.min(h*0.24,70);
+      const xs=Array.from({length:6},(_,i)=>margin+i*(w-2*margin)/5);
+      return {xs, cy, amp};
+    },
+    getPath({xs,cy,amp}){
+      const verts=xs.map((x,i)=>({x, y:cy+(i%2===0?amp:-amp)}));
+      const path=[];
+      for(let i=0;i<verts.length-1;i++) path.push(...segPts(verts[i],verts[i+1],28));
+      path.push({...verts[verts.length-1]});
+      return path;
+    },
+    arrowFraction: 0.10
+  },
+  {
+    id:'wavy', name:'Wavy Line', category:'line', color:'#26a69a', isOpen:true,
+    iconSvg:`<path d="M2 22 C8 10, 14 10, 20 22 S32 34, 38 22" fill="none" stroke="#26a69a" stroke-width="5" stroke-linecap="round"/>`,
+    getParams(w,h){
+      const margin=w*0.10, amp=Math.min(h*0.20,58);
+      return {x0:margin, x1:w-margin, cy:h/2, amp};
+    },
+    getPath({x0,x1,cy,amp}){
+      const N=140;
+      return Array.from({length:N},(_,i)=>{
+        const t=i/(N-1);
+        const x=x0+(x1-x0)*t;
+        const y=cy + amp*Math.sin(t*Math.PI*2.5);
+        return {x,y};
+      });
+    },
+    arrowFraction: 0.10
+  }
+];
+
+// ── Tab management ────────────────────────────────────
+let activeTab = 'shapes';
+
+function buildGrid(tab) {
+  const grid = document.getElementById('shapeGrid');
+  grid.innerHTML = '';
+  ITEMS.filter(it => it.category === (tab === 'shapes' ? 'shape' : 'line')).forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'shape-card';
+    card.setAttribute('tabindex','0');
+    card.setAttribute('role','button');
+    card.setAttribute('aria-label',`Trace a ${item.name}`);
+    card.innerHTML = `<svg viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">${item.iconSvg}</svg>
+      <span class="card-label">${item.name}</span>`;
+    card.style.borderColor = item.color + '40';
+    card.addEventListener('click', () => startGame(item));
+    card.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') startGame(item); });
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('tabStrip').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeTab = btn.dataset.tab;
+  buildGrid(activeTab);
+});
+
+buildGrid('shapes');
+
+// ── Screen helpers ────────────────────────────────────
+const startScreen = document.getElementById('start-screen');
+const gameScreen  = document.getElementById('game-screen');
+const successOv   = document.getElementById('success-overlay');
+function showScreen(id) {
+  [startScreen, gameScreen].forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ── Game state ────────────────────────────────────────
+let currentItem  = null;
+let shapePath    = [];
+let shapeParams  = {};
+let frontier     = 0;
+let isTracing    = false;
+let gameComplete = false;
+let canvasW = 0, canvasH = 0;
+let animId  = null;
+let orbPulse = 0;
+
+// Direction arrow state
+let arrowVisible  = true;   // true = show arrow
+let arrowOpacity  = 1.0;
+let arrowFadeDir  = 0;      // -1 = fading out, +1 = fading in, 0 = stable
+let arrowReappearTimer = null;
+
+const canvas = document.getElementById('trace-canvas');
+const ctx    = canvas.getContext('2d');
+const wrap   = document.getElementById('canvasWrap');
+const TRACK_W = 32;
+
+// ── Start game ────────────────────────────────────────
+function startGame(item) {
+  currentItem  = item;
+  frontier     = 0;
+  isTracing    = false;
+  gameComplete = false;
+  orbPulse     = 0;
+  arrowVisible  = true;
+  arrowOpacity  = 1.0;
+  arrowFadeDir  = 0;
+  clearTimeout(arrowReappearTimer);
+
+  document.getElementById('gameShapeName').textContent  = item.name;
+  document.getElementById('progressLabel').textContent  = '0%';
+  document.getElementById('hintBar').textContent        = 'Start at the glowing dot!';
+
+  showScreen('game-screen');
+  cancelAnimationFrame(animId);
+  requestAnimationFrame(() => { resizeCanvas(); loop(); });
+}
+
+// ── Resize ────────────────────────────────────────────
+function resizeCanvas() {
+  const rect = wrap.getBoundingClientRect();
+  canvasW = rect.width;
+  canvasH = rect.height;
+  canvas.width  = canvasW;
+  canvas.height = canvasH;
+  canvas.style.width  = canvasW + 'px';
+  canvas.style.height = canvasH + 'px';
+  canvas.style.left = '0';
+  canvas.style.top  = '0';
+  if (currentItem) {
+    shapeParams = currentItem.getParams(canvasW, canvasH);
+    shapePath   = currentItem.getPath(shapeParams);
+    frontier    = Math.min(frontier, shapePath.length - 1);
+  }
+}
+window.addEventListener('resize', () => {
+  if (!gameScreen.classList.contains('hidden')) resizeCanvas();
+});
+
+// ── Render loop ───────────────────────────────────────
+function loop() {
+  if (gameScreen.classList.contains('hidden')) return;
+  orbPulse += 0.04;
+  // Arrow fade animation
+  if (arrowFadeDir !== 0) {
+    arrowOpacity = Math.max(0, Math.min(1, arrowOpacity + arrowFadeDir * 0.06));
+    if (arrowOpacity <= 0) { arrowFadeDir = 0; arrowVisible = false; }
+    if (arrowOpacity >= 1) { arrowFadeDir = 0; }
+  }
+  draw();
+  animId = requestAnimationFrame(loop);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  drawTrack();
+  drawFill();
+  if (!gameComplete) {
+    drawOrb();
+    if (arrowVisible || arrowOpacity > 0) drawDirectionArrow();
+  }
+}
+
+// ── Track (hollow guide) ──────────────────────────────
+function drawTrack() {
+  if (shapePath.length < 2) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(shapePath[0].x, shapePath[0].y);
+  for (let i = 1; i < shapePath.length; i++) ctx.lineTo(shapePath[i].x, shapePath[i].y);
+  if (!currentItem.isOpen) ctx.closePath();
+  ctx.strokeStyle = 'rgba(200,194,222,0.52)';
+  ctx.lineWidth = TRACK_W + 10;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.78)';
+  ctx.lineWidth = TRACK_W;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ── Fill ─────────────────────────────────────────────
+function drawFill() {
+  if (frontier < 2) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(shapePath[0].x, shapePath[0].y);
+  for (let i = 1; i <= frontier; i++) ctx.lineTo(shapePath[i].x, shapePath[i].y);
+  ctx.strokeStyle = currentItem.color;
+  ctx.lineWidth = TRACK_W - 6;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ── Orb ───────────────────────────────────────────────
+function drawOrb() {
+  if (!shapePath.length) return;
+  const pt = shapePath[frontier];
+  const r  = 11 + Math.sin(orbPulse) * 1.8;
+  ctx.save();
+  // Faint halo
+  ctx.beginPath();
+  ctx.arc(pt.x, pt.y, r + 7, 0, Math.PI * 2);
+  ctx.fillStyle = currentItem.color + '25';
+  ctx.fill();
+  // White disc
+  ctx.beginPath();
+  ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  // Colour centre
+  ctx.beginPath();
+  ctx.arc(pt.x, pt.y, r * 0.50, 0, Math.PI * 2);
+  ctx.fillStyle = currentItem.color;
+  ctx.fill();
+  ctx.restore();
+}
+
+// ── Direction arrow ───────────────────────────────────
+// Drawn slightly ahead of the frontier along the path,
+// as a small curved arrow whose angle matches the local tangent.
+function drawDirectionArrow() {
+  if (!shapePath.length || arrowOpacity <= 0) return;
+
+  // Pick a point ~8% of path ahead of frontier (clamped)
+  const lookAhead = Math.max(8, Math.floor(shapePath.length * 0.08));
+  const tipIdx    = Math.min(frontier + lookAhead, shapePath.length - 1);
+  const tailIdx   = Math.max(0, tipIdx - Math.floor(lookAhead * 0.5));
+
+  const tip  = shapePath[tipIdx];
+  const tail = shapePath[tailIdx];
+  const dx   = tip.x - tail.x;
+  const dy   = tip.y - tail.y;
+  const angle = Math.atan2(dy, dx);
+
+  // Pulse: subtle scale breathe
+  const pulse = 1 + Math.sin(orbPulse * 1.8) * 0.12;
+  const arrowLen = 22 * pulse;
+  const headSize = 9 * pulse;
+
+  ctx.save();
+  ctx.globalAlpha = arrowOpacity * 0.82;
+  ctx.translate(tip.x, tip.y);
+  ctx.rotate(angle);
+
+  // Shaft
+  ctx.beginPath();
+  ctx.moveTo(-arrowLen, 0);
+  ctx.lineTo(0, 0);
+  ctx.strokeStyle = currentItem.color;
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Arrowhead (filled triangle)
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-headSize, -headSize * 0.55);
+  ctx.lineTo(-headSize, headSize * 0.55);
+  ctx.closePath();
+  ctx.fillStyle = currentItem.color;
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ── Arrow show/hide helpers ───────────────────────────
+function hideArrow() {
+  arrowFadeDir = -1;
+  arrowVisible = true; // keep rendering until fully faded
+  clearTimeout(arrowReappearTimer);
+}
+function scheduleArrowReappear() {
+  clearTimeout(arrowReappearTimer);
+  arrowReappearTimer = setTimeout(() => {
+    arrowVisible = true;
+    arrowFadeDir = 1;
+  }, 2000);
+}
+
+// ── Input helpers ─────────────────────────────────────
+const TOLERANCE   = TRACK_W * 1.15;
+const SEARCH_WIN  = 32;
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvasW / rect.width, sy = canvasH / rect.height;
+  let cx, cy;
+  if (e.touches && e.touches.length) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+  else { cx = e.clientX; cy = e.clientY; }
+  return { x:(cx-rect.left)*sx, y:(cy-rect.top)*sy };
+}
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+function advanceFrontier(pos) {
+  const end = Math.min(shapePath.length-1, frontier+SEARCH_WIN);
+  let bestIdx=-1, bestDist=Infinity;
+  for (let i=frontier; i<=end; i++) {
+    const d=dist(pos,shapePath[i]);
+    if(d<bestDist){ bestDist=d; bestIdx=i; }
+  }
+  if(bestDist<=TOLERANCE && bestIdx>frontier){ frontier=bestIdx; return true; }
+  if(dist(pos,shapePath[frontier])<=TOLERANCE) return true;
+  return false;
+}
+
+// ── Pointer events ────────────────────────────────────
+function onDown(e) {
+  e.preventDefault();
+  if(gameComplete) return;
+  const pos=getPos(e);
+  if(dist(pos,shapePath[frontier])<=TOLERANCE*1.9){
+    isTracing=true;
+    hideArrow();
+    document.getElementById('hintBar').textContent='Keep going!';
+  }
+}
+
+function onMove(e) {
+  e.preventDefault();
+  if(!isTracing||gameComplete) return;
+  const pos=getPos(e);
+  if(!advanceFrontier(pos)) return;
+  const pct=Math.round((frontier/(shapePath.length-1))*100);
+  document.getElementById('progressLabel').textContent=pct+'%';
+  if(frontier>=shapePath.length-2){
+    frontier=shapePath.length-1;
+    triggerSuccess();
+  }
+}
+
+function onUp(e) {
+  if(!isTracing) return;
+  isTracing=false;
+  if(!gameComplete && frontier>0 && frontier<shapePath.length-2){
+    document.getElementById('hintBar').textContent='Keep tracing from the dot!';
+    scheduleArrowReappear();
+  }
+}
+
+canvas.addEventListener('mousedown',   onDown,{passive:false});
+canvas.addEventListener('mousemove',   onMove,{passive:false});
+canvas.addEventListener('mouseup',     onUp);
+canvas.addEventListener('mouseleave',  onUp);
+canvas.addEventListener('touchstart',  onDown,{passive:false});
+canvas.addEventListener('touchmove',   onMove,{passive:false});
+canvas.addEventListener('touchend',    onUp);
+canvas.addEventListener('touchcancel', onUp);
+
+// ── Success chime (Web Audio API — no files needed) ───
+// Plays a gentle three-note ascending arpeggio: C5 → E5 → G5
+function playSuccessChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Resume in case browser suspended it (required after a user gesture on some browsers)
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+
+      const start = ctx.currentTime + i * 0.13; // stagger each note by 130 ms
+      const peak  = start + 0.02;
+      const end   = start + 0.55;
+
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.22, peak);   // gentle volume
+      gain.gain.exponentialRampToValueAtTime(0.001, end);
+
+      osc.start(start);
+      osc.stop(end);
+    });
+  } catch(e) {
+    // Audio not available — fail silently
+  }
+}
+
+// ── Success ───────────────────────────────────────────
+function triggerSuccess() {
+  if(gameComplete) return;
+  gameComplete=true; isTracing=false;
+  clearTimeout(arrowReappearTimer);
+  cancelAnimationFrame(animId);
+  playSuccessChime();
+
+  ctx.clearRect(0,0,canvasW,canvasH);
+  drawTrack();
+  // Full fill
+  if(shapePath.length>1){
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(shapePath[0].x,shapePath[0].y);
+    for(let i=1;i<shapePath.length;i++) ctx.lineTo(shapePath[i].x,shapePath[i].y);
+    ctx.strokeStyle=currentItem.color;
+    ctx.lineWidth=TRACK_W-6;
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  document.getElementById('hintBar').textContent='';
+  document.getElementById('successShapeName').textContent='You traced a '+currentItem.name+'!';
+  setTimeout(()=>successOv.classList.add('visible'),400);
+}
+
+// ── Navigation ────────────────────────────────────────
+document.getElementById('backBtn').addEventListener('click',()=>{
+  cancelAnimationFrame(animId); clearTimeout(arrowReappearTimer);
+  successOv.classList.remove('visible');
+  showScreen('start-screen');
+});
+document.getElementById('btnAgain').addEventListener('click',()=>{
+  successOv.classList.remove('visible');
+  startGame(currentItem);
+});
+document.getElementById('btnMenu').addEventListener('click',()=>{
+  cancelAnimationFrame(animId); clearTimeout(arrowReappearTimer);
+  successOv.classList.remove('visible');
+  showScreen('start-screen');
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!successOv.classList.contains('visible')){
+    cancelAnimationFrame(animId); clearTimeout(arrowReappearTimer);
+    showScreen('start-screen');
+  }
+});
+</script>
+</body>
+</html>
