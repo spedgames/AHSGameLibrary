@@ -21,16 +21,39 @@
         body { 
             margin: 0; background: #e0e4e8; 
             display: flex; justify-content: center; align-items: center; 
-            /* Fixes the mobile/iPad browser address bar height issue */
             height: 100vh; height: -webkit-fill-available; 
             overflow: hidden; font-family: 'Poppins', sans-serif;
+            position: relative;
         }
+
+        /* FLOATING SOUND BUTTON ON TOP RIGHT OF SCREEN */
+        #sound-toggle {
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            z-index: 9999; /* Forces it above everything else on screen */
+            width: 48px; 
+            height: 48px; 
+            border-radius: 50%; 
+            border: none;
+            background: white; 
+            color: var(--text); 
+            font-size: 1.4rem;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            cursor: pointer; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            transition: transform 0.1s ease, background 0.2s;
+        }
+        #sound-toggle:active { transform: scale(0.92); }
+        #sound-toggle.muted { background: #dfe4ea; color: #a4b0be; }
 
         #game-viewport {
             width: 95vw; height: 92vh; max-width: 850px; max-height: 850px;
             background: #ffffff; border-radius: 40px; display: flex; flex-direction: column;
             box-shadow: 0 40px 100px rgba(0,0,0,0.1); overflow: hidden;
-            padding: 15px 20px 25px; /* Added extra bottom padding */
+            padding: 15px 20px 25px;
             transition: all 0.2s ease;
         }
 
@@ -38,12 +61,12 @@
         #game-viewport.desktop { max-width: 750px; max-height: 750px; }
         #game-viewport.tablet { 
             max-width: 680px; 
-            height: 90vh; /* Reduced height on tablets to prevent bottom cutoff */
-            padding-bottom: 30px; /* Generous bottom padding for iPads */
+            height: 90vh; 
+            padding-bottom: 30px; 
         }
         #game-viewport.mobile {
             width: 100vw; height: 100vh; height: -webkit-fill-available; max-width: 100%; max-height: 100%;
-            border-radius: 0; padding: 10px 10px 35px; /* Added heavy padding for thumb zones & home indicators */
+            border-radius: 0; padding: 10px 10px 35px;
         }
 
         #game-viewport.mobile #stage-container { border-radius: 20px; }
@@ -102,7 +125,6 @@
 
         .button-row { display: flex; gap: 10px; justify-content: center; width: 100%; flex-wrap: wrap; }
 
-        /* WIDER BUTTONS FOR FAT FINGERS */
         .ans-btn {
             width: 95px; height: 58px; border-radius: 15px; border: none;
             background: var(--secondary); color: white; font-size: 1.8rem; font-weight: 800;
@@ -124,7 +146,6 @@
             z-index: 10;
         }
 
-        /* SHAKE ANIMATION FOR WRONG ANSWERS */
         @keyframes buttonShake {
             0%, 100% { transform: translateX(0); }
             20%, 60% { transform: translateX(-6px); }
@@ -133,7 +154,7 @@
 
         .shake {
             animation: buttonShake 0.3s ease-in-out;
-            box-shadow: 0 5px 0 #cf3a48; /* Temporary red shadow tint during shake */
+            box-shadow: 0 5px 0 #cf3a48;
         }
 
         #next-btn {
@@ -145,6 +166,8 @@
     </style>
 </head>
 <body>
+
+<button id="sound-toggle" title="Toggle Sound">🔊</button>
 
 <div id="game-viewport">
     <div id="progress-bar" class="progress-track hidden"></div>
@@ -212,19 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
     const emojis = ['🍎', '🍕', '🍦', '🍩', '🍓', '🍔', '🍉', '🍭'];
     
-    const playNote = (freq, type, dur) => {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + dur);
-    };
-
     let state = {
         total: 3,
         current: 0,
@@ -235,7 +245,53 @@ document.addEventListener('DOMContentLoaded', () => {
         mode: 'not-guided',
         shuffle: 'random',
         tapCount: 0,
-        range: { min: 1, max: 5 }
+        range: { min: 1, max: 5 },
+        soundEnabled: true
+    };
+
+    // Shared audio context initializer safely cleared from autoplay strict logic
+    let globalAudioCtx = null;
+    function getAudioContext() {
+        if (!globalAudioCtx) {
+            globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (globalAudioCtx.state === 'suspended') {
+            globalAudioCtx.resume();
+        }
+        return globalAudioCtx;
+    }
+
+    const playNote = (freq, type, dur) => {
+        if (!state.soundEnabled) return;
+        try {
+            const audioCtx = getAudioContext();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(); 
+            osc.stop(audioCtx.currentTime + dur);
+        } catch (e) {
+            console.log("Audio contextual playback issue:", e);
+        }
+    };
+
+    // Sound Button Setup
+    const soundToggleBtn = document.getElementById('sound-toggle');
+    soundToggleBtn.onclick = () => {
+        state.soundEnabled = !state.soundEnabled;
+        if (state.soundEnabled) {
+            soundToggleBtn.innerText = '🔊';
+            soundToggleBtn.classList.remove('muted');
+            playNote(440, 'sine', 0.08); 
+        } else {
+            soundToggleBtn.innerText = '🔇';
+            soundToggleBtn.classList.add('muted');
+        }
     };
 
     function detectDeviceLayout() {
@@ -396,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addEventListener('pointerdown', (e) => {
         if(state.solved) return;
+        getAudioContext(); // Activates Audio Context on physical user interactions
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
@@ -414,6 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleGuess(guess, btn) {
         if(state.solved) return;
+        getAudioContext(); // Activates Audio Context on option buttons
         if(guess === state.ans) {
             state.solved = true;
             btn.classList.add('correct-highlight');
@@ -425,15 +483,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(state.current >= state.total) {
                     document.getElementById('end-screen').classList.remove('hidden');
                     document.getElementById('controls').classList.add('hidden');
-                    document.getElementById('progress-bar').classList.add('hidden'); // Hide progress bar at summary
+                    document.getElementById('progress-bar').classList.add('hidden');
                 } else {
                     document.getElementById('next-btn').classList.remove('hidden');
                 }
             }, 2000);
         } else { 
-            // Sound removed. Button now shakes.
-            btn.classList.remove('shake'); // Reset animation state if clicked fast
-            void btn.offsetWidth;          // Trigger a reflow to restart animation
+            btn.classList.remove('shake');
+            void btn.offsetWidth;
             btn.classList.add('shake');
         }
     }
@@ -461,8 +518,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSelectors('mode-select', 'mode');
 
     document.getElementById('start-btn').onclick = () => {
+        getAudioContext(); // Activates context on landing overlay confirmation click
         document.getElementById('start-screen').classList.add('hidden');
-        document.getElementById('progress-bar').classList.remove('hidden'); // Reveal progress bar during active gameplay
+        document.getElementById('progress-bar').classList.remove('hidden');
         initProgress(); initButtons(); generateRound();
         setTimeout(resizeCanvasToFit, 50);
     };
@@ -470,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('restart-btn').onclick = () => {
         state.current = 0;
         document.getElementById('end-screen').classList.add('hidden');
-        document.getElementById('progress-bar').classList.add('hidden'); // Ensure progress bar is hidden on start screen
+        document.getElementById('progress-bar').classList.add('hidden');
         document.getElementById('start-screen').classList.remove('hidden');
     };
 
