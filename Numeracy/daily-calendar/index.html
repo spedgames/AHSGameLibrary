@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Today's Calendar Adventure!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fdfcf0;
+            --main-blue: #a2d2ff;
+            --success-green: #4ade80; 
+            --column-highlight: #f0fff4;
+            --text-color: #333333;
+            --error-red: #ffb3b3;
+            --border-width: 4px;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background-color: var(--bg-color);
+            font-family: 'Lexend', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            color: var(--text-color);
+        }
+
+        #game-container {
+            width: 100vw; height: 100vh;
+            display: flex; flex-direction: column;
+            padding: 1.5vh 2vw; box-sizing: border-box;
+            justify-content: space-between;
+        }
+
+        #question-header {
+            font-size: clamp(1.1rem, 3.5vh, 2.2rem);
+            background: white;
+            padding: 1vh 20px;
+            border-radius: 20px;
+            border: var(--border-width) solid #333;
+            text-align: center;
+            box-shadow: 0 4px 0 #333;
+            margin-bottom: 1vh;
+            flex-shrink: 0;
+        }
+
+        #month-label {
+            font-size: clamp(1.1rem, 4vh, 2.2rem);
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1vh;
+            flex-shrink: 0;
+        }
+
+        /* Fixed structural scaling wrapper */
+        #calendar-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border: var(--border-width) solid #333;
+            padding: 1.5vh 2vw;
+            border-radius: 25px;
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.05);
+            min-height: 0; /* Critical fix for sub-flex calculation sizing */
+        }
+
+        #calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: auto repeat(6, 1fr);
+            gap: 8px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .day-name {
+            font-weight: 700;
+            font-size: clamp(0.75rem, 2.2vh, 1.4rem); 
+            padding: 8px 2px;
+            border: 3px solid #333;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 3px 0 #333;
+            position: relative;
+            user-select: none;
+        }
+
+        .crossed-out {
+            opacity: 0.3;
+            text-decoration: line-through;
+            text-decoration-color: #ff4444;
+            text-decoration-thickness: 4px;
+            filter: grayscale(0.5);
+        }
+
+        .day-0 { background-color: #ffadad; } 
+        .day-1 { background-color: #ffd6a5; } 
+        .day-2 { background-color: #fdffb6; } 
+        .day-3 { background-color: #e2c0ff; } 
+        .day-4 { background-color: #9bf6ff; } 
+        .day-5 { background-color: #a0c4ff; } 
+        .day-6 { background-color: #bdb2ff; } 
+
+        .date-cell {
+            display: flex; justify-content: center; align-items: center;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: clamp(1rem, 4vh, 2.5rem);
+            font-weight: 700;
+            cursor: pointer;
+            background: #fff;
+            transition: all 0.2s;
+            user-select: none;
+            position: relative;
+        }
+
+        .column-hint { background-color: var(--column-highlight) !important; border-color: var(--success-green) !important; }
+        .empty { background: transparent; border: none; cursor: default; pointer-events: none; }
+
+        .correct { 
+            background-color: var(--success-green) !important; 
+            border: 3px solid #333 !important; 
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 3px 0 #333 !important;
+            transform: scale(1.02);
+            z-index: 5;
+        }
+
+        .wrong { background-color: #ffb3b3 !important; border: 3px solid #333 !important; }
+
+        #controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 1.5vh;
+            flex-shrink: 0;
+            min-height: 50px;
+        }
+
+        .btn-main {
+            background: #333; color: white; border: none; padding: 12px 35px;
+            font-size: clamp(1rem, 2.5vh, 1.3rem); border-radius: 50px; cursor: pointer; font-weight: 700;
+            font-family: 'Lexend', sans-serif;
+            box-shadow: 0 4px 0 #000;
+            transition: transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-main:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #000;
+        }
+
+        #submit-btn {
+            background: var(--success-green);
+            color: #333;
+            display: none; 
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(162, 210, 255, 0.95);
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+
+        .win-card {
+            background: white; padding: 40px; border-radius: 40px;
+            border: 6px solid #333; text-align: center; box-shadow: 0 15px 0 #333;
+            max-width: 85vw;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="question-header">Find <b>Today's Day</b> and <b>Date</b>!</div>
+    <div id="month-label">MONTH YEAR</div>
+
+    <div id="calendar-container">
+        <div id="calendar-grid">
+            <div class="day-name day-0" data-idx="0">Sunday</div>
+            <div class="day-name day-1" data-idx="1">Monday</div>
+            <div class="day-name day-2" data-idx="2">Tuesday</div>
+            <div class="day-name day-3" data-idx="3">Wednesday</div>
+            <div class="day-name day-4" data-idx="4">Thursday</div>
+            <div class="day-name day-5" data-idx="5">Friday</div>
+            <div class="day-name day-6" data-idx="6">Saturday</div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <button class="btn-main" id="reset-btn">Reset</button>
+        <button id="submit-btn" class="btn-main">Next ➔</button>
+    </div>
+
+    <div id="overlay">
+        <div class="win-card">
+            <h2 style="font-size: clamp(2rem, 6vh, 3rem); margin: 0;">Excellent! ⭐</h2>
+            <p id="date-details" style="font-size: clamp(1.2rem, 3.5vh, 1.5rem); margin: 20px 0;"></p>
+            <button class="btn-main" id="play-again-btn" style="font-size: 1.2rem;">Play Again ↻</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Modernized Web Audio Synth Subsystem
+    class SoundFX {
+        constructor() {
+            this.ctx = null;
+        }
+        init() {
+            if (!this.ctx) {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+        }
+        play(type) {
+            this.init();
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            if (type === 'correct') {
+                osc.frequency.setValueAtTime(523, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.1);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+            }
+            gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.2);
+        }
+    }
+
+    const sfx = new SoundFX();
+    let dayFound = false, dateFound = false, now = new Date();
+
+    function initGame() {
+        now = new Date();
+        dayFound = false; 
+        dateFound = false;
+        document.getElementById('submit-btn').style.display = 'none';
+        document.querySelectorAll('.day-name').forEach(el => {
+            el.classList.remove('correct', 'crossed-out');
+        });
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        document.getElementById('month-label').innerText = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+        buildCalendar();
+    }
+
+    function crossOutPastDays(todayIdx) {
+        document.querySelectorAll('.day-name').forEach(day => {
+            const idx = parseInt(day.getAttribute('data-idx'));
+            if (idx < todayIdx) day.classList.add('crossed-out');
+        });
+    }
+
+    function crossOutPastDates(todayDate) {
+        document.querySelectorAll('.date-cell').forEach(cell => {
+            const dateVal = parseInt(cell.innerText);
+            if (dateVal && dateVal < todayDate) cell.classList.add('crossed-out');
+        });
+    }
+
+    function highlightColumn(index) {
+        document.querySelectorAll('.date-cell').forEach(cell => {
+            if (cell.dataset.colIndex == index) cell.classList.add('column-hint');
+        });
+    }
+
+    function buildCalendar() {
+        const grid = document.getElementById('calendar-grid');
+        grid.querySelectorAll('.date-cell, .empty').forEach(c => c.remove());
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+        const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'date-cell empty';
+            grid.appendChild(empty);
+        }
+
+        for (let d = 1; d <= totalDays; d++) {
+            const cell = document.createElement('div');
+            cell.className = 'date-cell';
+            cell.innerText = d;
+            cell.dataset.colIndex = new Date(now.getFullYear(), now.getMonth(), d).getDay();
+
+            cell.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                sfx.init();
+                if (d === now.getDate()) {
+                    if (!dateFound) {
+                        sfx.play('correct');
+                        dateFound = true;
+                        cell.classList.add('correct');
+                        crossOutPastDates(d);
+                        checkReadyToSubmit();
+                    }
+                } else {
+                    sfx.play('wrong');
+                    cell.classList.add('wrong');
+                    setTimeout(() => cell.classList.remove('wrong'), 400);
+                }
+            });
+            grid.appendChild(cell);
+        }
+    }
+
+    document.querySelectorAll('.day-name').forEach(dayBtn => {
+        dayBtn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            sfx.init();
+            const idx = parseInt(dayBtn.getAttribute('data-idx'));
+            if (idx === now.getDay()) {
+                if (!dayFound) {
+                    sfx.play('correct');
+                    dayFound = true;
+                    dayBtn.classList.add('correct');
+                    highlightColumn(idx);
+                    crossOutPastDays(idx);
+                    checkReadyToSubmit();
+                }
+            } else {
+                sfx.play('wrong');
+                dayBtn.classList.add('wrong');
+                setTimeout(() => dayBtn.classList.remove('wrong'), 400);
+            }
+        });
+    });
+
+    function checkReadyToSubmit() {
+        if (dayFound && dateFound) {
+            document.getElementById('submit-btn').style.display = 'inline-flex';
+        }
+    }
+
+    function showFinalWin() {
+        sfx.play('correct');
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        document.getElementById('date-details').innerText = `Today's Date: ${now.toLocaleDateString(undefined, options)}!`;
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function resetGame() {
+        document.getElementById('overlay').style.display = 'none';
+        initGame();
+    }
+
+    // Explicit structural click / event listeners
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+    document.getElementById('submit-btn').addEventListener('click', showFinalWin);
+    document.getElementById('play-again-btn').addEventListener('click', resetGame);
+
+    // Initial setup
+    initGame();
+</script>
+</body>
+</html>
