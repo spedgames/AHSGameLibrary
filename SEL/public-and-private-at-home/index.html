@@ -35,18 +35,20 @@
             background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
             color: var(--text-main);
             min-height: 100vh;
+            min-height: calc(var(--vh, 1vh) * 100);
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden; /* Prevents viewport scrolling */
-            padding: 10px;
+            overflow: hidden; 
+            padding: 24px 16px; /* Increased vertical padding to push container away from browser edges */
         }
 
         #game-container {
             width: 100%;
             max-width: 650px;
-            height: 94vh;
-            max-height: 825px;
+            height: 90vh;
+            height: calc(var(--vh, 1vh) * 90); /* Reduced from 95 to guarantee safe vertical clearance */
+            max-height: 750px;
             background: var(--card-bg);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow);
@@ -59,8 +61,8 @@
         /* --- GLOBAL UTILITY CONTROLS --- */
         .sound-toggle-container {
             position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 12px;
+            right: 12px;
             z-index: 20;
         }
 
@@ -69,15 +71,15 @@
             color: var(--text-main);
             border: 2px solid #e2e8f0;
             border-radius: var(--radius-md);
-            padding: 6px 12px;
-            font-size: 0.85rem;
+            padding: 4px 10px;
+            font-size: 0.8rem;
             font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 6px;
             transition: var(--transition);
-            min-height: 40px;
+            min-height: 36px;
         }
 
         .sound-btn:hover {
@@ -98,7 +100,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            padding: 24px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -106,7 +108,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.4s ease, transform 0.4s ease;
-            transform: translateY(20px);
+            transform: translateY(10px);
         }
 
         .screen.active {
@@ -118,10 +120,10 @@
 
         /* --- TYPOGRAPHY & BUTTONS --- */
         h1 {
-            font-size: 2rem;
+            font-size: 1.8rem;
             color: var(--primary-color);
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-weight: 700;
         }
 
@@ -134,10 +136,10 @@
         }
 
         p.description {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             color: var(--text-muted);
             text-align: center;
-            max-width: 85%;
+            max-width: 90%;
             line-height: 1.4;
         }
 
@@ -146,35 +148,31 @@
             color: white;
             border: none;
             border-radius: var(--radius-md);
-            padding: 14px 28px;
+            padding: 12px 24px;
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
-            min-height: 48px; /* Touch-friendly target size */
+            min-height: 48px;
             display: inline-flex;
             justify-content: center;
             align-items: center;
             box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
-        }
-
-        .btn:hover, .btn:focus {
-            background-color: var(--primary-hover);
-            transform: translateY(-2px);
-            outline: none;
+            width: 80%;
+            max-width: 300px;
         }
 
         /* --- PRELOADER SCREEN --- */
         #preloader-screen {
             justify-content: center;
-            gap: 24px;
+            gap: 20px;
         }
 
         .loader-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #e2e8f0;
-            border-top: 5px solid var(--primary-color);
+            width: 44px;
+            height: 44px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -187,17 +185,11 @@
         /* --- START SCREEN --- */
         #start-screen {
             justify-content: center;
-            gap: 30px;
+            gap: 20px;
         }
 
         .house-illustration {
-            font-size: 5rem;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            font-size: 4rem;
         }
 
         /* --- GAMEPLAY SCREEN --- */
@@ -207,16 +199,16 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #f1f5f9;
-            padding-bottom: 10px;
-            padding-right: 120px; /* Leave breathing room for the global sound toggle button */
+            padding-bottom: 8px;
+            padding-right: 120px;
         }
 
         .progress-container {
             flex-grow: 1;
-            margin: 0 15px;
+            margin: 0 12px;
             background-color: #e2e8f0;
-            height: 12px;
-            border-radius: 6px;
+            height: 10px;
+            border-radius: 5px;
             overflow: hidden;
         }
 
@@ -230,9 +222,10 @@
         .score-counter {
             font-weight: 700;
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
+        /* Compressed question box workspace to fix cutoff */
         .question-box {
             display: flex;
             flex-direction: column;
@@ -240,18 +233,18 @@
             justify-content: center;
             flex-grow: 1;
             width: 100%;
-            margin: 10px 0;
-            gap: 12px;
+            margin: 4px 0; /* Minimized vertical margins */
+            gap: 6px;      /* Reduced space between elements */
         }
 
         .question-text {
-            font-size: 1.3rem;
+            font-size: 1.15rem;
             font-weight: 600;
             text-align: center;
         }
 
         .picto-card {
-            width: 180px;
+            width: 140px;
             background: #f8fafc;
             border: 3px solid #e2e8f0;
             border-radius: var(--radius-lg);
@@ -259,19 +252,19 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 12px;
+            padding: 8px;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-            gap: 10px;
+            gap: 4px;
         }
 
         .picto-img {
-            width: 120px;
-            height: 120px;
+            width: 85px;
+            height: 85px;
             object-fit: contain;
         }
 
         .picto-label {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 700;
             color: var(--primary-color);
             text-transform: capitalize;
@@ -282,9 +275,9 @@
         .choices-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            gap: 10px;
             width: 100%;
-            margin-top: auto;
+            margin-top: 4px; /* Tighter gap above answers grid */
         }
 
         .choice-btn {
@@ -292,16 +285,16 @@
             color: var(--text-main);
             border: 2px solid #e2e8f0;
             border-radius: var(--radius-md);
-            padding: 8px 14px;
-            font-size: 1rem;
+            padding: 6px 12px;
+            font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
-            min-height: 64px;
+            min-height: 54px;
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            gap: 14px;
+            gap: 10px;
             text-align: left;
         }
 
@@ -311,8 +304,8 @@
         }
 
         .choice-btn-img {
-            width: 44px;
-            height: 44px;
+            width: 36px;
+            height: 36px;
             object-fit: contain;
             background: white;
             border: 1px solid #e2e8f0;
@@ -323,6 +316,7 @@
 
         .choice-btn-text {
             flex-grow: 1;
+            line-height: 1.2;
         }
 
         .choice-btn.correct {
@@ -340,8 +334,8 @@
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-6px); }
-            75% { transform: translateX(6px); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
         }
 
         /* --- REINFORCEMENT MODAL --- */
@@ -360,7 +354,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
-            padding: 20px;
+            padding: 15px;
         }
 
         .modal-overlay.active {
@@ -371,37 +365,31 @@
         .modal-content {
             background-color: var(--card-bg);
             border-radius: var(--radius-lg);
-            padding: 24px;
+            padding: 16px;
             width: 100%;
-            max-width: 480px;
+            max-width: 420px;
             box-shadow: var(--shadow);
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .modal-overlay.active .modal-content {
-            transform: scale(1);
         }
 
         .modal-title {
             color: var(--success-color);
-            font-size: 1.6rem;
-            margin-bottom: 12px;
+            font-size: 1.4rem;
+            margin-bottom: 8px;
             font-weight: 700;
         }
 
         .reinforcement-sentence {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             line-height: 1.4;
             color: var(--text-main);
             background-color: #f8fafc;
-            padding: 12px;
+            padding: 8px;
             border-radius: var(--radius-md);
             width: 100%;
         }
@@ -410,58 +398,52 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 24px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
 
         .modal-picto {
-            width: 90px;
-            height: 90px;
+            width: 70px;
+            height: 70px;
             border: 2px solid #e2e8f0;
             border-radius: var(--radius-md);
-            padding: 6px;
+            padding: 4px;
             background: white;
-        }
-
-        .modal-arrow {
-            font-size: 1.5rem;
-            color: var(--primary-color);
-            font-weight: bold;
         }
 
         /* --- SUCCESS SCREEN --- */
         #success-screen {
             justify-content: center;
-            gap: 20px;
+            gap: 16px;
             text-align: center;
         }
 
         .trophy-container {
-            font-size: 5rem;
-            margin-bottom: 10px;
-            animation: bounce 1s alternate infinite;
+            font-size: 4rem;
         }
 
-        @keyframes bounce {
-            from { transform: translateY(0); }
-            to { transform: translateY(-12px); }
-        }
-
-        /* --- RESPONSIVE ADJUSTMENTS --- */
-        @media (max-height: 700px) {
-            h1 { font-size: 1.5rem; }
-            p.description { font-size: 0.95rem; }
-            .picto-card { width: 140px; padding: 8px; gap: 4px; }
-            .picto-img { width: 85px; height: 85px; }
-            .picto-label { font-size: 0.95rem; }
-            .question-text { font-size: 1.1rem; }
-            .choices-grid { gap: 8px; }
-            .choice-btn { min-height: 52px; padding: 6px 10px; font-size: 0.9rem; gap: 8px; }
-            .choice-btn-img { width: 36px; height: 36px; }
-            .modal-picto { width: 75px; height: 75px; }
-            .reinforcement-sentence { font-size: 1.1rem; padding: 8px; }
-            .game-header { padding-right: 110px; }
-            .sound-btn { min-height: 34px; padding: 4px 8px; font-size: 0.75rem; }
+        /* --- MOBILE HEIGHT SAFETY OVERRIDES --- */
+        @media (max-height: 720px) or (max-width: 400px) {
+            body { padding: 12px 8px; }
+            #game-container { height: 94vh; height: calc(var(--vh, 1vh) * 94); }
+            h1 { font-size: 1.3rem; margin-bottom: 4px; }
+            p.description { font-size: 0.85rem; }
+            .screen { padding: 12px; }
+            .picto-card { width: 110px; padding: 4px; }
+            .picto-img { width: 70px; height: 70px; }
+            .picto-label { font-size: 0.85rem; }
+            .question-text { font-size: 0.95rem; }
+            .question-box { margin: 2px 0; gap: 4px; }
+            .choices-grid { gap: 6px; margin-top: 2px; }
+            .choice-btn { min-height: 46px; padding: 4px 8px; font-size: 0.8rem; gap: 6px; }
+            .choice-btn-img { width: 30px; height: 30px; }
+            .modal-picto { width: 60px; height: 60px; }
+            .reinforcement-sentence { font-size: 0.95rem; padding: 6px; margin-bottom: 8px; }
+            .modal-visuals { margin-bottom: 12px; }
+            .game-header { padding-right: 95px; padding-bottom: 4px; }
+            .sound-btn { min-height: 30px; padding: 2px 6px; font-size: 0.65rem; }
+            .house-illustration { font-size: 3rem; }
+            .btn { min-height: 40px; padding: 6px 12px; font-size: 0.95rem; }
         }
     </style>
 </head>
@@ -469,7 +451,6 @@
 
     <div id="game-container">
         
-        <!-- GLOBAL CONTROL LAYER -->
         <div class="sound-toggle-container">
             <button id="global-sound-btn" class="sound-btn">
                 <span id="sound-icon">🔊</span>
@@ -477,16 +458,14 @@
             </button>
         </div>
 
-        <!-- ASSET PRELOADER SCREEN -->
         <div id="preloader-screen" class="screen active">
             <div class="loader-spinner"></div>
             <div class="text-center-wrapper">
-                <h1 style="font-size: 1.6rem;">Loading Game Materials...</h1>
+                <h1 style="font-size: 1.4rem;">Loading Game Materials...</h1>
                 <p class="description" id="preloader-status">Preparing game assets (0%)</p>
             </div>
         </div>
         
-        <!-- START SCREEN -->
         <div id="start-screen" class="screen">
             <div class="house-illustration">🏠</div>
             <div class="text-center-wrapper">
@@ -496,7 +475,6 @@
             <button class="btn" id="start-btn">Start Game</button>
         </div>
 
-        <!-- GAMEPLAY SCREEN -->
         <div id="game-screen" class="screen">
             <div class="game-header">
                 <span class="score-counter" id="question-number">Question 1/10</span>
@@ -514,11 +492,9 @@
             </div>
 
             <div class="choices-grid" id="choices-grid">
-                <!-- Location buttons dynamically generated here -->
-            </div>
+                </div>
         </div>
 
-        <!-- REINFORCEMENT MODAL -->
         <div id="modal-overlay" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-title">Great Job! 🎉</div>
@@ -530,31 +506,27 @@
                     <img id="modal-location-img" class="modal-picto" src="" alt="Location">
                 </div>
                 
-                <button class="btn" id="next-btn" style="background-color: var(--success-color); width: 100%;">Next Activity</button>
+                <button class="btn" id="next-btn" style="background-color: var(--success-color); width: 100%; max-width: 100%;">Next Activity</button>
             </div>
         </div>
 
-        <!-- SUCCESS SCREEN -->
         <div id="success-screen" class="screen">
             <div class="trophy-container">🏆</div>
             <div class="text-center-wrapper">
                 <h1>Fantastic Learning!</h1>
-                <p class="description">You know exactly where all the activities belong in the house.</p>
+                <p class="description">You know exactly where all the public and private activities belong in the house.</p>
             </div>
             <button class="btn" id="play-again-btn">Play Again</button>
         </div>
 
     </div>
 
-    <!-- AUDIO SYSTEM INTERFACE -->
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let isSoundEnabled = true;
 
         function playSound(type) {
-            // Early drop exit if the state toggle is systematically set to off
             if (!isSoundEnabled) return;
-
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
@@ -576,8 +548,17 @@
         }
     </script>
 
-    <!-- MAIN GAME LOGIC -->
     <script>
+        // --- MOBILE VIEWPORT HEIGHT FIX ---
+        function calculateRealViewportHeight() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        
+        window.addEventListener('resize', calculateRealViewportHeight);
+        window.addEventListener('orientationchange', calculateRealViewportHeight);
+        calculateRealViewportHeight();
+
         // --- DATA DICTIONARIES ---
         const ARASAAC_BASE = "https://api.arasaac.org/api/pictograms/";
 
@@ -632,7 +613,6 @@
         const modalBehaviorImg = document.getElementById('modal-behavior-img');
         const modalLocationImg = document.getElementById('modal-location-img');
 
-        // --- AUDIO CONFIGURATION MANAGEMENT ---
         function toggleSoundPreference() {
             isSoundEnabled = !isSoundEnabled;
             if (isSoundEnabled) {
