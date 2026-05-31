@@ -57,7 +57,7 @@
         #stage-container {
             flex: 1; position: relative; background: var(--surface);
             border-radius: 30px; box-shadow: inset 0 4px 15px rgba(0,0,0,0.08);
-            overflow: hidden; margin-bottom: 15px; min-height: 0; /* CRITICAL: Allows flex child to shrink below contents */
+            overflow: hidden; margin-bottom: 15px; min-height: 0;
         }
 
         canvas { width: 100%; height: 100%; display: block; touch-action: none; }
@@ -90,19 +90,20 @@
 
         #controls {
             display: flex; justify-content: center; align-items: center;
-            padding: 5px 0; width: 100%; height: 75px; flex-shrink: 0; /* Fixed height locks control panel space */
+            padding: 5px 0; width: 100%; height: 75px; flex-shrink: 0;
         }
 
-        .button-row { display: flex; gap: 8px; justify-content: center; width: 100%; }
+        .button-row { display: flex; gap: 10px; justify-content: center; width: 100%; }
 
+        /* WIDER BUTTONS FOR FAT FINGERS */
         .ans-btn {
-            width: 58px; height: 58px; border-radius: 15px; border: none;
-            background: var(--secondary); color: white; font-size: 1.6rem; font-weight: 800;
+            width: 95px; height: 58px; border-radius: 15px; border: none;
+            background: var(--secondary); color: white; font-size: 1.8rem; font-weight: 800;
             cursor: pointer; box-shadow: 0 5px 0 #2730c7; transition: transform 0.2s, background 0.2s;
         }
 
         #game-viewport.mobile .ans-btn {
-            width: 50px; height: 50px; font-size: 1.4rem; border-radius: 12px;
+            width: 72px; height: 52px; font-size: 1.5rem; border-radius: 12px;
         }
 
         .ans-btn.correct-highlight {
@@ -110,6 +111,18 @@
             transform: scale(1.1);
             box-shadow: 0 0 15px var(--success);
             z-index: 10;
+        }
+
+        /* SHAKE ANIMATION FOR WRONG ANSWERS */
+        @keyframes buttonShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        .shake {
+            animation: buttonShake 0.3s ease-in-out;
+            box-shadow: 0 5px 0 #cf3a48; /* Temporary red shadow tint during shake */
         }
 
         #next-btn {
@@ -123,7 +136,8 @@
 <body>
 
 <div id="game-viewport">
-    <div id="progress-bar" class="progress-track"></div>
+    <!-- Progress bar starts hidden so it doesn't show over the start screen -->
+    <div id="progress-bar" class="progress-track hidden"></div>
 
     <div id="stage-container">
         <canvas id="gameCanvas"></canvas>
@@ -246,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         item.x = (item.x / oldW) * canvas.width;
                         item.y = (item.y / oldH) * canvas.height;
                         
-                        // Recalculate radius based on new size
                         const minCanvasDim = Math.min(canvas.width, canvas.height);
                         item.radius = Math.max(22, Math.min(42, minCanvasDim * 0.08));
                     });
@@ -260,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
         detectDeviceLayout();
     });
     
-    // Quick mutation observer to check when canvas size becomes computed upon screens switching
     const observer = new ResizeObserver(() => resizeCanvasToFit());
     observer.observe(document.getElementById('stage-container'));
 
@@ -319,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.activeEmoji = emojis[Math.floor(Math.random() * emojis.length)];
         document.getElementById('next-btn').classList.add('hidden');
         document.getElementById('controls').classList.remove('hidden');
-        document.querySelectorAll('.ans-btn').forEach(b => b.classList.remove('correct-highlight'));
+        document.querySelectorAll('.ans-btn').forEach(b => b.classList.remove('correct-highlight', 'shake'));
         
         state.ans = getShuffleAnswer();
         state.items = [];
@@ -403,11 +415,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(state.current >= state.total) {
                     document.getElementById('end-screen').classList.remove('hidden');
                     document.getElementById('controls').classList.add('hidden');
+                    document.getElementById('progress-bar').classList.add('hidden'); // Hide progress bar at summary
                 } else {
                     document.getElementById('next-btn').classList.remove('hidden');
                 }
             }, 2000);
-        } else { playNote(140, 'sawtooth', 0.2); }
+        } else { 
+            // Sound removed. Button now shakes.
+            btn.classList.remove('shake'); // Reset animation state if clicked fast
+            void btn.offsetWidth;          // Trigger a reflow to restart animation
+            btn.classList.add('shake');
+        }
     }
 
     function setupSelectors(id, stateKey) {
@@ -434,13 +452,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('start-btn').onclick = () => {
         document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('progress-bar').classList.remove('hidden'); // Reveal progress bar during active gameplay
         initProgress(); initButtons(); generateRound();
-        setTimeout(resizeCanvasToFit, 50); // Hard sync layout after view transition
+        setTimeout(resizeCanvasToFit, 50);
     };
 
     document.getElementById('restart-btn').onclick = () => {
         state.current = 0;
         document.getElementById('end-screen').classList.add('hidden');
+        document.getElementById('progress-bar').classList.add('hidden'); // Ensure progress bar is hidden on start screen
         document.getElementById('start-screen').classList.remove('hidden');
     };
 
