@@ -32,8 +32,8 @@
             flex-direction: row; /* desktop: side-by-side */
         }
 
-        /* On narrow screens stack world on top, controls below */
-        @media (max-width: 768px) {
+        /* Touch devices: stack world on top, UI panel below */
+        @media (hover: none) {
             #game-container { flex-direction: column; }
         }
 
@@ -84,7 +84,7 @@
             background-image: radial-gradient(#e0e0e0 1.5px, transparent 1.5px);
             background-size: 30px 30px; overflow: hidden;
         }
-        @media (max-width: 768px) {
+        @media (hover: none) {
             #world { flex: 1 1 auto; min-height: 0; }
         }
 
@@ -152,15 +152,13 @@
             flex: 0 0 230px;
             overflow-y: auto;
         }
-        @media (max-width: 768px) {
+        @media (hover: none) {
             #ui {
                 flex: 0 0 auto;
                 flex-direction: column;
                 box-shadow: 0 -4px 12px rgba(0,0,0,0.12);
-                /* allow shrinking so world gets space */
                 padding: 6px 10px;
             }
-            /* Hide in-game instructions on very small screens to save room */
             #ingame-instructions { font-size: 0.75rem; padding: 6px 8px; }
         }
 
@@ -176,6 +174,7 @@
         @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(67,160,71,0.5); } 50%{ box-shadow:0 0 0 10px rgba(67,160,71,0); } }
 
         /* ── Controls ── */
+        /* Desktop: sit at the bottom of the #ui sidebar */
         #controls {
             display: grid;
             grid-template-areas: ". up ." "left action right" ". down .";
@@ -184,22 +183,24 @@
             margin-top: auto;
             padding-top: 6px;
         }
-        /* On mobile: fixed overlay so it's never clipped by overflow:hidden */
-        @media (max-width: 768px) {
+
+        /* Touch devices — phones AND tablets in any orientation.
+           (hover:none) reliably identifies touch screens.
+           Wide breakpoint catches landscape iPad (1024px wide). */
+        @media (hover: none) {
             #controls {
                 position: fixed;
-                bottom: 140px;
-                bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+                bottom: 36%;
                 left: 50%;
                 transform: translateX(-50%);
                 z-index: 600;
                 margin-top: 0;
-                background: rgba(255,255,255,0.82);
-                backdrop-filter: blur(6px);
-                -webkit-backdrop-filter: blur(6px);
-                border-radius: 20px;
                 padding: 10px 16px 12px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+                background: rgba(255,255,255,0.88);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                border-radius: 20px;
+                box-shadow: 0 4px 24px rgba(0,0,0,0.2);
             }
         }
 
