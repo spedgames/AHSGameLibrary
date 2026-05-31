@@ -30,6 +30,11 @@
             transition: opacity 0.4s ease; z-index: 10;
         }
 
+        #main-game {
+            justify-content: flex-start;
+            overflow: hidden;
+        }
+
         .hidden { display: none !important; opacity: 0; }
 
         /* --- UI Styling --- */
@@ -63,7 +68,7 @@
         .sound-btn.playing { background: var(--neon-blue); box-shadow: 0 0 30px var(--neon-blue); }
 
         /* --- Mixer Mode --- */
-        #mixer-view { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; }
+        #mixer-view { width: 100%; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 20px; padding-top: 0; }
         .tracks-area { flex: 1; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
         .track-row { height: 80px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; padding: 0 15px; gap: 15px; }
         
@@ -90,7 +95,7 @@
     </div>
 
     <div id="main-game" class="screen hidden">
-        <div style="width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
             <div id="mode-display" style="font-size: 1.5rem; font-weight: 800;"></div>
             <div style="display: flex; gap: 10px;">
                 <button id="play-mix-btn" class="btn btn-accent hidden" onclick="playAllTracks()">▶️ Play All</button>
@@ -103,8 +108,8 @@
         <div id="buttons-view" class="sound-grid"></div>
 
         <div id="mixer-view" class="hidden">
-            <div class="mixer-container" style="display:flex; gap:20px; flex:1; width:100%; overflow:hidden;">
-                <div id="mixer-grid" class="sound-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 280px; margin: 0;"></div>
+            <div class="mixer-container" style="display:flex; gap:20px; flex:1; min-height:0; width:100%; overflow:hidden;">
+                <div id="mixer-grid" class="sound-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 280px; margin: 0; align-content: start; overflow-y: auto;"></div>
                 <div class="tracks-area" id="tracks-container"></div>
             </div>
             <button class="btn" style="margin: 20px auto;" onclick="addTrack()">➕ Add More Layers</button>
