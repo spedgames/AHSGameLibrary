@@ -208,9 +208,8 @@
             align-items: center;
             justify-content: center;
             flex-grow: 1;
-            min-height: 0; 
             width: 100%;
-            gap: 8px;
+            gap: 12px;
         }
 
         .question-text {
@@ -221,9 +220,9 @@
             flex-shrink: 0;
         }
 
-        /* --- FIXED FIXED HOLISTIC PICTOGRAM CARD --- */
+        /* --- OPTIMIZED PICTOGRAM CARD (FIXED ELONGATION) --- */
         .picto-card {
-            width: 100%;
+            width: 90%;
             max-width: 220px;
             background: #f8fafc;
             border: 4px solid #e2e8f0;
@@ -232,21 +231,17 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 16px; /* Added padding to cushion text and assets beautifully */
+            padding: 16px; 
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-            gap: 8px;
-            flex-grow: 1;  /* Expands to match size comfortably */
-            flex-shrink: 1; /* Automatically tapers safely on mobile heights */
-            min-height: 0;  /* Allows layout architecture constraints to pass down */
+            gap: 12px;
+            flex-grow: 0;   /* Stopped card from aggressively stretching vertically */
+            flex-shrink: 1; 
         }
 
         .picto-img {
-            width: 100%;
-            height: 100%;
-            max-width: 135px;
-            max-height: 135px;
+            width: 120px;   /* Set clean fixed sizing baselines for the child image */
+            height: 120px;
             object-fit: contain;
-            flex-shrink: 1; /* Compresses image dynamically instead of layout spilling outside boundaries */
         }
 
         .picto-label {
@@ -256,7 +251,6 @@
             text-transform: capitalize;
             text-align: center;
             line-height: 1.2;
-            flex-shrink: 0; /* Ensures critical reading text label never gets crunched */
             width: 100%;
             word-wrap: break-word;
         }
@@ -395,7 +389,8 @@
             .choice-btn-img { width: 38px; height: 38px; }
             .choices-grid { gap: 8px; }
             
-            .picto-card { max-width: 140px; padding: 8px; gap: 4px; }
+            .picto-card { max-width: 160px; padding: 10px; gap: 6px; }
+            .picto-img { width: 90px; height: 90px; }
             .picto-label { font-size: 0.95rem; }
             
             .modal-content { padding: 14px; }
@@ -524,7 +519,7 @@
             kitchen:     { id: "33070", name: "Kitchen" },
             dining_room: { id: "9824", name: "Dining Room" },
             toilet:      { id: "15905", name: "Toilet" },
-            bedroom:     { id: "33068", name: "My Bedroom" }
+            bedroom:     { id: "33068", name: "My bedroom" }
         };
 
         const behaviors = [
@@ -534,7 +529,7 @@
             { text: "play toys", pictoId: "36885", rooms: ["living_room", "bedroom"] },
             { text: "read books", pictoId: "31680", rooms: ["living_room", "bedroom"] },
             { text: "paint", pictoId: "7207", rooms: ["living_room", "bedroom"] },
-            { text: "scratch private parts", pictoId: "22192", rooms: ["toilet", "bedroom"] },
+            { text: "scratch private parts", pictoId: "22192", rooms: ["toilet"] },
             { text: "change clothes", pictoId: "11232", rooms: ["toilet", "bedroom"] },
             { text: "pass motion", pictoId: "3428", rooms: ["toilet"] },
             { text: "dig my nose", pictoId: "15722", rooms: ["toilet", "bedroom"] }
