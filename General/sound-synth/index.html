@@ -30,10 +30,7 @@
             transition: opacity 0.4s ease; z-index: 10;
         }
 
-        #main-game {
-            justify-content: flex-start;
-            overflow: hidden;
-        }
+        #main-game { justify-content: flex-start; overflow: hidden; }
 
         .hidden { display: none !important; opacity: 0; }
 
@@ -68,8 +65,11 @@
         .sound-btn.playing { background: var(--neon-blue); box-shadow: 0 0 30px var(--neon-blue); }
 
         /* --- Mixer Mode --- */
-        #mixer-view { width: 100%; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 20px; padding-top: 0; }
-        .tracks-area { flex: 1; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+        #mixer-view { width: 100%; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 20px 10px; }
+        .mixer-container { display: flex; gap: 20px; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
+        #mixer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 220px; flex-shrink: 0; align-content: start; }
+        #mixer-grid .sound-btn { aspect-ratio: 1/1; }
+        .tracks-area { flex: 1; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-height: 0; }
         .track-row { height: 80px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; padding: 0 15px; gap: 15px; }
         
         .track-timeline { flex: 1; height: 60px; background: rgba(0,0,0,0.5); border-radius: 5px; position: relative; overflow: hidden; border: 1px dashed rgba(255,255,255,0.1); }
@@ -108,11 +108,11 @@
         <div id="buttons-view" class="sound-grid"></div>
 
         <div id="mixer-view" class="hidden">
-            <div class="mixer-container" style="display:flex; gap:20px; flex:1; min-height:0; width:100%; overflow:hidden;">
-                <div id="mixer-grid" class="sound-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 280px; margin: 0; align-content: start; overflow-y: auto;"></div>
+            <div class="mixer-container">
+                <div id="mixer-grid"></div>
                 <div class="tracks-area" id="tracks-container"></div>
             </div>
-            <button class="btn" style="margin: 20px auto;" onclick="addTrack()">➕ Add More Layers</button>
+            <button class="btn" style="margin: 10px auto; flex-shrink: 0;" onclick="addTrack()">➕ Add More Layers</button>
         </div>
     </div>
 
@@ -214,10 +214,10 @@
                 grid.innerHTML = ''; mGrid.innerHTML = '';
 
                 soundData.forEach((s, i) => {
-                    const setupBtn = (container) => {
+                    const setupBtn = (container, labelNum) => {
                         const b = document.createElement('div');
                         b.className = 'sound-btn';
-                        b.innerHTML = `<div>${i+1}</div><span>${s.name}</span>`;
+                        b.innerHTML = `<div>${labelNum}</div><span>${s.name}</span>`;
                         const trigger = (e) => {
                             e.preventDefault();
                             playSound(i);
@@ -228,8 +228,9 @@
                         b.addEventListener('mousedown', trigger);
                         container.appendChild(b);
                     };
-                    setupBtn(grid);
-                    setupBtn(mGrid);
+                    setupBtn(grid, i + 1);
+                    // Mixer grid: exclude KICK (index 0)
+                    if (s.name !== 'KICK') setupBtn(mGrid, i + 1);
                 });
 
                 if (mode === 'buttons') {
