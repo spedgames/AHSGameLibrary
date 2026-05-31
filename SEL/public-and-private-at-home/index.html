@@ -15,8 +15,8 @@
             --text-main: #1e293b;
             --text-muted: #64748b;
             --card-bg: #ffffff;
-            --radius-lg: 20px;
-            --radius-md: 12px;
+            --radius-lg: 24px;
+            --radius-md: 16px;
             --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -40,22 +40,22 @@
             justify-content: center;
             align-items: center;
             overflow: hidden; 
-            padding: 24px 16px; /* Increased vertical padding to push container away from browser edges */
+            padding: 12px;
         }
 
         #game-container {
             width: 100%;
             max-width: 650px;
-            height: 90vh;
-            height: calc(var(--vh, 1vh) * 90); /* Reduced from 95 to guarantee safe vertical clearance */
-            max-height: 750px;
+            height: 96vh;
+            height: calc(var(--vh, 1vh) * 96);
+            max-height: 850px;
             background: var(--card-bg);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow);
-            overflow: hidden;
             position: relative;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         /* --- GLOBAL UTILITY CONTROLS --- */
@@ -82,17 +82,6 @@
             min-height: 36px;
         }
 
-        .sound-btn:hover {
-            background-color: #e2e8f0;
-            border-color: #cbd5e1;
-        }
-
-        .sound-btn.muted {
-            background-color: #fee2e2;
-            border-color: #fca5a5;
-            color: #991b1b;
-        }
-
         /* --- SCREEN MANAGEMENT --- */
         .screen {
             position: absolute;
@@ -103,7 +92,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
             opacity: 0;
             pointer-events: none;
@@ -123,7 +112,7 @@
             font-size: 1.8rem;
             color: var(--primary-color);
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 700;
         }
 
@@ -150,47 +139,33 @@
             border-radius: var(--radius-md);
             padding: 12px 24px;
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: var(--transition);
-            min-height: 48px;
+            min-height: 50px;
             display: inline-flex;
             justify-content: center;
             align-items: center;
             box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
-            width: 80%;
-            max-width: 300px;
+            width: 85%;
+            max-width: 320px;
         }
 
         /* --- PRELOADER SCREEN --- */
-        #preloader-screen {
-            justify-content: center;
-            gap: 20px;
-        }
-
+        #preloader-screen { justify-content: center; gap: 20px; }
         .loader-spinner {
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             border: 4px solid #e2e8f0;
             border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* --- START SCREEN --- */
-        #start-screen {
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .house-illustration {
-            font-size: 4rem;
-        }
+        #start-screen { justify-content: center; gap: 20px; }
+        .house-illustration { font-size: 4.5rem; }
 
         /* --- GAMEPLAY SCREEN --- */
         .game-header {
@@ -199,13 +174,15 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #f1f5f9;
-            padding-bottom: 8px;
-            padding-right: 120px;
+            padding-bottom: 6px;
+            padding-right: 115px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
         }
 
         .progress-container {
             flex-grow: 1;
-            margin: 0 12px;
+            margin: 0 10px;
             background-color: #e2e8f0;
             height: 10px;
             border-radius: 5px;
@@ -222,80 +199,95 @@
         .score-counter {
             font-weight: 700;
             color: var(--text-muted);
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
 
-        /* Compressed question box workspace to fix cutoff */
         .question-box {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             flex-grow: 1;
+            min-height: 0; 
             width: 100%;
-            margin: 4px 0; /* Minimized vertical margins */
-            gap: 6px;      /* Reduced space between elements */
+            gap: 8px;
         }
 
         .question-text {
-            font-size: 1.15rem;
-            font-weight: 600;
+            font-size: 1.3rem;
+            font-weight: 700;
             text-align: center;
+            color: var(--text-main);
+            flex-shrink: 0;
         }
 
+        /* --- FIXED FIXED HOLISTIC PICTOGRAM CARD --- */
         .picto-card {
-            width: 140px;
+            width: 100%;
+            max-width: 220px;
             background: #f8fafc;
-            border: 3px solid #e2e8f0;
+            border: 4px solid #e2e8f0;
             border-radius: var(--radius-lg);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 8px;
+            padding: 16px; /* Added padding to cushion text and assets beautifully */
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-            gap: 4px;
+            gap: 8px;
+            flex-grow: 1;  /* Expands to match size comfortably */
+            flex-shrink: 1; /* Automatically tapers safely on mobile heights */
+            min-height: 0;  /* Allows layout architecture constraints to pass down */
         }
 
         .picto-img {
-            width: 85px;
-            height: 85px;
+            width: 100%;
+            height: 100%;
+            max-width: 135px;
+            max-height: 135px;
             object-fit: contain;
+            flex-shrink: 1; /* Compresses image dynamically instead of layout spilling outside boundaries */
         }
 
         .picto-label {
-            font-size: 0.95rem;
-            font-weight: 700;
+            font-size: 1.2rem;
+            font-weight: 800;
             color: var(--primary-color);
             text-transform: capitalize;
             text-align: center;
+            line-height: 1.2;
+            flex-shrink: 0; /* Ensures critical reading text label never gets crunched */
+            width: 100%;
+            word-wrap: break-word;
         }
 
-        /* --- CHOICE BUTTONS GRID --- */
+        /* --- 2-COLUMN BIG BUTTON GRID --- */
         .choices-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            gap: 12px;
             width: 100%;
-            margin-top: 4px; /* Tighter gap above answers grid */
+            margin-top: 8px;
+            flex-shrink: 0; 
         }
 
         .choice-btn {
             background-color: #f8fafc;
             color: var(--text-main);
-            border: 2px solid #e2e8f0;
+            border: 3px solid #e2e8f0;
             border-radius: var(--radius-md);
-            padding: 6px 12px;
-            font-size: 0.95rem;
-            font-weight: 600;
+            padding: 12px 14px;
+            font-size: 1.15rem; 
+            font-weight: 700;
             cursor: pointer;
             transition: var(--transition);
-            min-height: 54px;
+            height: 76px; 
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            gap: 10px;
+            gap: 12px;
             text-align: left;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
 
         .choice-btn:hover {
@@ -304,12 +296,12 @@
         }
 
         .choice-btn-img {
-            width: 36px;
-            height: 36px;
+            width: 46px;
+            height: 46px;
             object-fit: contain;
             background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
             padding: 2px;
             flex-shrink: 0;
         }
@@ -357,15 +349,12 @@
             padding: 15px;
         }
 
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
 
         .modal-content {
             background-color: var(--card-bg);
             border-radius: var(--radius-lg);
-            padding: 16px;
+            padding: 20px;
             width: 100%;
             max-width: 420px;
             box-shadow: var(--shadow);
@@ -375,75 +364,43 @@
             text-align: center;
         }
 
-        .modal-title {
-            color: var(--success-color);
-            font-size: 1.4rem;
-            margin-bottom: 8px;
-            font-weight: 700;
-        }
-
+        .modal-title { color: var(--success-color); font-size: 1.5rem; margin-bottom: 6px; font-weight: 700; }
         .reinforcement-sentence {
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.2rem;
+            font-weight: 700;
             margin-bottom: 12px;
             line-height: 1.4;
             color: var(--text-main);
             background-color: #f8fafc;
-            padding: 8px;
+            padding: 10px;
             border-radius: var(--radius-md);
             width: 100%;
         }
 
-        .modal-visuals {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .modal-picto {
-            width: 70px;
-            height: 70px;
-            border: 2px solid #e2e8f0;
-            border-radius: var(--radius-md);
-            padding: 4px;
-            background: white;
-        }
+        .modal-visuals { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 16px; }
+        .modal-picto { width: 75px; height: 75px; border: 2px solid #e2e8f0; border-radius: var(--radius-md); padding: 4px; background: white; }
 
         /* --- SUCCESS SCREEN --- */
-        #success-screen {
-            justify-content: center;
-            gap: 16px;
-            text-align: center;
-        }
+        #success-screen { justify-content: center; gap: 16px; text-align: center; }
+        .trophy-container { font-size: 4.5rem; }
 
-        .trophy-container {
-            font-size: 4rem;
-        }
-
-        /* --- MOBILE HEIGHT SAFETY OVERRIDES --- */
-        @media (max-height: 720px) or (max-width: 400px) {
-            body { padding: 12px 8px; }
-            #game-container { height: 94vh; height: calc(var(--vh, 1vh) * 94); }
-            h1 { font-size: 1.3rem; margin-bottom: 4px; }
-            p.description { font-size: 0.85rem; }
+        /* --- DYNAMIC RESPONSIVE HEIGHT SAFETY INTERFACES --- */
+        @media (max-height: 700px) or (max-width: 420px) {
             .screen { padding: 12px; }
-            .picto-card { width: 110px; padding: 4px; }
-            .picto-img { width: 70px; height: 70px; }
-            .picto-label { font-size: 0.85rem; }
-            .question-text { font-size: 0.95rem; }
-            .question-box { margin: 2px 0; gap: 4px; }
-            .choices-grid { gap: 6px; margin-top: 2px; }
-            .choice-btn { min-height: 46px; padding: 4px 8px; font-size: 0.8rem; gap: 6px; }
-            .choice-btn-img { width: 30px; height: 30px; }
+            h1 { font-size: 1.4rem; }
+            .game-header { padding-right: 95px; margin-bottom: 4px; }
+            .question-text { font-size: 1.1rem; }
+            
+            .choice-btn { height: 62px; padding: 6px 10px; font-size: 0.95rem; gap: 8px; }
+            .choice-btn-img { width: 38px; height: 38px; }
+            .choices-grid { gap: 8px; }
+            
+            .picto-card { max-width: 140px; padding: 8px; gap: 4px; }
+            .picto-label { font-size: 0.95rem; }
+            
+            .modal-content { padding: 14px; }
             .modal-picto { width: 60px; height: 60px; }
-            .reinforcement-sentence { font-size: 0.95rem; padding: 6px; margin-bottom: 8px; }
-            .modal-visuals { margin-bottom: 12px; }
-            .game-header { padding-right: 95px; padding-bottom: 4px; }
-            .sound-btn { min-height: 30px; padding: 2px 6px; font-size: 0.65rem; }
-            .house-illustration { font-size: 3rem; }
-            .btn { min-height: 40px; padding: 6px 12px; font-size: 0.95rem; }
+            .reinforcement-sentence { font-size: 1rem; }
         }
     </style>
 </head>
@@ -567,7 +524,7 @@
             kitchen:     { id: "33070", name: "Kitchen" },
             dining_room: { id: "9824", name: "Dining Room" },
             toilet:      { id: "15905", name: "Toilet" },
-            bedroom:     { id: "33068", name: "My Bedroom" }
+            bedroom:     { id: "33068", name: "My bedroom" }
         };
 
         const behaviors = [
@@ -577,7 +534,7 @@
             { text: "play toys", pictoId: "36885", rooms: ["living_room", "bedroom"] },
             { text: "read books", pictoId: "31680", rooms: ["living_room", "bedroom"] },
             { text: "paint", pictoId: "7207", rooms: ["living_room", "bedroom"] },
-            { text: "scratch private parts", pictoId: "22192", rooms: ["toilet", "bedroom"] },
+            { text: "scratch private parts", pictoId: "22192", rooms: ["toilet"] },
             { text: "change clothes", pictoId: "11232", rooms: ["toilet", "bedroom"] },
             { text: "pass motion", pictoId: "3428", rooms: ["toilet"] },
             { text: "dig my nose", pictoId: "15722", rooms: ["toilet", "bedroom"] }
