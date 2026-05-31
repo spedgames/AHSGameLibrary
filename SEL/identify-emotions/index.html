@@ -3,185 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Our House: Public & Private Behaviors</title>
+    <title>Identify Emotions - Educational Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* --- DESIGN SYSTEM & CSS VARIABLES --- */
         :root {
-            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #chbae8 100%);
-            --primary-color: #4f46e5;
-            --primary-hover: #4338ca;
-            --success-color: #10b981;
-            --success-hover: #059669;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --card-bg: #ffffff;
-            --radius-lg: 20px;
-            --radius-md: 12px;
-            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --bg-color: #f0f9ff;
+            --primary: #4cc9f0;
+            --secondary: #4895ef;
+            --success: #4caf50;
+            --error: #f72585;
+            --text: #2b2d42;
+            --white: #ffffff;
+            --shadow: 0 8px 16px rgba(0,0,0,0.1);
         }
 
-        /* --- RESET & LAYOUT --- */
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
-            color: var(--text-main);
-            /* Fallback to standard vh if JS hasn't run yet */
-            min-height: 100vh;
-            min-height: calc(var(--vh, 1vh) * 100);
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden; /* Strict viewport containment */
-            padding: 10px;
         }
 
         #game-container {
-            width: 100%;
-            max-width: 650px;
-            /* Dynamically adapts to exact available mobile screen space */
+            width: 95vw;
             height: 95vh;
-            height: calc(var(--vh, 1vh) * 95);
-            max-height: 800px;
-            background: var(--card-bg);
-            border-radius: var(--radius-lg);
+            max-width: 800px;
+            max-height: 1000px;
+            background: var(--white);
+            border-radius: 30px;
             box-shadow: var(--shadow);
-            overflow: hidden;
             position: relative;
             display: flex;
             flex-direction: column;
-        }
-
-        /* --- GLOBAL UTILITY CONTROLS --- */
-        .sound-toggle-container {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            z-index: 20;
-        }
-
-        .sound-btn {
-            background-color: #f1f5f9;
-            color: var(--text-main);
-            border: 2px solid #e2e8f0;
-            border-radius: var(--radius-md);
-            padding: 4px 10px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: var(--transition);
-            min-height: 38px;
-        }
-
-        .sound-btn:hover {
-            background-color: #e2e8f0;
-            border-color: #cbd5e1;
-        }
-
-        .sound-btn.muted {
-            background-color: #fee2e2;
-            border-color: #fca5a5;
-            color: #991b1b;
-        }
-
-        /* --- SCREEN MANAGEMENT --- */
-        .screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            transform: translateY(15px);
+            border: 8px solid var(--primary);
         }
 
-        .screen.active {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0);
-            position: relative;
-        }
-
-        /* --- TYPOGRAPHY & BUTTONS --- */
-        h1 {
-            font-size: 1.8rem;
-            color: var(--primary-color);
-            text-align: center;
-            margin-bottom: 8px;
-            font-weight: 700;
-        }
-
-        .text-center-wrapper {
-            display: flex;
+        .screen {
+            display: none;
             flex-direction: column;
             align-items: center;
-            text-align: center;
+            justify-content: center;
+            height: 100%;
             width: 100%;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
         }
 
-        p.description {
-            font-size: 1.05rem;
-            color: var(--text-muted);
-            text-align: center;
-            max-width: 90%;
-            line-height: 1.4;
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
+
+        h1 { font-size: 2.5rem; color: var(--secondary); margin-bottom: 10px; }
+        p { font-size: 1.1rem; margin-bottom: 20px; }
 
         .btn {
-            background-color: var(--primary-color);
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: var(--radius-md);
-            padding: 12px 24px;
-            font-size: 1.1rem;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.2rem;
             font-weight: 600;
             cursor: pointer;
-            transition: var(--transition);
-            min-height: 48px;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
-            width: 80%;
-            max-width: 300px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 #3ba7c9;
+            margin: 10px;
+            min-width: 150px;
         }
 
-        .btn:hover, .btn:focus {
-            background-color: var(--primary-hover);
-            outline: none;
+        .btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #3ba7c9;
         }
 
-        /* --- PRELOADER SCREEN --- */
-        #preloader-screen {
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .loader-spinner {
-            width: 44px;
-            height: 44px;
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid var(--primary-color);
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid var(--secondary);
             border-radius: 50%;
+            width: 60px;
+            height: 60px;
             animation: spin 1s linear infinite;
+            margin-bottom: 20px;
         }
 
         @keyframes spin {
@@ -189,620 +106,389 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* --- START SCREEN --- */
-        #start-screen {
+        .settings-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .setting-label { font-weight: 600; margin-bottom: 10px; display: block; }
+        
+        .chip-container {
+            display: flex;
+            flex-wrap: wrap;
             justify-content: center;
-            gap: 24px;
+            gap: 10px;
         }
 
-        .house-illustration {
-            font-size: 4.5rem;
-            animation: float 3s ease-in-out infinite;
+        .chip {
+            padding: 10px 20px;
+            background: #e9ecef;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid transparent;
+            font-size: 0.9rem;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+        .chip.active {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
         }
 
-        /* --- GAMEPLAY SCREEN --- */
-        .game-header {
+        #hud {
             width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid #f1f5f9;
-            padding-bottom: 8px;
-            padding-right: 120px;
+            margin-bottom: 15px;
         }
 
-        .progress-container {
+        #progress-wrapper {
             flex-grow: 1;
-            margin: 0 12px;
-            background-color: #e2e8f0;
-            height: 10px;
-            border-radius: 5px;
+            height: 15px;
+            background: #e9ecef;
+            border-radius: 10px;
+            margin: 0 20px;
             overflow: hidden;
         }
 
-        .progress-bar {
-            height: 100%;
+        #progress-bar {
             width: 0%;
-            background: linear-gradient(90deg, var(--primary-color), #818cf8);
+            height: 100%;
+            background: var(--success);
             transition: width 0.3s ease;
         }
 
-        .score-counter {
-            font-weight: 700;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .question-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex-grow: 1;
+        #image-display {
             width: 100%;
-            margin: 8px 0;
-            gap: 8px;
-        }
-
-        .question-text {
-            font-size: 1.15rem;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .picto-card {
-            width: 150px;
-            background: #f8fafc;
-            border: 3px solid #e2e8f0;
-            border-radius: var(--radius-lg);
+            flex-grow: 1;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            padding: 10px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-            gap: 6px;
+            justify-content: center;
+            margin-bottom: 20px;
+            border: 4px solid #f0f0f0;
         }
 
-        .picto-img {
-            width: 95px;
-            height: 95px;
+        #image-display img {
+            max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
         }
 
-        .picto-label {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            text-transform: capitalize;
-            text-align: center;
-        }
-
-        /* --- CHOICE BUTTONS GRID --- */
-        .choices-grid {
+        #options-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
             width: 100%;
-            margin-top: auto;
         }
 
-        .choice-btn {
-            background-color: #f8fafc;
-            color: var(--text-main);
-            border: 2px solid #e2e8f0;
-            border-radius: var(--radius-md);
-            padding: 6px 12px;
-            font-size: 0.95rem;
-            font-weight: 600;
+        .option-btn {
+            padding: 20px;
+            font-size: 1.3rem;
+            border-radius: 20px;
+            border: 3px solid #ddd;
+            background: white;
             cursor: pointer;
-            transition: var(--transition);
-            min-height: 56px;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             gap: 10px;
-            text-align: left;
+            transition: 0.2s;
+            font-family: inherit;
+            min-height: 80px;
         }
 
-        .choice-btn:hover {
-            border-color: var(--primary-color);
-            background-color: #eef2ff;
+        .option-btn span { font-size: 1.8rem; }
+
+        .correct {
+            background-color: var(--success) !important;
+            color: white !important;
+            border-color: #388e3c !important;
+            animation: pulse 0.5s ease;
         }
 
-        .choice-btn-img {
-            width: 38px;
-            height: 38px;
-            object-fit: contain;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 2px;
-            flex-shrink: 0;
+        .shake {
+            animation: shake 0.4s ease;
         }
 
-        .choice-btn-text {
-            flex-grow: 1;
-            line-height: 1.2;
-        }
-
-        .choice-btn.correct {
-            background-color: #d1fae5;
-            border-color: var(--success-color);
-            color: #065f46;
-        }
-
-        .choice-btn.wrong {
-            background-color: #fee2e2;
-            border-color: #ef4444;
-            color: #991b1b;
-            animation: shake 0.4s ease-in-out;
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-
-        /* --- REINFORCEMENT MODAL --- */
-        .modal-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            padding: 15px;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-content {
-            background-color: var(--card-bg);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            width: 100%;
-            max-width: 440px;
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .modal-overlay.active .modal-content {
-            transform: scale(1);
-        }
-
-        .modal-title {
-            color: var(--success-color);
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .reinforcement-sentence {
-            font-size: 1.15rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-            line-height: 1.4;
-            color: var(--text-main);
-            background-color: #f8fafc;
-            padding: 10px;
-            border-radius: var(--radius-md);
-            width: 100%;
-        }
-
-        .modal-visuals {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .modal-picto {
-            width: 80px;
-            height: 80px;
-            border: 2px solid #e2e8f0;
-            border-radius: var(--radius-md);
-            padding: 4px;
-            background: white;
-        }
-
-        .modal-arrow {
-            font-size: 1.3rem;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        /* --- SUCCESS SCREEN --- */
-        #success-screen {
-            justify-content: center;
-            gap: 20px;
-            text-align: center;
-        }
-
-        .trophy-container {
-            font-size: 4.5rem;
-            margin-bottom: 5px;
-            animation: bounce 1s alternate infinite;
-        }
-
-        @keyframes bounce {
-            from { transform: translateY(0); }
-            to { transform: translateY(-10px); }
-        }
-
-        /* --- INTENSE RESPONSIVE HEIGHT SAFETY OVERRIDES --- */
-        @media (max-height: 680px) or (max-width: 380px) {
-            h1 { font-size: 1.4rem; margin-bottom: 4px; }
-            p.description { font-size: 0.9rem; }
-            .screen { padding: 12px; }
-            .picto-card { width: 120px; padding: 6px; gap: 4px; }
-            .picto-img { width: 70px; height: 70px; }
-            .picto-label { font-size: 0.85rem; }
-            .question-text { font-size: 1rem; }
-            .choices-grid { gap: 6px; }
-            .choice-btn { min-height: 48px; padding: 4px 8px; font-size: 0.85rem; gap: 6px; }
-            .choice-btn-img { width: 32px; height: 32px; }
-            .modal-picto { width: 65px; height: 65px; }
-            .reinforcement-sentence { font-size: 1rem; padding: 6px; margin-bottom: 12px; }
-            .modal-visuals { margin-bottom: 15px; }
-            .game-header { padding-right: 100px; padding-bottom: 4px; }
-            .sound-btn { min-height: 32px; padding: 2px 6px; font-size: 0.7rem; }
-            .house-illustration { font-size: 3.5rem; }
-            .btn { min-height: 42px; padding: 8px 16px; font-size: 1rem; }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
         }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
+<div id="game-container">
+    
+    <div id="screen-start" class="screen active">
+        <h1>Identify Emotions! 🌈</h1>
+        <p>Look at the picture and pick the emotion.</p>
         
-        <div class="sound-toggle-container">
-            <button id="global-sound-btn" class="sound-btn">
-                <span id="sound-icon">🔊</span>
-                <span id="sound-text">Sound On</span>
-            </button>
-        </div>
-
-        <div id="preloader-screen" class="screen active">
-            <div class="loader-spinner"></div>
-            <div class="text-center-wrapper">
-                <h1 style="font-size: 1.4rem;">Loading Game Materials...</h1>
-                <p class="description" id="preloader-status">Preparing game assets (0%)</p>
-            </div>
-        </div>
-        
-        <div id="start-screen" class="screen">
-            <div class="house-illustration">🏠</div>
-            <div class="text-center-wrapper">
-                <h1>Our House & Behaviors</h1>
-                <p class="description">Let's learn about our home! Look at the pictures and choose the best room for each activity.</p>
-            </div>
-            <button class="btn" id="start-btn">Start Game</button>
-        </div>
-
-        <div id="game-screen" class="screen">
-            <div class="game-header">
-                <span class="score-counter" id="question-number">Question 1/10</span>
-                <div class="progress-container">
-                    <div class="progress-bar" id="progress-bar"></div>
-                </div>
-            </div>
-
-            <div class="question-box">
-                <div class="question-text" id="question-prompt">Where do I do this?</div>
-                <div class="picto-card">
-                    <img id="behavior-picto" class="picto-img" src="" alt="Behavior Illustration">
-                    <div id="behavior-label" class="picto-label">Action</div>
-                </div>
-            </div>
-
-            <div class="choices-grid" id="choices-grid">
-                </div>
-        </div>
-
-        <div id="modal-overlay" class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-title">Great Job! 🎉</div>
-                <div class="reinforcement-sentence" id="modal-sentence">I cook food in the kitchen.</div>
-                
-                <div class="modal-visuals">
-                    <img id="modal-behavior-img" class="modal-picto" src="" alt="Behavior">
-                    <div class="modal-arrow">➔</div>
-                    <img id="modal-location-img" class="modal-picto" src="" alt="Location">
-                </div>
-                
-                <button class="btn" id="next-btn" style="background-color: var(--success-color); width: 100%; max-width: 100%;">Next Activity</button>
+        <div class="settings-group">
+            <span class="setting-label">Which emotions?</span>
+            <div id="emotion-chips" class="chip-container">
+                <div class="chip active" data-val="happy">😊 Happy</div>
+                <div class="chip active" data-val="sad">😢 Sad</div>
+                <div class="chip active" data-val="angry">😡 Angry</div>
+                <div class="chip active" data-val="scared">😱 Scared</div>
             </div>
         </div>
 
-        <div id="success-screen" class="screen">
-            <div class="trophy-container">🏆</div>
-            <div class="text-center-wrapper">
-                <h1>Fantastic Learning!</h1>
-                <p class="description">You know exactly where all the public and private activities belong in the house.</p>
+        <div class="settings-group">
+            <span class="setting-label">How many rounds?</span>
+            <div id="count-chips" class="chip-container">
+                <div class="chip" data-val="3">3</div>
+                <div class="chip active" data-val="6">6</div>
+                <div class="chip" data-val="10">10</div>
             </div>
-            <button class="btn" id="play-again-btn">Play Again</button>
         </div>
 
+        <button class="btn" onclick="initGameFlow()">PLAY GAME</button>
     </div>
 
-    <script>
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let isSoundEnabled = true;
+    <div id="screen-loading" class="screen">
+        <div class="loader"></div>
+        <h2>Loading Photos...</h2>
+        <p>Get ready to play!</p>
+    </div>
 
-        function playSound(type) {
-            if (!isSoundEnabled) return;
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            if (type === 'correct') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
-                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); 
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
-            }
-        }
-    </script>
-
-    <script>
-        // --- MOBILE VIEWPORT HEIGHT FIX ---
-        function calculateRealViewportHeight() {
-            let vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty('--vh', `${vh}px`);
-        }
+    <div id="screen-game" class="screen">
+        <div id="hud">
+            <div id="score-display">Score: <b>0</b></div>
+            <div id="progress-wrapper"><div id="progress-bar"></div></div>
+            <div id="round-display">1/6</div>
+        </div>
         
-        // Listen to resizing and orientation shifts to recompute screen limits
-        window.addEventListener('resize', calculateRealViewportHeight);
-        window.addEventListener('orientationchange', calculateRealViewportHeight);
-        calculateRealViewportHeight();
+        <div id="image-display">
+            <img id="target-img" src="" alt="Emotion photo">
+        </div>
 
-        // --- DATA DICTIONARIES ---
-        const ARASAAC_BASE = "https://api.arasaac.org/api/pictograms/";
+        <div id="options-grid"></div>
+    </div>
 
-        const locations = {
-            living_room: { id: "6211", name: "Living Room" },
-            kitchen:     { id: "33070", name: "Kitchen" },
-            dining_room: { id: "9824", name: "Dining Room" },
-            toilet:      { id: "15905", name: "Toilet" },
-            bedroom:     { id: "33068", name: "My Bedroom" }
-        };
+    <div id="screen-result" class="screen">
+        <h1 id="result-title">Great Job!</h1>
+        <p id="result-text">You identified all the emotions.</p>
+        <div style="font-size: 4rem; margin: 20px;">🏆</div>
+        <button class="btn" onclick="showStart()">PLAY AGAIN</button>
+    </div>
 
-        const behaviors = [
-            { text: "cook food", pictoId: "2342", rooms: ["kitchen"] },
-            { text: "eat", pictoId: "28669", rooms: ["dining_room"] },
-            { text: "watch TV", pictoId: "29125", rooms: ["living_room"] },
-            { text: "play toys", pictoId: "36885", rooms: ["living_room", "bedroom"] },
-            { text: "read books", pictoId: "31680", rooms: ["living_room", "bedroom"] },
-            { text: "paint", pictoId: "7207", rooms: ["living_room", "bedroom"] },
-            { text: "scratch private parts", pictoId: "22192", rooms: ["toilet", "bedroom"] },
-            { text: "change clothes", pictoId: "11232", rooms: ["toilet", "bedroom"] },
-            { text: "pass motion", pictoId: "3428", rooms: ["toilet"] },
-            { text: "dig my nose", pictoId: "15722", rooms: ["toilet", "bedroom"] }
-        ];
+</div>
 
-        // --- STATE MANAGEMENT ---
-        let shuffledQuestions = [];
-        let currentQuestionIndex = 0;
-        let isTransitioning = false;
+<script>
+    const EMOTION_DATA = {
+        happy: {
+            emoji: "😊",
+            images: [
+                "https://i.postimg.cc/13NbWwMC/happy-(3).jpg",
+                "https://i.postimg.cc/Gms6MGzv/happy-(2).jpg",
+                "https://i.postimg.cc/KYSwCjHS/happy-(9).jpg"
+            ]
+        },
+        sad: {
+            emoji: "😢",
+            images: [
+                "https://i.postimg.cc/PxdcrcHL/sad-(3).jpg",
+                "https://i.postimg.cc/7L3d44F5/sad-(2).jpg",
+                "https://i.postimg.cc/26Ttqw8j/sad-(1).jpg"
+            ]
+        },
+        angry: {
+            emoji: "😡",
+            images: [
+                "https://i.postimg.cc/Y2sXJjvR/angry-(18).jpg",
+                "https://i.postimg.cc/KcH9d41r/angry-(15).jpg",
+                "https://i.postimg.cc/kMpjkD2S/angry-(11).jpg"
+            ]
+        },
+        scared: {
+            emoji: "😱",
+            images: [
+                "https://i.postimg.cc/7hfK5rWW/scared-(14).jpg",
+                "https://i.postimg.cc/RhNgWxDb/scared-(11).jpg",
+                "https://i.postimg.cc/yxkLDCbc/scared-(5).jpg"
+            ]
+        }
+    };
 
-        // --- DOM ELEMENTS ---
-        const preloaderScreen = document.getElementById('preloader-screen');
-        const preloaderStatus = document.getElementById('preloader-status');
-        const startScreen = document.getElementById('start-screen');
-        const gameScreen = document.getElementById('game-screen');
-        const successScreen = document.getElementById('success-screen');
-        const modalOverlay = document.getElementById('modal-overlay');
-        
-        const startBtn = document.getElementById('start-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const playAgainBtn = document.getElementById('play-again-btn');
-        const globalSoundBtn = document.getElementById('global-sound-btn');
-        const soundIcon = document.getElementById('sound-icon');
-        const soundText = document.getElementById('sound-text');
-        
-        const behaviorPicto = document.getElementById('behavior-picto');
-        const behaviorLabel = document.getElementById('behavior-label');
-        const questionNumber = document.getElementById('question-number');
-        const progressBar = document.getElementById('progress-bar');
-        const choicesGrid = document.getElementById('choices-grid');
-        
-        const modalSentence = document.getElementById('modal-sentence');
-        const modalBehaviorImg = document.getElementById('modal-behavior-img');
-        const modalLocationImg = document.getElementById('modal-location-img');
+    let gameState = {
+        totalRounds: 6,
+        currentRound: 0,
+        score: 0,
+        activeEmotions: [],
+        questions: []
+    };
 
-        // --- AUDIO CONFIGURATION MANAGEMENT ---
-        function toggleSoundPreference() {
-            isSoundEnabled = !isSoundEnabled;
-            if (isSoundEnabled) {
-                globalSoundBtn.classList.remove('muted');
-                soundIcon.textContent = "🔊";
-                soundText.textContent = "Sound On";
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(freq, type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            const group = this.parentElement.id;
+            if (group === 'count-chips') {
+                this.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
             } else {
-                globalSoundBtn.classList.add('muted');
-                soundIcon.textContent = "🔇";
-                soundText.textContent = "Sound Off";
-            }
-        }
-
-        // --- PRELOADER LOGIC ---
-        function preloadImages() {
-            const urlsToLoad = [];
-            behaviors.forEach(b => urlsToLoad.push(`${ARASAAC_BASE}${b.pictoId}`));
-            Object.keys(locations).forEach(key => urlsToLoad.push(`${ARASAAC_BASE}${locations[key].id}`));
-
-            let loadedCount = 0;
-            const totalCount = urlsToLoad.length;
-
-            urlsToLoad.forEach(url => {
-                const img = new Image();
-                img.src = url;
-                
-                const onImageLoad = () => {
-                    loadedCount++;
-                    const progress = Math.round((loadedCount / totalCount) * 100);
-                    preloaderStatus.textContent = `Preparing game assets (${progress}%)`;
-                    
-                    if (loadedCount === totalCount) {
-                        setTimeout(() => {
-                            navigateToScreen(startScreen);
-                        }, 500);
-                    }
-                };
-
-                img.onload = onImageLoad;
-                img.onerror = onImageLoad;
-            });
-        }
-
-        // --- GAME CONTROL FUNCTIONS ---
-        function initGame() {
-            shuffledQuestions = [...behaviors].sort(() => Math.random() - 0.5);
-            currentQuestionIndex = 0;
-            navigateToScreen(gameScreen);
-            loadQuestion();
-        }
-
-        function navigateToScreen(targetScreen) {
-            [preloaderScreen, startScreen, gameScreen, successScreen].forEach(s => s.classList.remove('active'));
-            targetScreen.classList.add('active');
-        }
-
-        function loadQuestion() {
-            isTransitioning = false;
-            const currentData = shuffledQuestions[currentQuestionIndex];
-            
-            questionNumber.textContent = `Activity ${currentQuestionIndex + 1} of ${shuffledQuestions.length}`;
-            const progressionPercentage = (currentQuestionIndex / shuffledQuestions.length) * 100;
-            progressBar.style.width = `${progressionPercentage}%`;
-            
-            behaviorPicto.src = `${ARASAAC_BASE}${currentData.pictoId}`;
-            behaviorPicto.alt = currentData.text;
-            behaviorLabel.textContent = currentData.text;
-
-            choicesGrid.innerHTML = '';
-            Object.keys(locations).forEach(key => {
-                const loc = locations[key];
-                
-                const button = document.createElement('button');
-                button.className = 'choice-btn';
-                
-                const img = document.createElement('img');
-                img.src = `${ARASAAC_BASE}${loc.id}`;
-                img.alt = loc.name;
-                img.className = 'choice-btn-img';
-                
-                const textSpan = document.createElement('span');
-                textSpan.className = 'choice-btn-text';
-                textSpan.textContent = loc.name;
-                
-                button.appendChild(img);
-                button.appendChild(textSpan);
-                
-                button.addEventListener('click', () => handleChoiceSelection(key, button));
-                choicesGrid.appendChild(button);
-            });
-        }
-
-        function handleChoiceSelection(selectedRoomKey, selectedButton) {
-            if (isTransitioning) return;
-
-            const currentData = shuffledQuestions[currentQuestionIndex];
-            const isCorrect = currentData.rooms.includes(selectedRoomKey);
-
-            if (isCorrect) {
-                isTransitioning = true;
-                playSound('correct');
-                selectedButton.classList.add('correct');
-                
-                setTimeout(() => {
-                    displayReinforcementModal(currentData, selectedRoomKey);
-                }, 500);
-            } else {
-                selectedButton.classList.add('wrong');
-                setTimeout(() => {
-                    selectedButton.classList.remove('wrong');
-                }, 500);
-            }
-        }
-
-        function displayReinforcementModal(behaviorData, roomKey) {
-            const matchedLocation = locations[roomKey];
-            const roomName = matchedLocation.name.toLowerCase();
-            
-            let formatSentence = "";
-            if (roomName.includes("my")) {
-                formatSentence = `I ${behaviorData.text} in ${roomName}.`;
-            } else {
-                formatSentence = `I ${behaviorData.text} in the ${roomName}.`;
-            }
-            
-            modalSentence.textContent = formatSentence;
-            modalBehaviorImg.src = `${ARASAAC_BASE}${behaviorData.pictoId}`;
-            modalLocationImg.src = `${ARASAAC_BASE}${matchedLocation.id}`;
-            
-            modalOverlay.classList.add('active');
-        }
-
-        function handleNextStep() {
-            modalOverlay.classList.remove('active');
-            currentQuestionIndex++;
-
-            if (currentQuestionIndex < shuffledQuestions.length) {
-                loadQuestion();
-            } else {
-                progressBar.style.width = '100%';
-                setTimeout(() => {
-                    navigateToScreen(successScreen);
-                }, 400);
-            }
-        }
-
-        // --- EVENT HANDLERS ---
-        globalSoundBtn.addEventListener('click', toggleSoundPreference);
-        startBtn.addEventListener('click', initGame);
-        nextBtn.addEventListener('click', handleNextStep);
-        playAgainBtn.addEventListener('click', () => navigateToScreen(startScreen));
-
-        window.addEventListener('keydown', (e) => {
-            if (modalOverlay.classList.contains('active') && (e.key === 'Enter' || e.key === ' ')) {
-                e.preventDefault();
-                handleNextStep();
+                const actives = this.parentElement.querySelectorAll('.chip.active');
+                if (actives.length > 1 || !this.classList.contains('active')) {
+                    this.classList.toggle('active');
+                }
             }
         });
+    });
 
-        window.onload = preloadImages;
-    </script>
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`screen-${screenId}`).classList.add('active');
+    }
+
+    function showStart() {
+        showScreen('start');
+    }
+
+    function preloadImages(urls) {
+        return Promise.all(urls.map(url => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = url;
+                img.onload = resolve;
+                img.onerror = resolve;
+            });
+        }));
+    }
+
+    async function initGameFlow() {
+        const emotionChips = document.querySelectorAll('#emotion-chips .chip.active');
+        gameState.activeEmotions = Array.from(emotionChips).map(c => c.dataset.val);
+        showScreen('loading');
+        const imagesToLoad = [];
+        gameState.activeEmotions.forEach(emo => imagesToLoad.push(...EMOTION_DATA[emo].images));
+        await preloadImages(imagesToLoad);
+        startGame();
+    }
+
+    function startGame() {
+        const countChip = document.querySelector('#count-chips .chip.active');
+        gameState.totalRounds = parseInt(countChip.dataset.val);
+
+        gameState.questions = [];
+        let lastImage = null;
+
+        for (let i = 0; i < gameState.totalRounds; i++) {
+            // Pick a random emotion from ALL active ones (allows back-to-back same emotion)
+            const emotion = gameState.activeEmotions[Math.floor(Math.random() * gameState.activeEmotions.length)];
+            const imgList = EMOTION_DATA[emotion].images;
+            
+            // Only prevent the EXACT same image file from repeating twice in a row
+            let availableImages = imgList.length > 1 
+                ? imgList.filter(img => img !== lastImage)
+                : imgList;
+            
+            const img = availableImages[Math.floor(Math.random() * availableImages.length)];
+            
+            gameState.questions.push({ emotion, img });
+            lastImage = img;
+        }
+
+        gameState.currentRound = 0;
+        gameState.score = 0;
+        updateHUD();
+        nextRound();
+        showScreen('game');
+    }
+
+    function updateHUD() {
+        document.querySelector('#score-display b').innerText = gameState.score;
+        document.getElementById('round-display').innerText = `${gameState.currentRound + 1}/${gameState.totalRounds}`;
+        const progress = (gameState.currentRound / gameState.totalRounds) * 100;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+    }
+
+    function nextRound() {
+        if (gameState.currentRound >= gameState.totalRounds) {
+            endGame();
+            return;
+        }
+
+        const question = gameState.questions[gameState.currentRound];
+        gameState.currentAnswer = question.emotion;
+        document.getElementById('target-img').src = question.img;
+
+        const grid = document.getElementById('options-grid');
+        grid.innerHTML = '';
+        
+        const shuffledButtons = [...gameState.activeEmotions].sort(() => Math.random() - 0.5);
+
+        shuffledButtons.forEach(emo => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerHTML = `<span>${EMOTION_DATA[emo].emoji}</span> ${emo.charAt(0).toUpperCase() + emo.slice(1)}`;
+            btn.onclick = () => handleChoice(emo, btn);
+            grid.appendChild(btn);
+        });
+        
+        updateHUD();
+    }
+
+    function handleChoice(choice, btnElement) {
+        if (choice === gameState.currentAnswer) {
+            gameState.score += 10;
+            btnElement.classList.add('correct');
+            playSound(523.25, 'sine');
+            setTimeout(() => playSound(659.25, 'sine'), 100);
+            
+            setTimeout(() => {
+                gameState.currentRound++;
+                nextRound();
+            }, 600);
+        } else {
+            btnElement.classList.add('shake');
+            setTimeout(() => btnElement.classList.remove('shake'), 400);
+        }
+    }
+
+    function endGame() {
+        document.getElementById('progress-bar').style.width = `100%`;
+        const percentage = (gameState.score / (gameState.totalRounds * 10)) * 100;
+        
+        let title = "Awesome!";
+        if (percentage < 50) title = "Keep Practicing!";
+        else if (percentage < 100) title = "Great Work!";
+
+        document.getElementById('result-title').innerText = title;
+        document.getElementById('result-text').innerText = `You scored ${gameState.score} points!`;
+        showScreen('result');
+    }
+
+    showStart();
+</script>
 </body>
 </html>
