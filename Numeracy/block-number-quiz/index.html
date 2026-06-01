@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Block Number Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --success: #10B981;
+            --error: #EF4444;
+            --neutral-dark: #1F2937;
+            --neutral-light: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --radius: 16px;
+            --font-main: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%);
+            color: var(--neutral-dark);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* App Container: Guarantees no scrolling on any device */
+        #app-container {
+            width: 100%;
+            max-width: 500px;
+            height: 100%;
+            max-height: 850px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+            #app-container {
+                height: 90vh;
+            }
+        }
+
+        /* Screens Management */
+        .screen {
+            display: none;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: #6B7280;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        /* Header / Progress Bar */
+        .quiz-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-container {
+            width: 60%;
+            height: 8px;
+            background-color: var(--neutral-light);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .score-tracker {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--neutral-dark);
+        }
+
+        /* Asset Display Box */
+        .image-container {
+            width: 100%;
+            flex-grow: 1;
+            min-height: 200px;
+            max-height: 320px;
+            background-color: var(--neutral-light);
+            border-radius: var(--radius);
+            margin: 1rem 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border: 2px solid #E5E7EB;
+        }
+
+        .block-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Fallback Graphic UI if assets fail to load */
+        .fallback-graphic {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #9CA3AF;
+        }
+
+        /* Quiz Options Grid */
+        .options-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Interactive Buttons */
+        .btn {
+            font-family: var(--font-main);
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            min-height: 54px;
+        }
+
+        .btn-primary:active {
+            background-color: var(--primary-hover);
+            transform: scale(0.98);
+        }
+
+        .btn-option {
+            background-color: #F9FAFB;
+            color: var(--neutral-dark);
+            border: 2px solid #E5E7EB;
+            min-height: 60px; /* Highly touch-friendly target */
+            padding: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* Option Feedback States */
+        .btn-option.correct {
+            background-color: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .btn-option.incorrect {
+            background-color: var(--error);
+            color: white;
+            border-color: var(--error);
+        }
+
+        .btn-option:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        /* Result Screen Elements */
+        .result-circle {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background-color: #EEF2F6;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 1.5rem 0;
+            border: 4px solid var(--primary);
+        }
+
+        .result-score {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--neutral-dark);
+        }
+
+        /* Utility classes */
+        .flex-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+
+        <div id="screen-start" class="screen active">
+            <div class="flex-center" style="justify-content: center; gap: 1rem; flex-grow: 1;">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+                    <path d="m4 6 8-4 8 4v10l-8 4-8-4z"></path>
+                    <path d="m12 22v-10"></path>
+                    <path d="m12 12 8-4"></path>
+                    <path d="M12 12 4 8"></path>
+                </svg>
+                <div>
+                    <h1>Block Quiz</h1>
+                    <p>Test your knowledge. Can you identify the correct block numbers?</p>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="Game.start()">Start Quiz</button>
+        </div>
+
+        <div id="screen-game" class="screen">
+            <div class="quiz-header">
+                <div class="progress-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div id="score-tracker" class="score-tracker">Score: 0</div>
+            </div>
+
+            <div class="image-container">
+                <img id="block-image" class="block-image" src="" alt="Block Number Concept">
+                <div id="fallback-graphic" class="fallback-graphic">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    <span id="fallback-text" style="font-size: 0.8rem; margin-top: 0.5rem; font-weight: 600;">Loading...</span>
+                </div>
+            </div>
+
+            <p style="font-weight: 600; font-size: 1.1rem; color: var(--neutral-dark);">Identify this block number:</p>
+
+            <div class="options-grid" id="options-grid">
+                </div>
+        </div>
+
+        <div id="screen-end" class="screen">
+            <div class="flex-center" style="justify-content: center; flex-grow: 1; width: 100%;">
+                <h1>Quiz Complete!</h1>
+                <p id="result-message">Great job! Here is your final score:</p>
+                
+                <div class="result-circle">
+                    <span id="final-score" class="result-score">0</span>
+                    <span style="font-size: 0.9rem; color: #6B7280; font-weight: 600;">out of 5</span>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="Game.resetToStart()">Play Again</button>
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * POOL OF DATA
+         * Modify, add, or subtract blocks easily here.
+         * The string matches your naming standard: 'Blk[Number]'
+         */
+        const BLOCK_POOL = [
+            "Blk 111", "Blk 313A", "Blk 467", "Blk 469", "Blk 477", 
+            "Blk 476", "Blk 475", "Blk 507D", "Blk 483", "Blk 493",
+            "Blk 111",
+        ];
+
+        const Game = {
+            currentRound: 0,
+            score: 0,
+            totalRounds: 5,
+            activeBlocks: [],
+            currentCorrectAnswer: "",
+
+            // Initialize app state
+            init() {
+                this.preloadElements();
+            },
+
+            preloadElements() {
+                this.imgElement = document.getElementById('block-image');
+                this.fallbackGraphic = document.getElementById('fallback-graphic');
+                this.fallbackText = document.getElementById('fallback-text');
+                
+                // Watch for image error handles to show clean placeholder data automatically
+                this.imgElement.onerror = () => {
+                    this.fallbackGraphic.style.display = 'flex';
+                    // Strip space out for display layout lookalike if real image fails
+                    this.fallbackText.innerText = this.currentCorrectAnswer.replace(/\s+/g, '');
+                };
+                
+                this.imgElement.onload = () => {
+                    this.fallbackGraphic.style.display = 'none';
+                };
+            },
+
+            // Transition utility between application layers
+            showScreen(screenId) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(screenId).classList.add('active');
+            },
+
+            // Starts a new instance of 5 rounds
+            start() {
+                this.currentRound = 0;
+                this.score = 0;
+                
+                // Shuffle pool and slice out 5 random samples
+                this.activeBlocks = [...BLOCK_POOL]
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, this.totalRounds);
+
+                this.updateScoreTracker();
+                this.showScreen('screen-game');
+                this.nextRound();
+            },
+
+            nextRound() {
+                if (this.currentRound >= this.totalRounds) {
+                    this.endGame();
+                    return;
+                }
+
+                // UI Progress Update
+                const progressPercent = (this.currentRound / this.totalRounds) * 100;
+                document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+
+                this.currentCorrectAnswer = this.activeBlocks[this.currentRound];
+                
+                // Format Image Path String Standard matching convention: [Blk(number)].png
+                // E.g. "Blk 409A" -> "assets/Blk409A.png"
+                const cleanFileName = this.currentCorrectAnswer.replace(/\s+/g, '');
+                this.imgElement.src = `assets/${cleanFileName}.png`;
+                
+                // Reset graphic states while rendering updates
+                this.fallbackGraphic.style.display = 'flex';
+                this.fallbackText.innerText = "Loading...";
+
+                this.generateOptions();
+            },
+
+            generateOptions() {
+                const grid = document.getElementById('options-grid');
+                grid.innerHTML = ''; // Wipe out previous options
+
+                // Generate 3 wrong distractors from remaining global pool data
+                const distractors = BLOCK_POOL.filter(item => item !== this.currentCorrectAnswer);
+                const chosenDistractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
+                
+                // Mix right answer with distractors
+                const choices = [this.currentCorrectAnswer, ...chosenDistractors].sort(() => 0.5 - Math.random());
+
+                choices.forEach(choice => {
+                    const button = document.createElement('button');
+                    button.className = 'btn btn-option';
+                    button.textContent = choice;
+                    
+                    // Support uniform interactive event triggers across all touch environments
+                    button.addEventListener('click', (e) => this.handleAnswer(e, choice));
+                    grid.appendChild(button);
+                });
+            },
+
+            handleAnswer(event, selectedAnswer) {
+                const buttons = document.querySelectorAll('.btn-option');
+                buttons.forEach(btn => btn.disabled = true); // Lock options instantly
+
+                const isCorrect = selectedAnswer === this.currentCorrectAnswer;
+                const clickedButton = event.currentTarget;
+
+                if (isCorrect) {
+                    clickedButton.classList.add('correct');
+                    this.score++;
+                    this.updateScoreTracker();
+                } else {
+                    clickedButton.classList.add('incorrect');
+                    // Accent color clue highlights correct alternative options
+                    buttons.forEach(btn => {
+                        if (btn.textContent === this.currentCorrectAnswer) {
+                            btn.classList.add('correct');
+                        }
+                    });
+                }
+
+                // Short delay to review feedback before stepping forward 
+                setTimeout(() => {
+                    this.currentRound++;
+                    this.nextRound();
+                }, 1400);
+            },
+
+            updateScoreTracker() {
+                document.getElementById('score-tracker').textContent = `Score: ${this.score}`;
+            },
+
+            endGame() {
+                document.getElementById('progress-bar').style.width = '100%';
+                document.getElementById('final-score').textContent = this.score;
+                
+                const msgElement = document.getElementById('result-message');
+                if (this.score === this.totalRounds) {
+                    msgElement.textContent = "Perfect score! Exceptional block tracking skills!";
+                } else if (this.score >= 3) {
+                    msgElement.textContent = "Nicely done! You have solid recognition skills.";
+                } else {
+                    msgElement.textContent = "Good try! Let's give it another spin to practice.";
+                }
+
+                this.showScreen('screen-end');
+            },
+
+            resetToStart() {
+                this.showScreen('screen-start');
+            }
+        };
+
+        // Fire engine activation sequence on window load completion
+        window.addEventListener('DOMContentLoaded', () => Game.init());
+    </script>
+</body>
+</html>
