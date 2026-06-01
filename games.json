@@ -1,5 +1,15 @@
 [
   {
+    "id": "block-number- quiz",
+    "title": "Block Number Quiz",
+    "description": "What block number is this?",
+    "creatorName": "Teacher Carmina",
+    "category": "Numeracy",
+    "compatibility": ["desktop", "tablet", "mobile"],
+    "tags": ["numbers", "address", "personal information"],
+    "uploadDate": "2026-06-01"
+  },
+  {
     "id": "letter-matcher",
     "title": "Letter Matcher",
     "description": "Match lowercase to uppercase letters",
@@ -76,7 +86,7 @@
     "creatorName": "Teacher Joan",
     "category": "Literacy",
     "compatibility": ["desktop"],
-    "tags": ["safety", "community living"],
+    "tags": ["safety", "community living", "vocabulary", "typing"],
     "uploadDate": "2026-5-30",
     "url": "https://scratch.mit.edu/projects/1320444978/",
     "thumbnail": "https://uploads.scratch.mit.edu/get_image/project/1320444978_480x360.png"
@@ -88,7 +98,7 @@
     "creatorName": "Teacher Joan",
     "category": "Daily Living",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["safety", "road crossing"],
+    "tags": ["safety", "road crossing", "mobility"],
     "uploadDate": "2026-5-30",
     "url": "https://scratch.mit.edu/projects/1320927852/",
     "thumbnail": "https://uploads.scratch.mit.edu/get_image/project/1320927852_480x360.png"
@@ -100,7 +110,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["reading", "coding"],
+    "tags": ["reading", "coding", "sight words"],
     "uploadDate": "2026-05-28"
   },
   {
@@ -190,7 +200,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop", "tablet"],
-    "tags": ["body parts", "sentence building"],
+    "tags": ["body parts", "sentence building", "vocabulary"],
     "uploadDate": "2026-05-25"
   },
   {
@@ -200,7 +210,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop", "tablet"],
-    "tags": ["attributes", "sentence building"],
+    "tags": ["attributes", "sentence building", "vocabulary", "writing"],
     "uploadDate": "2026-05-26"
   },
   {
@@ -210,7 +220,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop"],
-    "tags": ["predictable charts", "sentence building"],
+    "tags": ["predictable charts", "sentence building", "vocabulary", "writing"],
     "uploadDate": "2026-05-02"
   },
   {
@@ -270,7 +280,7 @@
     "creatorName": "Teacher Carmina",
     "category": "General",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["communication", "structured teaching"],
+    "tags": ["communication", "structured teaching", "tool"],
     "uploadDate": "2026-05-14"
   },
   {
