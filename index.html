@@ -108,13 +108,82 @@
             outline: none;
             box-sizing: border-box;
         }
-        .view-switcher { display: flex; background: #e2e8f0; padding: 4px; border-radius: 10px; }
-        .view-btn { background: none; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-light); }
-        .view-btn.active { background: white; color: var(--primary); }
+        /* Icon buttons */
+        .icon-btn {
+            position: relative;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: border-color 0.2s, background 0.2s;
+            color: var(--text-light);
+        }
+        .icon-btn:hover { border-color: #cbd5e1; }
+        .icon-btn.active {
+            border-color: var(--primary);
+            background: #eff6ff;
+            color: var(--primary);
+        }
+        /* Active dot indicator */
+        .icon-btn .active-dot {
+            display: none;
+            position: absolute;
+            top: 6px; right: 6px;
+            width: 7px; height: 7px;
+            background: var(--primary);
+            border-radius: 50%;
+            border: 1.5px solid white;
+        }
+        .icon-btn.has-filter .active-dot { display: block; }
 
-        .game-grid { display: grid; gap: 24px; margin-top: 20px; }
-        .view-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-        .view-compact { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+        /* Popovers */
+        .popover {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 8px 24px -4px rgba(15,23,42,0.12);
+            padding: 16px;
+            z-index: 500;
+            min-width: 200px;
+        }
+        .popover.open { display: block; }
+        .popover-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-light);
+            margin-bottom: 8px;
+            display: block;
+        }
+        .popover select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 9px;
+            border: 1.5px solid #e2e8f0;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-dark);
+            background: white;
+            cursor: pointer;
+            outline: none;
+            margin-bottom: 12px;
+        }
+        .popover select:last-child { margin-bottom: 0; }
+        .popover select:focus { border-color: var(--primary); }
+        .popover-divider { border: none; border-top: 1px solid #f1f5f9; margin: 12px 0; }
+
+        .game-grid { display: grid; gap: 16px; margin-top: 20px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 
         .game-card { 
             background: var(--card-bg); 
@@ -188,12 +257,7 @@
             .detail-body { grid-template-columns: 1fr; }
             .qr-area { border-left: none; padding-left: 0; border-top: 1px solid #f1f5f9; padding-top: 20px; }
             
-            .view-compact .game-card { flex-direction: row; height: 100px; align-items: stretch; }
-            .view-compact .snapshot { width: 100px; height: 100%; flex-shrink: 0; }
-            .view-compact .card-content { padding: 10px 12px; justify-content: center; overflow: hidden; }
-            .view-compact .card-title { font-size: 0.9rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .view-compact .card-desc { display: none; }
-            .view-compact .badge-new { top: 5px; left: 5px; font-size: 0.5rem; padding: 2px 5px; }
+            .game-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
         }
     </style>
 </head>
@@ -216,11 +280,43 @@
     <div id="game-section">
         <div class="controls-row">
             <div class="search-container">
-                <input type="text" id="game-search" placeholder="Search title, description, tags, creator..." onkeyup="handleSearch()">
+                <input type="text" id="game-search" placeholder="Search All Games..." onkeyup="handleSearch()">
             </div>
-            <div class="view-switcher">
-                <button class="view-btn" id="btn-grid" onclick="updateView('grid')">Grid</button>
-                <button class="view-btn active" id="btn-compact" onclick="updateView('compact')">Compact</button>
+            <!-- Filter icon button -->
+            <div style="position:relative;">
+                <button class="icon-btn" id="filter-btn" onclick="openPopover('filter-popover', 'filter-btn')" title="Filter">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    <span class="active-dot"></span>
+                </button>
+                <div class="popover" id="filter-popover">
+                    <span class="popover-label" id="filter-topic-label">Topic</span>
+                    <select id="filter-topic" onchange="applyFilters(); updateFilterIndicator()">
+                        <option value="">All Topics</option>
+                    </select>
+                    <hr class="popover-divider" id="filter-topic-divider">
+                    <span class="popover-label">Device</span>
+                    <select id="filter-device" onchange="applyFilters(); updateFilterIndicator()">
+                        <option value="">All Devices</option>
+                        <option value="desktop">Desktop</option>
+                        <option value="tablet">Tablet</option>
+                        <option value="mobile">Mobile</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Sort icon button -->
+            <div style="position:relative;">
+                <button class="icon-btn" id="sort-btn" onclick="openPopover('sort-popover', 'sort-btn')" title="Sort">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    <span class="active-dot"></span>
+                </button>
+                <div class="popover" id="sort-popover">
+                    <span class="popover-label">Sort by</span>
+                    <select id="sort-by" onchange="applyFilters(); updateSortIndicator()">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="alpha">A → Z</option>
+                    </select>
+                </div>
             </div>
         </div>
         
@@ -264,9 +360,52 @@
 </div>
 
 <script>
+    const TOPICS = {
+        Numeracy: {
+            'Numbers':       ['numbers', 'counting', 'number comparison', 'more', 'less'],
+            'Operations':    ['addition', 'subtraction', 'operations'],
+            'Money':         ['money', 'purchasing', 'dollar and cents', 'exact combination'],
+            'Time':          ['days of the week', 'months of the year', 'date', 'week', 'calendar'],
+            'Measurement':   ['measurement', 'length', 'weight', 'capacity'],
+            'Geometry':      ['shapes', 'lines', 'geometry', 'tracing'],
+            'Data Analysis': ['data', 'graph', 'tally'],
+        },
+        Literacy: {
+            'Letters':       ['letters', 'alphabet', 'case', 'initial letter sounds', 'phonics'],
+            'Reading':       ['reading', 'sight words', 'coding', 'dictation'],
+            'Vocabulary':    ['vocabulary', 'community living', 'body parts', 'attributes'],
+            'Comprehension': ['comprehension', 'predictable charts', 'sentence building'],
+            'Writing':       ['writing', 'typing', 'fine motor skills'],
+        },
+        'Daily Living': {
+            'Self Care':         ['self care', 'toileting', 'toilet signs'],
+            'Home Living':       ['home living', 'food safety', 'laundry'],
+            'Health and Safety': ['safety', 'road crossing', 'health'],
+            'Leisure':           ['leisure', 'play'],
+            'Community Living':  ['community living', 'mobility'],
+        },
+        SEL: {
+            'Self Awareness':   ['emotions', 'regulation'],
+            'Social Awareness': ['public and private places', 'public and private behaviours'],
+            'Decision Making':  ['decision making'],
+        },
+        General: {
+            'Creative': ['creative', 'art'],
+            'Sensory':  ['sensory', 'tool', 'communication', 'structured teaching'],
+        },
+    };
+
+    function getTopicsForGame(game) {
+        const catTopics = TOPICS[game.category];
+        if (!catTopics) return [];
+        const tags = (game.tags || []).map(t => t.toLowerCase());
+        return Object.entries(catTopics)
+            .filter(([, kws]) => kws.some(kw => tags.some(t => t.includes(kw) || kw.includes(t))))
+            .map(([topic]) => topic);
+    }
+
     let allGames = [];
     let currentCategory = 'Home';
-    let currentView = 'compact';
 
     const avatarSvg = `<div class="creator-avatar"><svg width="12" height="12" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
 
@@ -291,9 +430,8 @@
         try {
             const response = await fetch('games.json?v=' + Date.now());
             allGames = await response.json();
-            
+            allGames.forEach(g => { g._topics = getTopicsForGame(g); });
             allGames.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
-            
             renderContent();
         } catch (e) { console.error("Could not load games.json"); }
     }
@@ -304,6 +442,16 @@
         
         const gameSection = document.getElementById('game-section');
         const aboutContent = document.getElementById('about-content');
+
+        // Reset filters on tab change
+        document.getElementById('filter-topic').value = '';
+        document.getElementById('filter-device').value = '';
+        document.getElementById('sort-by').value = 'newest';
+        updateFilterIndicator();
+        updateSortIndicator();
+        closeAllPopovers();
+
+        populateTopicFilter(tab);
 
         if (tab === 'About') {
             gameSection.style.display = 'none';
@@ -316,13 +464,90 @@
         window.scrollTo(0,0);
     }
 
-    function renderContent(filtered = null) {
+    function populateTopicFilter(category) {
+        const sel = document.getElementById('filter-topic');
+        const topicLabel = document.getElementById('filter-topic-label');
+        const topicDivider = document.getElementById('filter-topic-divider');
+        const catTopics = TOPICS[category];
+
+        // Update search placeholder
+        const searchInput = document.getElementById('game-search');
+        if (category === 'Home' || category === 'About') {
+            searchInput.placeholder = 'Search All Games...';
+        } else {
+            searchInput.placeholder = `Search ${category} Games...`;
+        }
+
+        // Show/hide topic filter
+        if (catTopics) {
+            sel.innerHTML = '<option value="">All Topics</option>';
+            Object.keys(catTopics).forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                sel.appendChild(opt);
+            });
+            sel.style.display = '';
+            topicLabel.style.display = '';
+            topicDivider.style.display = '';
+        } else {
+            sel.style.display = 'none';
+            topicLabel.style.display = 'none';
+            topicDivider.style.display = 'none';
+        }
+    }
+
+    function openPopover(popoverId, btnId) {
+        const popover = document.getElementById(popoverId);
+        const isOpen = popover.classList.contains('open');
+        // Close all popovers first
+        document.querySelectorAll('.popover').forEach(p => p.classList.remove('open'));
+        document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+        if (!isOpen) {
+            popover.classList.add('open');
+            document.getElementById(btnId).classList.add('active');
+        }
+    }
+
+    function closeAllPopovers() {
+        document.querySelectorAll('.popover').forEach(p => p.classList.remove('open'));
+        document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    function updateFilterIndicator() {
+        const topic = (currentCategory !== 'Home' && currentCategory !== 'About')
+            ? document.getElementById('filter-topic').value : '';
+        const device = document.getElementById('filter-device').value;
+        document.getElementById('filter-btn').classList.toggle('has-filter', !!(topic || device));
+    }
+
+    function updateSortIndicator() {
+        const sort = document.getElementById('sort-by').value;
+        document.getElementById('sort-btn').classList.toggle('has-filter', sort !== 'newest');
+    }
+
+    function applyFilters() { renderContent(); }
+
+    function renderContent() {
         const content = document.getElementById('main-content');
         const header = document.getElementById('home-header');
+        const q = document.getElementById('game-search').value.toLowerCase().trim();
+        const topic = document.getElementById('filter-topic').value;
+        const device = document.getElementById('filter-device').value;
+        const sort = document.getElementById('sort-by').value;
         let list;
 
-        if (filtered) {
-            list = filtered;
+        if (q) {
+            const pool = (currentCategory === 'Home' || currentCategory === 'About')
+                ? allGames
+                : allGames.filter(g => g.category === currentCategory);
+            list = pool.filter(g =>
+                (g.title||'').toLowerCase().includes(q) ||
+                (g.description||'').toLowerCase().includes(q) ||
+                (g.category||'').toLowerCase().includes(q) ||
+                (g.creatorName||'').toLowerCase().includes(q) ||
+                (g.tags||[]).some(t => t.toLowerCase().includes(q)) ||
+                (g.compatibility||[]).some(c => c.toLowerCase().includes(q))
+            );
             header.style.display = 'none';
         } else if (currentCategory === 'Home') {
             list = allGames.filter(g => checkIsNew(g.uploadDate));
@@ -332,7 +557,14 @@
             header.style.display = 'none';
         }
 
-        content.innerHTML = `<div class="game-grid view-${currentView}">${list.map(createCard).join('')}</div>`;
+        if (topic) list = list.filter(g => (g._topics||[]).includes(topic));
+        if (device) list = list.filter(g => (g.compatibility||[]).includes(device));
+
+        if (sort === 'newest') list.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+        else if (sort === 'oldest') list.sort((a, b) => new Date(a.uploadDate) - new Date(b.uploadDate));
+        else if (sort === 'alpha') list.sort((a, b) => a.title.localeCompare(b.title));
+
+        content.innerHTML = `<div class="game-grid">${list.map(createCard).join('')}</div>`;
     }
 
     function createCard(game) {
@@ -350,11 +582,6 @@
         `;
     }
 
-    function updateView(v) {
-        currentView = v;
-        document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.id === `btn-${v}`));
-        renderContent();
-    }
 
     function validateAndPlay(id) {
         const game = allGames.find(g => g.id === id);
@@ -370,31 +597,7 @@
         }
     }
 
-    function handleSearch() {
-        const q = document.getElementById('game-search').value.toLowerCase().trim();
-        
-        if (!q) {
-            renderContent();
-            return;
-        }
-
-        const results = allGames.filter(g => {
-            const titleMatch = g.title ? g.title.toLowerCase().includes(q) : false;
-            const descMatch = g.description ? g.description.toLowerCase().includes(q) : false;
-            const categoryMatch = g.category ? g.category.toLowerCase().includes(q) : false;
-            const creatorMatch = g.creatorName ? g.creatorName.toLowerCase().includes(q) : false;
-            
-            // Check array of tags safely
-            const tagsMatch = g.tags ? g.tags.some(t => t.toLowerCase().includes(q)) : false;
-            
-            // Check array of compatibility items safely
-            const compatMatch = g.compatibility ? g.compatibility.some(c => c.toLowerCase().includes(q)) : false;
-
-            return titleMatch || descMatch || categoryMatch || creatorMatch || tagsMatch || compatMatch;
-        });
-
-        renderContent(results);
-    }
+    function handleSearch() { renderContent(); }
 
     function openDetails(id) {
         const g = allGames.find(game => game.id === id);
@@ -433,6 +636,12 @@ function playGame(id) {
     link.click();
     link.remove();
 }
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.icon-btn') && !e.target.closest('.popover')) {
+            closeAllPopovers();
+        }
+    });
 
     init();
 </script>
