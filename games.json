@@ -1,5 +1,15 @@
 [
   {
+    "id": "letter-matcher",
+    "title": "Letter Matcher",
+    "description": "Match lowercase to uppercase letters",
+    "creatorName": "Teacher Carmina",
+    "category": "Literacy",
+    "compatibility": ["desktop", "tablet", "mobile"],
+    "tags": ["letters", "alphabet", "case"],
+    "uploadDate": "2026-06-01"
+  },
+  {
     "id": "trace-and-learn",
     "title": "Trace and Learn",
     "description": "Trace the shapes and lines.",
