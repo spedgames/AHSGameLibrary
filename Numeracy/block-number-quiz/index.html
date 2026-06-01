@@ -19,6 +19,8 @@
             --card-bg: #FFFFFF;
             --radius: 16px;
             --font-main: 'Inter', sans-serif;
+            /* Dynamic height variable to combat mobile browser address bars */
+            --app-height: 100vh;
         }
 
         * {
@@ -34,7 +36,7 @@
             font-family: var(--font-main);
             background: linear-gradient(135deg, #EEF2F6 0%, #E2E8F0 100%);
             color: var(--neutral-dark);
-            height: 100vh;
+            height: var(--app-height);
             width: 100vw;
             overflow: hidden;
             display: flex;
@@ -42,21 +44,22 @@
             align-items: center;
         }
 
-        /* App Container: Guarantees no scrolling on any device */
+        /* App Container: Compact layout to fit perfectly without scrolling */
         #app-container {
             width: 100%;
-            max-width: 500px;
-            height: 100%;
-            max-height: 850px;
-            padding: 1.5rem;
+            max-width: 460px;
+            height: var(--app-height);
+            padding: 1rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            align-items: center;
         }
 
         @media (min-width: 768px) {
             #app-container {
-                height: 90vh;
+                height: 90%;
+                max-height: 800px;
             }
         }
 
@@ -65,7 +68,7 @@
             display: none;
             background: var(--card-bg);
             border-radius: var(--radius);
-            padding: 2rem;
+            padding: 1.25rem;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
             width: 100%;
             height: 100%;
@@ -73,44 +76,60 @@
             justify-content: space-between;
             align-items: center;
             text-align: center;
-            animation: fadeIn 0.4s ease-out;
+            overflow: hidden;
         }
 
         .screen.active {
             display: flex;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Loading Preloader Screen */
+        #screen-loading {
+            justify-content: center;
+            gap: 1.5rem;
         }
 
-        /* Typography */
+        .loader-ring {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--neutral-light);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Typography optimizations */
         h1 {
-            font-size: 2.25rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: var(--primary);
             line-height: 1.2;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
 
         p {
             color: #6B7280;
-            font-size: 1rem;
-            line-height: 1.5;
+            font-size: 0.95rem;
+            line-height: 1.4;
         }
 
-        /* Header / Progress Bar */
+        /* Header Layout Fixes */
         .quiz-header {
             width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            gap: 1rem;
         }
 
         .progress-container {
-            width: 60%;
+            flex-grow: 1;
             height: 8px;
             background-color: var(--neutral-light);
             border-radius: 4px;
@@ -128,17 +147,18 @@
             font-weight: 600;
             font-size: 0.9rem;
             color: var(--neutral-dark);
+            white-space: nowrap;
         }
 
-        /* Asset Display Box */
+        /* Highly Scalable Asset Display Box */
         .image-container {
             width: 100%;
             flex-grow: 1;
-            min-height: 200px;
-            max-height: 320px;
+            min-height: 140px;
+            max-height: 340px;
             background-color: var(--neutral-light);
             border-radius: var(--radius);
-            margin: 1rem 0;
+            margin: 0.5rem 0;
             overflow: hidden;
             display: flex;
             justify-content: center;
@@ -153,7 +173,6 @@
             object-fit: contain;
         }
 
-        /* Fallback Graphic UI if assets fail to load */
         .fallback-graphic {
             position: absolute;
             display: flex;
@@ -163,12 +182,12 @@
             color: #9CA3AF;
         }
 
-        /* Quiz Options Grid */
+        /* Compact Quiz Options Grid */
         .options-grid {
             width: 100%;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
+            gap: 0.5rem;
             margin-top: 0.5rem;
         }
 
@@ -180,7 +199,7 @@
             border: none;
             border-radius: var(--radius);
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -190,8 +209,8 @@
         .btn-primary {
             background-color: var(--primary);
             color: white;
-            padding: 1rem 2rem;
-            min-height: 54px;
+            padding: 0.75rem 2rem;
+            min-height: 48px;
         }
 
         .btn-primary:active {
@@ -203,12 +222,11 @@
             background-color: #F9FAFB;
             color: var(--neutral-dark);
             border: 2px solid #E5E7EB;
-            min-height: 60px; /* Highly touch-friendly target */
+            min-height: 52px; /* Balanced hit target */
             padding: 0.5rem;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
         }
 
-        /* Option Feedback States */
         .btn-option.correct {
             background-color: var(--success);
             color: white;
@@ -223,36 +241,36 @@
 
         .btn-option:disabled {
             cursor: not-allowed;
-            opacity: 0.8;
+            opacity: 0.9;
         }
 
-        /* Result Screen Elements */
+        /* Result Screen Layout Elements */
         .result-circle {
-            width: 140px;
-            height: 140px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             background-color: #EEF2F6;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            margin: 1.5rem 0;
+            margin: 1rem 0;
             border: 4px solid var(--primary);
         }
 
         .result-score {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: 800;
             color: var(--neutral-dark);
         }
 
-        /* Utility classes */
         .flex-center {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100%;
+            width: 100%;
         }
     </style>
 </head>
@@ -260,9 +278,17 @@
 
     <div id="app-container">
 
-        <div id="screen-start" class="screen active">
-            <div class="flex-center" style="justify-content: center; gap: 1rem; flex-grow: 1;">
-                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+        <div id="screen-loading" class="screen active">
+            <div class="loader-ring"></div>
+            <div>
+                <h1 style="font-size: 1.5rem;">Loading Game Assets</h1>
+                <p id="loading-text" style="margin-top: 0.25rem;">Preparing (0%)...</p>
+            </div>
+        </div>
+
+        <div id="screen-start" class="screen">
+            <div class="flex-center" style="justify-content: center; gap: 0.75rem; flex-grow: 1;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
                     <path d="m4 6 8-4 8 4v10l-8 4-8-4z"></path>
                     <path d="m12 22v-10"></path>
                     <path d="m12 12 8-4"></path>
@@ -270,7 +296,7 @@
                 </svg>
                 <div>
                     <h1>Block Quiz</h1>
-                    <p>Test your knowledge. Can you identify the correct block numbers?</p>
+                    <p>Can you identify the correct block numbers?</p>
                 </div>
             </div>
             <button class="btn btn-primary" onclick="Game.start()">Start Quiz</button>
@@ -285,31 +311,30 @@
             </div>
 
             <div class="image-container">
-                <img id="block-image" class="block-image" src="" alt="Block Number Concept">
+                <img id="block-image" class="block-image" src="" alt="Block Image">
                 <div id="fallback-graphic" class="fallback-graphic">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                         <circle cx="8.5" cy="8.5" r="1.5"></circle>
                         <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
-                    <span id="fallback-text" style="font-size: 0.8rem; margin-top: 0.5rem; font-weight: 600;">Loading...</span>
+                    <span id="fallback-text" style="font-size: 0.8rem; margin-top: 0.5rem; font-weight: 600;"></span>
                 </div>
             </div>
 
-            <p style="font-weight: 600; font-size: 1.1rem; color: var(--neutral-dark);">Identify this block number:</p>
+            <p style="font-weight: 600; font-size: 1rem; color: var(--neutral-dark);">Identify this block number:</p>
 
-            <div class="options-grid" id="options-grid">
-                </div>
+            <div class="options-grid" id="options-grid"></div>
         </div>
 
         <div id="screen-end" class="screen">
-            <div class="flex-center" style="justify-content: center; flex-grow: 1; width: 100%;">
+            <div class="flex-center" style="justify-content: center; flex-grow: 1;">
                 <h1>Quiz Complete!</h1>
-                <p id="result-message">Great job! Here is your final score:</p>
+                <p id="result-message">Here is your final score:</p>
                 
                 <div class="result-circle">
                     <span id="final-score" class="result-score">0</span>
-                    <span style="font-size: 0.9rem; color: #6B7280; font-weight: 600;">out of 5</span>
+                    <span style="font-size: 0.85rem; color: #6B7280; font-weight: 600;">out of 5</span>
                 </div>
             </div>
             <button class="btn btn-primary" onclick="Game.resetToStart()">Play Again</button>
@@ -320,13 +345,11 @@
     <script>
         /**
          * POOL OF DATA
-         * Modify, add, or subtract blocks easily here.
-         * The string matches your naming standard: 'Blk[Number]'
+         * Remember to modify this list to perfectly match your actual filenames!
          */
         const BLOCK_POOL = [
             "Blk 111", "Blk 313A", "Blk 467", "Blk 469", "Blk 477", 
-            "Blk 476", "Blk 475", "Blk 507D", "Blk 483", "Blk 493",
-            "Blk 111",
+            "Blk 476", "Blk 475", "Blk 507D", "Blk 483", "Blk 493"
         ];
 
         const Game = {
@@ -335,10 +358,25 @@
             totalRounds: 5,
             activeBlocks: [],
             currentCorrectAnswer: "",
+            preloadedImages: {},
 
-            // Initialize app state
             init() {
+                this.setupViewportHeight();
                 this.preloadElements();
+                this.preloadAllAssets();
+            },
+
+            // Handles accurate cross-platform mobile viewport heights (safari/chrome browser toolbar fixes)
+            setupViewportHeight() {
+                const calculateHeight = () => {
+                    let vh = window.innerHeight * 0.01;
+                    document.documentElement.style.setProperty('--vh', `${vh}px`);
+                    document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+                };
+                
+                calculateHeight();
+                window.addEventListener('resize', calculateHeight);
+                window.addEventListener('orientationchange', calculateHeight);
             },
 
             preloadElements() {
@@ -346,10 +384,8 @@
                 this.fallbackGraphic = document.getElementById('fallback-graphic');
                 this.fallbackText = document.getElementById('fallback-text');
                 
-                // Watch for image error handles to show clean placeholder data automatically
                 this.imgElement.onerror = () => {
                     this.fallbackGraphic.style.display = 'flex';
-                    // Strip space out for display layout lookalike if real image fails
                     this.fallbackText.innerText = this.currentCorrectAnswer.replace(/\s+/g, '');
                 };
                 
@@ -358,18 +394,43 @@
                 };
             },
 
-            // Transition utility between application layers
+            // Preloads all images into memory before releasing the loading screen cover
+            preloadAllAssets() {
+                let loadedCount = 0;
+                const totalAssets = BLOCK_POOL.length;
+                const loadingText = document.getElementById('loading-text');
+
+                BLOCK_POOL.forEach(blockName => {
+                    const cleanName = blockName.replace(/\s+/g, '');
+                    const img = new Image();
+                    img.src = `assets/${cleanName}.png`;
+                    
+                    const onAssetLoaded = () => {
+                        loadedCount++;
+                        let percent = Math.floor((loadedCount / totalAssets) * 100);
+                        loadingText.innerText = `Preparing (${percent}%)...`;
+
+                        if (loadedCount === totalAssets) {
+                            // Slight intentional delay for user experience transition smooth look
+                            setTimeout(() => this.showScreen('screen-start'), 600);
+                        }
+                    };
+
+                    img.onload = onAssetLoaded;
+                    img.onerror = onAssetLoaded; // Proceed even if an asset is physically missing
+                    this.preloadedImages[blockName] = img;
+                });
+            },
+
             showScreen(screenId) {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById(screenId).classList.add('active');
             },
 
-            // Starts a new instance of 5 rounds
             start() {
                 this.currentRound = 0;
                 this.score = 0;
                 
-                // Shuffle pool and slice out 5 random samples
                 this.activeBlocks = [...BLOCK_POOL]
                     .sort(() => 0.5 - Math.random())
                     .slice(0, this.totalRounds);
@@ -385,41 +446,30 @@
                     return;
                 }
 
-                // UI Progress Update
                 const progressPercent = (this.currentRound / this.totalRounds) * 100;
                 document.getElementById('progress-bar').style.width = `${progressPercent}%`;
 
                 this.currentCorrectAnswer = this.activeBlocks[this.currentRound];
                 
-                // Format Image Path String Standard matching convention: [Blk(number)].png
-                // E.g. "Blk 409A" -> "assets/Blk409A.png"
+                // Fetch already loaded image source pointer instantly
                 const cleanFileName = this.currentCorrectAnswer.replace(/\s+/g, '');
                 this.imgElement.src = `assets/${cleanFileName}.png`;
                 
-                // Reset graphic states while rendering updates
-                this.fallbackGraphic.style.display = 'flex';
-                this.fallbackText.innerText = "Loading...";
-
                 this.generateOptions();
             },
 
             generateOptions() {
                 const grid = document.getElementById('options-grid');
-                grid.innerHTML = ''; // Wipe out previous options
+                grid.innerHTML = '';
 
-                // Generate 3 wrong distractors from remaining global pool data
                 const distractors = BLOCK_POOL.filter(item => item !== this.currentCorrectAnswer);
                 const chosenDistractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
-                
-                // Mix right answer with distractors
                 const choices = [this.currentCorrectAnswer, ...chosenDistractors].sort(() => 0.5 - Math.random());
 
                 choices.forEach(choice => {
                     const button = document.createElement('button');
                     button.className = 'btn btn-option';
                     button.textContent = choice;
-                    
-                    // Support uniform interactive event triggers across all touch environments
                     button.addEventListener('click', (e) => this.handleAnswer(e, choice));
                     grid.appendChild(button);
                 });
@@ -427,7 +477,7 @@
 
             handleAnswer(event, selectedAnswer) {
                 const buttons = document.querySelectorAll('.btn-option');
-                buttons.forEach(btn => btn.disabled = true); // Lock options instantly
+                buttons.forEach(btn => btn.disabled = true);
 
                 const isCorrect = selectedAnswer === this.currentCorrectAnswer;
                 const clickedButton = event.currentTarget;
@@ -438,7 +488,6 @@
                     this.updateScoreTracker();
                 } else {
                     clickedButton.classList.add('incorrect');
-                    // Accent color clue highlights correct alternative options
                     buttons.forEach(btn => {
                         if (btn.textContent === this.currentCorrectAnswer) {
                             btn.classList.add('correct');
@@ -446,11 +495,10 @@
                     });
                 }
 
-                // Short delay to review feedback before stepping forward 
                 setTimeout(() => {
                     this.currentRound++;
                     this.nextRound();
-                }, 1400);
+                }, 1200);
             },
 
             updateScoreTracker() {
@@ -463,11 +511,11 @@
                 
                 const msgElement = document.getElementById('result-message');
                 if (this.score === this.totalRounds) {
-                    msgElement.textContent = "Perfect score! Exceptional block tracking skills!";
+                    msgElement.textContent = "Perfect score! Exceptional recognition!";
                 } else if (this.score >= 3) {
-                    msgElement.textContent = "Nicely done! You have solid recognition skills.";
+                    msgElement.textContent = "Nicely done! Great job.";
                 } else {
-                    msgElement.textContent = "Good try! Let's give it another spin to practice.";
+                    msgElement.textContent = "Good try! Let's practice again.";
                 }
 
                 this.showScreen('screen-end');
@@ -478,7 +526,6 @@
             }
         };
 
-        // Fire engine activation sequence on window load completion
         window.addEventListener('DOMContentLoaded', () => Game.init());
     </script>
 </body>
