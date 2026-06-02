@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Add Up the Dollars</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --primary-hover: #357ABD;
+            --success: #47C28D;
+            --error: #E74C3C;
+            --text: #2C3E50;
+            --bg: #F0F4F8;
+            --btn-bg: #EDF2F7; /* Lighter, clean background for option buttons */
+            --btn-text: #4A5568; /* Readable dark-gray text for contrast */
+            --btn-hover: #E2E8F0; /* Subtle hover state */
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            width: 95%;
+            max-width: 650px;
+            height: 90vh;
+            max-height: 760px;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            margin: 10px;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-8px); }
+        }
+
+        .shake { animation: shake 0.4s ease-in-out; }
+
+        h1 { font-size: 2.2rem; margin-bottom: 0.5rem; color: var(--primary); }
+        p { line-height: 1.6; color: #64748B; margin-bottom: 1rem; }
+
+        .progress-wrapper { width: 100%; margin-bottom: 0.5rem; }
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background: #E2E8F0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #question-count { font-weight: 600; font-size: 0.9rem; margin-top: 5px; color: var(--primary); }
+
+        .money-zone {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            min-height: 160px; 
+            width: 100%;
+        }
+
+        .bill {
+            width: 160px;
+            height: 75px;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(-5deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+            margin-top: 0.5rem; 
+        }
+
+        .btn {
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: 2px solid #E2E8F0;
+            padding: 1rem;
+            border-radius: 20px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Poppins', sans-serif;
+            min-height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1.2rem 3rem;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-hover);
+        }
+
+        .option-btn:hover:not(:disabled) { 
+            background: var(--btn-hover); 
+            border-color: #CBD5E1;
+            transform: translateY(-2px);
+        }
+        
+        .correct { background: var(--success) !important; color: white !important; border-color: var(--success) !important; box-shadow: none !important; transform: none !important; pointer-events: none; }
+        .wrong { background: var(--error) !important; color: white !important; border-color: var(--error) !important; box-shadow: none !important; transform: none !important; pointer-events: none; }
+
+        @media (max-width: 500px) {
+            h1 { font-size: 1.6rem; }
+            .bill { width: 130px; height: 60px; }
+            .btn { font-size: 1.2rem; min-height: 55px; border-radius: 16px; }
+            .money-zone { min-height: 130px; margin: 0.5rem 0; }
+            #game-container { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="start-screen" class="screen active">
+        <h1>💰 Add up the Dollars</h1>
+        <p>Add up the dollar bills and tap the correct answer.</p>
+        <button id="start-btn" class="btn btn-primary" onclick="startGame()">Start Learning</button>
+        <p id="loading-msg" style="display:none; margin-top:10px; font-size:0.8rem;">Loading money...</p>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="progress-wrapper">
+            <div class="progress-container">
+                <div id="progress-fill"></div>
+            </div>
+            <div id="question-count">Question 1 of 10</div>
+        </div>
+        <div class="money-zone" id="money-zone"></div>
+        <div class="options-grid" id="options-grid"></div>
+    </div>
+
+    <div id="end-screen" class="screen">
+        <h1 id="result-title">Good job!</h1>
+        <p id="final-score">Perfect Score!</p>
+        <button class="btn btn-primary" onclick="resetGame()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    const billImages = {
+        1: 'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/1d.png',
+        2: 'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/2d.png',
+        5: 'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/5d.png',
+        10: 'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/10d.png'
+    };
+
+    const denominations = [1, 2, 5, 10];
+    let currentQuestion = 0;
+    const totalQuestions = 10;
+    let correctAnswer = 0;
+    let isTransitioning = false;
+    let assetsLoaded = false;
+    let wrongAttemptsThisTurn = 0;
+    let totalScore = 0;
+
+    const screens = document.querySelectorAll('.screen');
+    const moneyZone = document.getElementById('money-zone');
+    const optionsGrid = document.getElementById('options-grid');
+    const progressFill = document.getElementById('progress-fill');
+    const questionCountText = document.getElementById('question-count');
+    const startBtn = document.getElementById('start-btn');
+    const loadingMsg = document.getElementById('loading-msg');
+
+    function preloadAssets() {
+        const imagePaths = Object.values(billImages);
+        let loadedCount = 0;
+        return new Promise((resolve) => {
+            imagePaths.forEach(src => {
+                const img = new Image();
+                img.src = src;
+                img.onload = () => { if (++loadedCount === imagePaths.length) { assetsLoaded = true; resolve(); } };
+                img.onerror = resolve; 
+            });
+        });
+    }
+
+    async function startGame() {
+        if (!assetsLoaded) {
+            startBtn.disabled = true;
+            loadingMsg.style.display = "block";
+            await preloadAssets();
+        }
+        
+        // Hide loading states immediately once verified/loaded
+        startBtn.disabled = false;
+        loadingMsg.style.display = "none";
+        
+        currentQuestion = 0;
+        totalScore = 0;
+        showScreen('game-screen');
+        nextQuestion();
+    }
+
+    function showScreen(id) {
+        screens.forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function nextQuestion() {
+        if (currentQuestion >= totalQuestions) {
+            endGame();
+            return;
+        }
+        isTransitioning = false;
+        wrongAttemptsThisTurn = 0;
+        currentQuestion++;
+        updateUI();
+
+        const bills = [];
+        let total = 0;
+        for (let i = 0; i < 3; i++) {
+            const val = denominations[Math.floor(Math.random() * denominations.length)];
+            bills.push(val);
+            total += val;
+        }
+        correctAnswer = total;
+
+        moneyZone.innerHTML = '';
+        bills.forEach((val, index) => {
+            const billDiv = document.createElement('div');
+            billDiv.className = `bill`;
+            billDiv.style.backgroundImage = `url('${billImages[val]}')`;
+            billDiv.style.animationDelay = `${index * 0.1}s`;
+            moneyZone.appendChild(billDiv);
+        });
+
+        generateOptions(total);
+    }
+
+    function generateOptions(correct) {
+        let options = [correct];
+        while (options.length < 4) {
+            let offset = Math.floor(Math.random() * 5) + 1;
+            let wrong = Math.random() > 0.5 ? correct + offset : correct - offset;
+            if (wrong > 0 && !options.includes(wrong)) options.push(wrong);
+        }
+        options.sort(() => Math.random() - 0.5);
+        optionsGrid.innerHTML = '';
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn option-btn';
+            btn.textContent = `$${opt}`;
+            btn.onclick = () => checkAnswer(opt, btn);
+            optionsGrid.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selected, btn) {
+        if (isTransitioning) return;
+
+        if (selected === correctAnswer) {
+            isTransitioning = true;
+            btn.classList.add('correct');
+            
+            if (wrongAttemptsThisTurn === 0) totalScore++;
+
+            setTimeout(nextQuestion, 1200);
+        } else {
+            wrongAttemptsThisTurn++;
+            btn.classList.add('wrong', 'shake');
+            setTimeout(() => btn.classList.remove('shake'), 400);
+        }
+    }
+
+    function updateUI() {
+        const progress = ((currentQuestion - 1) / totalQuestions) * 100;
+        progressFill.style.width = `${progress}%`;
+        questionCountText.textContent = `Question ${currentQuestion} of ${totalQuestions}`;
+    }
+
+    function endGame() {
+        progressFill.style.width = `100%`;
+        showScreen('end-screen');
+        const finalScoreText = document.getElementById('final-score');
+        finalScoreText.textContent = `You got ${totalScore} right on the first try!`;
+    }
+
+    function resetGame() {
+        // Explicitly clear UI flags when returning to menu to prevent UI lockup
+        startBtn.disabled = false;
+        loadingMsg.style.display = "none";
+        showScreen('start-screen');
+    }
+</script>
+</body>
+</html>
