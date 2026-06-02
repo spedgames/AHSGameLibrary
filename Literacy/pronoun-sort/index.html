@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pronoun Sort: Landscape Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --surface-color: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            
+            --primary: #6366f1;
+            --he-color: #3b82f6;
+            --she-color: #ec4899;
+            --it-color: #10b981;
+            
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            --shadow-md: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --transition: all 0.25s ease;
+
+            /* Base Scale Factor Fallback */
+            --scale-factor: 1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- THE MASTER SCALING FRAME CONTAINER --- */
+        #scaling-container {
+            width: 1400px;
+            height: 800px;
+            position: relative;
+            transform: scale(var(--scale-factor));
+            transform-origin: center center;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* --- LANDSCAPE ORIENTATION FORCED OVERLAY --- */
+        #orientation-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #1e293b;
+            color: white;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .phone-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            animation: rotateDevice 2s ease-in-out infinite;
+        }
+
+        @keyframes rotateDevice {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        @media (orientation: portrait) {
+            #orientation-overlay {
+                display: flex;
+            }
+        }
+
+        /* Screen Wrapper Management */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            text-align: center;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.98);
+        }
+
+        /* Typography & Minimal UI Elements */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.5px;
+        }
+
+        p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 0.9rem 2.5rem;
+            border: none;
+            border-radius: var(--radius-md);
+            background-color: var(--primary);
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
+            transition: var(--transition);
+            min-height: 50px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+            background-color: #4f46e5;
+        }
+
+        /* Audio Toggle Button Styles */
+        .audio-toggle-btn {
+            background-color: #e2e8f0;
+            color: var(--text-main);
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 0.5rem 1rem;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+        }
+
+        .audio-toggle-btn:hover {
+            background-color: #cbd5e1;
+        }
+
+        /* --- GAMEPLAY SCREEN STRUCTURAL ANCHORS --- */
+        #game-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2.5rem; 
+            width: 100%;
+            height: 100%;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* Progress Bar Styling */
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+            margin: 1rem 0 1.5rem 0;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 999px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .zones-container {
+            display: flex;
+            justify-content: center; 
+            align-items: center;
+            gap: 2.5rem; 
+            width: 100%;
+            height: 420px; 
+            margin: 0 auto;
+        }
+
+        .zone {
+            background: var(--surface-color);
+            border-radius: var(--radius-lg);
+            border: 2px solid #e2e8f0;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 1rem;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            width: 360px; 
+            height: 100%;
+            flex-shrink: 0; 
+        }
+
+        .zone-header {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Top Color Strips */
+        .zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+        }
+        #zone-he::before { background-color: var(--he-color); }
+        #zone-she::before { background-color: var(--she-color); }
+        #zone-it::before { background-color: var(--it-color); }
+
+        /* Dragover Highlights */
+        .zone.drag-over {
+            transform: scale(1.02);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .items-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            width: 100%; 
+            justify-content: center;
+            align-content: start;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Source Deck Container */
+        .deck-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 140px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* ATTENTION BOUNCE ANIMATION */
+        @keyframes idleBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .draggable-item {
+            font-size: 4.5rem;
+            background: var(--surface-color);
+            width: 115px;
+            height: 115px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            box-shadow: var(--shadow-md);
+            border: 1px solid #f1f5f9;
+            position: absolute;
+            touch-action: none;
+            z-index: 10;
+            animation: idleBounce 2.2s ease-in-out infinite;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+
+        .dropped-item {
+            font-size: 4.5rem;
+            background: #f1f5f9;
+            width: 115px;
+            height: 115px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Notification bubble pops */
+        .feedback-pop {
+            position: absolute;
+            font-size: 1.1rem;
+            font-weight: 600;
+            pointer-events: none;
+            background: #10b981;
+            color: white;
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+            animation: floatUp 0.6s ease-out forwards;
+            z-index: 101;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translate(-50%, 0) scale(0.9); }
+            30% { opacity: 1; transform: translate(-50%, -20px) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -40px) scale(0.95); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="orientation-overlay">
+        <div class="phone-icon">📱</div>
+        <h2>Please Rotate Your Device</h2>
+        <p style="color: #94a3b8; margin-top: 0.5rem; margin-bottom: 0;">This game is designed to be played in landscape mode.</p>
+    </div>
+
+    <div id="scaling-container">
+
+        <div id="start-screen" class="screen">
+            <h1>Pronoun Sort</h1>
+            <p>Drag the pictures to the "he", "she" or "it" box.</p>
+            <button class="btn" id="start-btn">Start Practice</button>
+        </div>
+
+        <div id="game-screen" class="screen hidden">
+            <div class="game-header">
+                <h2 style="font-size: 1.2rem; font-weight: 600; color: var(--text-muted);">Sort the pictures to the correct box</h2>
+                <button class="audio-toggle-btn" id="audio-toggle-btn">
+                    <span id="audio-icon">🔊</span>
+                    <span id="audio-text">Sound On</span>
+                </button>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+
+            <div class="zones-container">
+                <div class="zone" id="zone-he" data-pronoun="he">
+                    <div class="zone-header">He</div>
+                    <div class="items-grid"></div>
+                </div>
+                <div class="zone" id="zone-she" data-pronoun="she">
+                    <div class="zone-header">She</div>
+                    <div class="items-grid"></div>
+                </div>
+                <div class="zone" id="zone-it" data-pronoun="it">
+                    <div class="zone-header">It</div>
+                    <div class="items-grid"></div>
+                </div>
+            </div>
+
+            <div class="deck-container" id="deck"></div>
+        </div>
+
+        <div id="end-screen" class="screen hidden">
+            <h1>Great Job!</h1>
+            <p>Now you know he, she and it!</p>
+            <button class="btn" id="restart-btn">Play Again</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- VIEWPORT SCALING ENGINE ---
+        const scalingContainer = document.getElementById('scaling-container');
+        const baseWidth = 1400;
+        const baseHeight = 800;
+        let currentScale = 1;
+
+        function updateAppScale() {
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            // Calculate ratios for both width and height
+            const scaleX = windowWidth / baseWidth;
+            const scaleY = windowHeight / baseHeight;
+            
+            // Choose the restrictive axis to fit everything inside safely
+            currentScale = Math.min(scaleX, scaleY);
+            
+            // Apply scale factor to design container
+            document.documentElement.style.setProperty('--scale-factor', currentScale);
+        }
+        
+        window.addEventListener('resize', updateAppScale);
+        window.addEventListener('DOMContentLoaded', updateAppScale);
+
+        // --- MASTER DATA POOL ---
+        const emojiPool = {
+            he: [
+                { emoji: '🧔🏻' }, { emoji: '👦🏻' }, { emoji: '👴🏻' }, { emoji: '🧑🏾‍🦱' },
+                { emoji: '👨🏻‍⚕️' }, { emoji: '👨🏻‍💼' }, { emoji: '👨🏼' }, { emoji: '👮🏻' }
+            ],
+            she: [
+                { emoji: '👩🏻' }, { emoji: '👧🏽' }, { emoji: '👵' }, { emoji: '👸🏽' },
+                { emoji: '👩🏼‍⚕️' }, { emoji: '👰🏻‍♀️' }, { emoji: '👩🏾' }, { emoji: '🧕🏻' }
+            ],
+            it: [
+                { emoji: '🐶' }, { emoji: '🚗' }, { emoji: '🍏' }, { emoji: '🧸' },
+                { emoji: '🏠' }, { emoji: '📱' }, { emoji: '🍕' }, { emoji: '🚀' }
+            ]
+        };
+
+        const TOTAL_QUESTIONS = 12;
+
+        // --- STATE SETUPS ---
+        let gameItems = [];
+        let currentIndex = 0;
+        let audioCtx = null;
+        let isAudioMuted = false;
+
+        let activeDragElement = null;
+        let startX = 0;
+        let startY = 0;
+
+        // --- DOM SELECTIONS ---
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const deck = document.getElementById('deck');
+        const progressBar = document.getElementById('progress-bar');
+        const zones = document.querySelectorAll('.zone');
+        
+        const audioToggleBtn = document.getElementById('audio-toggle-btn');
+        const audioIcon = document.getElementById('audio-icon');
+        const audioText = document.getElementById('audio-text');
+
+        // --- INTERACTION HOOKS ---
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', routeToStartScreen); 
+        audioToggleBtn.addEventListener('click', toggleAudioState);
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', handlePointerUp);
+
+        // --- AUDIO MANAGEMENT ENGINE ---
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function toggleAudioState() {
+            isAudioMuted = !isAudioMuted;
+            if (isAudioMuted) {
+                audioIcon.textContent = '🔇';
+                audioText.textContent = 'Sound Off';
+            } else {
+                audioIcon.textContent = '🔊';
+                audioText.textContent = 'Sound On';
+            }
+        }
+
+        function playCorrectSound() {
+            if (isAudioMuted) return; 
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(659.25, now); 
+            osc1.frequency.setValueAtTime(880.00, now + 0.08); 
+
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(1318.51, now + 0.08); 
+
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.12, now + 0.04);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+            osc1.connect(gainNode);
+            osc2.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 0.5);
+            osc2.stop(now + 0.5);
+        }
+
+        // --- GAME LOOP MODES ---
+        function routeToStartScreen() {
+            endScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+
+        function startGame() {
+            initAudio();
+            
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+
+            currentIndex = 0;
+            updateProgressBar();
+
+            zones.forEach(zone => {
+                const grid = zone.querySelector('.items-grid');
+                grid.innerHTML = '';
+            });
+
+            gameItems = generateBalancedDeck();
+            renderNextItem();
+        }
+
+        function generateBalancedDeck() {
+            const selectHe = getRandomSubset(emojiPool.he, 4).map(i => ({ ...i, pronoun: 'he' }));
+            const selectShe = getRandomSubset(emojiPool.she, 4).map(i => ({ ...i, pronoun: 'she' }));
+            const selectIt = getRandomSubset(emojiPool.it, 4).map(i => ({ ...i, pronoun: 'it' }));
+            
+            return shuffleArray([...selectHe, ...selectShe, ...selectIt]);
+        }
+
+        function updateProgressBar() {
+            const percentage = (currentIndex / TOTAL_QUESTIONS) * 100;
+            progressBar.style.width = `${percentage}%`;
+        }
+
+        function renderNextItem() {
+            deck.innerHTML = '';
+            
+            if (currentIndex >= gameItems.length) {
+                setTimeout(endGame, 500);
+                return;
+            }
+
+            const itemData = gameItems[currentIndex];
+            const itemEl = document.createElement('div');
+            itemEl.classList.add('draggable-item');
+            itemEl.textContent = itemData.emoji;
+            itemEl.setAttribute('data-pronoun', itemData.pronoun);
+            
+            itemEl.addEventListener('pointerdown', (e) => handlePointerDown(e, itemEl));
+            deck.appendChild(itemEl);
+        }
+
+        // --- TRANSLATION AND COORDINATE TRACKERS (ADJUSTED FOR LAYER SCALING) ---
+        function handlePointerDown(e, element) {
+            activeDragElement = element;
+            element.style.animation = 'none';
+            element.style.transition = 'none';
+            element.style.zIndex = '1000';
+            
+            startX = e.clientX;
+            startY = e.clientY;
+        }
+
+        function handlePointerMove(e) {
+            if (!activeDragElement) return;
+
+            // Divide standard viewport coordinate deltas by the scaling matrix 
+            // so active item drags 1:1 matching touch/pointer tip adjustments
+            const deltaX = (e.clientX - startX) / currentScale;
+            const deltaY = (e.clientY - startY) / currentScale;
+
+            activeDragElement.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
+
+            zones.forEach(zone => {
+                if (isPointerOverElement(e.clientX, e.clientY, zone)) {
+                    zone.classList.add('drag-over');
+                } else {
+                    zone.classList.remove('drag-over');
+                }
+            });
+        }
+
+        function handlePointerUp(e) {
+            if (!activeDragElement) return;
+
+            const currentElement = activeDragElement;
+            activeDragElement = null;
+
+            let targetZone = null;
+            zones.forEach(zone => {
+                if (isPointerOverElement(e.clientX, e.clientY, zone)) {
+                    targetZone = zone;
+                }
+                zone.classList.remove('drag-over');
+            });
+
+            const correctPronoun = currentElement.getAttribute('data-pronoun');
+
+            if (targetZone && targetZone.getAttribute('data-pronoun') === correctPronoun) {
+                executeMatchSuccess(targetZone, currentElement, e.clientX, e.clientY);
+            } else {
+                currentElement.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+                currentElement.style.transform = 'translate(0px, 0px)';
+                currentElement.style.zIndex = '10';
+                currentElement.style.animation = 'idleBounce 2.2s ease-in-out infinite';
+            }
+        }
+
+        function executeMatchSuccess(zone, element, dropX, dropY) {
+            element.remove();
+            playCorrectSound();
+            
+            const grid = zone.querySelector('.items-grid');
+            const matchedIndicator = document.createElement('div');
+            matchedIndicator.classList.add('dropped-item');
+            matchedIndicator.textContent = element.textContent;
+            grid.appendChild(matchedIndicator);
+
+            // Calculate feedback bubbles inside the scaling matrix boundaries
+            const containerRect = scalingContainer.getBoundingClientRect();
+            const localX = (dropX - containerRect.left) / currentScale;
+            const localY = (dropY - containerRect.top) / currentScale;
+            showFloatingFeedback(localX, localY - 20, 'Nice!');
+
+            currentIndex++;
+            updateProgressBar();
+            renderNextItem();
+        }
+
+        function isPointerOverElement(x, y, element) {
+            const rect = element.getBoundingClientRect();
+            return (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+        }
+
+        function showFloatingFeedback(x, y, text) {
+            const feedback = document.createElement('div');
+            feedback.classList.add('feedback-pop');
+            feedback.style.left = `${x}px`;
+            feedback.style.top = `${y}px`;
+            feedback.textContent = text;
+            scalingContainer.appendChild(feedback);
+
+            setTimeout(() => feedback.remove(), 600);
+        }
+
+        function endGame() {
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+        }
+
+        function getRandomSubset(arr, size) {
+            return [...arr].sort(() => 0.5 - Math.random()).slice(0, size);
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    </script>
+</body>
+</html>
