@@ -24,6 +24,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:Nunito,sans
   border-bottom:3px dashed #e8c99a;
   padding:10px 14px 6px;
   position:relative;
+  height:130px;
 }
 #recipePanel::before{
   content:"📋 RECIPE CARD";
@@ -122,7 +123,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:Nunito,sans
 }
 #pizzaZone {
   position: relative;
-  width: min(500px, 55vw, 70vh);
+  width: min(500px, 55vw, calc((100vh - 240px) * 500 / 320));
   aspect-ratio: 500 / 320;
   flex-shrink: 0;
   overflow: visible;
@@ -148,6 +149,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:Nunito,sans
   gap:clamp(10px,2.5vw,28px);
   flex-shrink:0;
   position:relative;
+  height:110px;
 }
 #ingredientsBar::before{
   content:"INGREDIENTS";
@@ -288,6 +290,16 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:Nunito,sans
 
 button{cursor:pointer}
 img{-webkit-user-drag:none}
+
+/* ── SMALL SCREEN (tablet/mobile) ── */
+@media (max-height: 600px) {
+  #recipePanel { height: 100px; }
+  #ingredientsBar { height: 90px; }
+  .ing { width: clamp(50px, 7vw, 80px); }
+  #pizzaZone {
+    width: min(500px, 55vw, calc((100vh - 190px) * 500 / 320));
+  }
+}
 </style>
 </head>
 <body>
