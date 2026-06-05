@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Logo Puzzles</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #f0f4f8;
+            --surface: #ffffff;
+            --primary: #4a90e2;
+            --primary-hover: #357abd;
+            --success: #2ecc71;
+            --accent: #ff7675;
+            --text-dark: #2c3e50;
+            --text-muted: #7f8c8d;
+            --border-radius: 16px;
+            --glow-color: rgba(74, 144, 226, 0.4);
+            --font-family: 'Poppins', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-main);
+            color: var(--text-dark);
+            /* Force absolute viewport lock */
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Strict viewport budgeting to prevent any bottom cutting */
+        #game-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1100px;
+            max-height: 100vh;
+            padding: 1rem;
+            display: grid;
+            grid-template-rows: auto auto 1fr auto; /* Strict height budgeting */
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .stat-badge {
+            background: var(--surface);
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            font-size: 0.9rem;
+        }
+
+        .instruction-bar {
+            background: #e1f5fe;
+            border-left: 5px solid var(--primary);
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        #stage {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: center;
+            min-height: 0; /* Critical for grid item scaling */
+        }
+
+        .brand-card {
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            height: 90%;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        .brand-card.focused {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--glow-color);
+        }
+
+        .logo-wrapper {
+            width: 140px;
+            height: 140px;
+            position: relative;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .logo-img {
+            width: 140px;
+            height: 140px;
+            display: block;
+            object-fit: cover;
+        }
+
+        .dropzone {
+            position: absolute;
+            border: 3px dashed #b2bec3;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.04);
+            cursor: context-menu; /* Shows right-click hint */
+            outline: none;
+        }
+
+        .dropzone.waiting-paste {
+            border-color: var(--primary);
+            background: rgba(74, 144, 226, 0.1);
+        }
+
+        .dropzone.filled {
+            border: none;
+            background: transparent;
+        }
+
+	.dropzone.error-flash {
+    	border-color: #ff7675 !important;
+    	background-color: rgba(255, 118, 117, 0.3) !important;
+    	transition: all 0.1s ease;
+	}
+
+/* Container for the floating toast text */
+.error-toast {
+    position: absolute;
+    top: -35px; /* Floats exactly above the dropzone */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ff7675;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    white-space: nowrap;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    letter-spacing: 0.5px;
+    pointer-events: none; /* Make sure it doesn't block mouse clicks */
+    animation: toastPop 0.2s ease-out forwards;
+    z-index: 50;
+}
+
+/* Quick pop-up animation */
+@keyframes toastPop {
+    0% { transform: translateX(-50%) translateY(10px); opacity: 0; }
+    100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+        .brand-title {
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        #vault-container {
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.02);
+            border: 2px dashed #cbd5e1;
+        }
+
+        .vault-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .pool {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .fragment-item {
+            width: 70px;
+            height: 70px;
+            background: #f8fafc;
+            border: 3px solid #e2e8f0;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: context-menu;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .fragment-item:focus, .fragment-item.copied {
+            border-color: var(--primary);
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(74, 144, 226, 0.15);
+        }
+
+        /* SIMULATED SYSTEM CUSTOM CONTEXT MENU */
+        #custom-context-menu {
+            position: absolute;
+            background: #ffffff;
+            border: 1px solid #ccd1d9;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            padding: 4px 0;
+            z-index: 1000;
+            display: none;
+            min-width: 140px;
+        }
+
+        .menu-item {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-item:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .menu-item.disabled {
+            color: #ccc;
+            pointer-events: none;
+            background: transparent;
+        }
+
+        .menu-shortcut {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-left: 1rem;
+        }
+        .menu-item:hover .menu-shortcut {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Modal Overlays */
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 62, 80, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1; pointer-events: auto;
+        }
+
+        .modal-card {
+            background: var(--surface);
+            padding: 2.5rem;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .btn-juicy {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0px #24a159;
+            transition: all 0.1s ease;
+            margin-top: 1rem;
+        }
+
+        .btn-juicy:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0px #24a159;
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            z-index: 99;
+            animation: explode 0.5s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <header>
+            <h1>Logo Puzzles</h1>
+            <div class="stats-container">
+                <div class="stat-badge" id="round-indicator">Round: 1 / 3</div>
+                <div class="stat-badge" id="clipboard-indicator">Clipboard: Empty</div>
+            </div>
+        </header>
+
+        <div class="instruction-bar" id="hint-bar">Use mouse right click to copy the pieces below and paste them to the logos.</div>
+
+        <main id="stage"></main>
+
+        <div id="vault-container">
+            <div class="vault-title">Puzzle Pieces</div>
+            <div class="pool" id="pool-container"></div>
+        </div>
+
+        <div class="modal-overlay active" id="modal-screen">
+            <div class="modal-card" id="modal-content"></div>
+        </div>
+    </div>
+
+    <div id="custom-context-menu"></div>
+
+    <script>
+        const BRAND_DATABASE = [
+            { id: 'brand1', name: 'Mcdonalds', color: '#e74c3c', imageSrc: 'assets/brand1.png' },
+            { id: 'brand2', name: 'KFC', color: '#9b59b6', imageSrc: 'assets/brand2.png' },
+            { id: 'brand3', name: 'Kiddy Palace', color: '#1abc9c', imageSrc: 'assets/brand3.png' },
+            { id: 'brand4', name: 'Toys R Us', color: '#f1c40f', imageSrc: 'assets/brand4.png' },
+            { id: 'brand5', name: 'Burger King', color: '#34495e', imageSrc: 'assets/brand5.png' },
+            { id: 'brand6', name: 'Grab', color: '#e67e22', imageSrc: 'assets/brand6.png' },
+            { id: 'brand7', name: 'Food Panda', color: '#27ae60', imageSrc: 'assets/brand7.png' },
+            { id: 'brand8', name: 'Kopitiam', color: '#2980b9', imageSrc: 'assets/brand8.png' },
+            { id: 'brand9', name: 'Ya Kun Kaya', color: '#d35400', imageSrc: 'assets/brand9.png' },
+            { id: 'brand10', name: 'Popular', color: '#7f8c8d', imageSrc: 'assets/brand10.png' }
+        ];
+
+        let gameState = {
+            currentRound: 1,
+            maxRounds: 3,
+            activePool: [],
+            virtualClipboard: null,
+            completedTargets: 0
+        };
+
+        // Active targeted tracking references for context actions
+        let targetedContextElement = null;
+        let targetedContextData = null;
+
+        const stageNode = document.getElementById('stage');
+        const poolNode = document.getElementById('pool-container');
+        const hintBarNode = document.getElementById('hint-bar');
+        const roundIndicatorNode = document.getElementById('round-indicator');
+        const clipboardIndicatorNode = document.getElementById('clipboard-indicator');
+        const modalScreenNode = document.getElementById('modal-screen');
+        const modalContentNode = document.getElementById('modal-content');
+        const contextMenuNode = document.getElementById('custom-context-menu');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            attachGlobalKeyboardHooks();
+            attachContextDismissHooks();
+            showStartScreen();
+        });
+
+        function showStartScreen() {
+            modalContentNode.innerHTML = `
+                <h2 style="font-size: 1.8rem; margin-bottom: 1rem; color: var(--primary);">Logo Puzzles</h2>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size:0.95rem;">
+                    Use mouse <strong>right-click copy</strong> and <strong>right-click paste</strong> to copy and paste the missing pieces!
+                </p>
+                <button class="btn-juicy" id="btn-start">Solve the Puzzles 🧩</button>
+            `;
+            document.getElementById('btn-start').addEventListener('click', () => {
+                modalScreenNode.classList.remove('active');
+                initGame();
+            });
+            modalScreenNode.classList.add('active');
+        }
+
+        function initGame() {
+            gameState.currentRound = 1;
+            setupRound();
+        }
+
+        function setupRound() {
+            gameState.completedTargets = 0;
+            gameState.virtualClipboard = null;
+            updateClipboardUI();
+            
+            roundIndicatorNode.textContent = `Round: ${gameState.currentRound} / ${gameState.maxRounds}`;
+
+            const shuffled = [...BRAND_DATABASE].sort(() => 0.5 - Math.random());
+            gameState.activePool = shuffled.slice(0, 3);
+
+            stageNode.innerHTML = '';
+            gameState.activePool.forEach(brand => {
+                const size = 48;
+                const minPos = 15;
+                const maxPos = 140 - size - 15;
+                
+                const clipX = Math.floor(Math.random() * (maxPos - minPos + 1)) + minPos;
+                const clipY = Math.floor(Math.random() * (maxPos - minPos + 1)) + minPos;
+
+                brand.clipX = `${clipX}px`;
+                brand.clipY = `${clipY}px`;
+                brand.clipW = `${size}px`;
+                brand.clipH = `${size}px`;
+
+                const card = document.createElement('div');
+                card.className = 'brand-card';
+                card.id = `card-${brand.id}`;
+                card.innerHTML = `
+                    <div class="logo-wrapper">
+                        <img class="logo-img" src="${brand.imageSrc}" style="
+                            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 
+                                       ${brand.clipX} ${brand.clipY}, 
+                                       ${brand.clipX} calc(${brand.clipY} + ${brand.clipH}), 
+                                       calc(${brand.clipX} + ${brand.clipW}) calc(${brand.clipY} + ${brand.clipH}), 
+                                       calc(${brand.clipX} + ${brand.clipW}) ${brand.clipY}, 
+                                       ${brand.clipX} ${brand.clipY});
+                        ">
+                        <div class="dropzone" id="dropzone-${brand.id}" data-expected="${brand.id}" tabindex="0"
+                             style="top: ${brand.clipY}; left: ${brand.clipX}; width: ${brand.clipW}; height: ${brand.clipH};">
+                        </div>
+                    </div>
+                    <div class="brand-title" style="color: ${brand.color}">${brand.name}</div>
+                `;
+
+                const dz = card.querySelector('.dropzone');
+                dz.addEventListener('focus', () => card.classList.add('focused'));
+                dz.addEventListener('blur', () => card.classList.remove('focused'));
+                
+                // Block normal left clicks
+                dz.addEventListener('click', (e) => {
+                    e.preventDefault();
+                });
+
+                // Attach custom contextual trigger handler
+                dz.addEventListener('contextmenu', (e) => openCustomMenu(e, 'dropzone', dz, brand));
+
+                stageNode.appendChild(card);
+            });
+
+            const scrambledFragments = [...gameState.activePool].sort(() => 0.5 - Math.random());
+            poolNode.innerHTML = '';
+            scrambledFragments.forEach(brand => {
+                const fragItem = document.createElement('div');
+                fragItem.className = 'fragment-item';
+                fragItem.id = `frag-${brand.id}`;
+                fragItem.tabIndex = 0;
+                fragItem.innerHTML = `
+                    <div style="width: ${brand.clipW}; height: ${brand.clipH}; overflow: hidden; position: relative; border-radius: 4px;">
+                        <img src="${brand.imageSrc}" style="position: absolute; left: -${brand.clipX}; top: -${brand.clipY}; width: 140px; height: 140px;">
+                    </div>
+                `;
+
+                // Block ordinary left selection click paths
+                fragItem.addEventListener('click', (e) => {
+                    e.preventDefault();
+                });
+
+                fragItem.addEventListener('contextmenu', (e) => openCustomMenu(e, 'fragment', fragItem, brand));
+                fragItem.addEventListener('dragstart', (e) => e.preventDefault());
+                poolNode.appendChild(fragItem);
+            });
+        }
+
+        /**
+         * CUSTOM SCHOOL APPLICATION MENU INTERFACES
+         */
+        function openCustomMenu(e, type, DOMElement, data) {
+            e.preventDefault(); // Stop native browser window list popup
+            closeCustomMenu();
+
+            targetedContextElement = DOMElement;
+            targetedContextData = data;
+
+            let menuHTML = '';
+
+            if (type === 'fragment') {
+                menuHTML = `<div class="menu-item" onclick="triggerContextCopy()">📄 Copy <span class="menu-shortcut">Ctrl+C</span></div>`;
+            } else if (type === 'dropzone') {
+                if (DOMElement.classList.contains('filled')) return;
+                
+                if (gameState.virtualClipboard) {
+                    menuHTML = `<div class="menu-item" onclick="triggerContextPaste()">📋 Paste <span class="menu-shortcut">Ctrl+V</span></div>`;
+                } else {
+                    menuHTML = `<div class="menu-item disabled">📋 Paste (Empty)</div>`;
+                }
+            }
+
+            contextMenuNode.innerHTML = menuHTML;
+            contextMenuNode.style.left = `${e.clientX}px`;
+            contextMenuNode.style.top = `${e.clientY}px`;
+            contextMenuNode.style.display = 'block';
+        }
+
+        function closeCustomMenu() {
+            contextMenuNode.style.display = 'none';
+        }
+
+        function attachContextDismissHooks() {
+            // Dismiss custom dialog menu whenever clicking outside anywhere else
+            document.addEventListener('click', () => closeCustomMenu());
+            document.addEventListener('contextmenu', (e) => {
+                // If context-clicking on non-game structural targets, close our custom dialog list
+                if (!e.target.closest('.fragment-item') && !e.target.closest('.dropzone')) {
+                    closeCustomMenu();
+                }
+            });
+        }
+
+        // Global functions map mapped onto direct window invocation for custom context item strings
+        window.triggerContextCopy = function() {
+            if (!targetedContextElement || !targetedContextData) return;
+            
+            document.querySelectorAll('.fragment-item').forEach(el => el.classList.remove('copied'));
+            targetedContextElement.classList.add('copied');
+            
+            gameState.virtualClipboard = {
+                id: targetedContextData.id,
+                color: targetedContextData.color,
+                htmlPayload: targetedContextElement.innerHTML
+            };
+            
+            updateClipboardUI();
+            
+            document.querySelectorAll('.dropzone:not(.filled)').forEach(dz => dz.classList.add('waiting-paste'));
+            triggerJuicyParticles(targetedContextElement, targetedContextData.color);
+            closeCustomMenu();
+        };
+
+        window.triggerContextPaste = function() {
+            if (!targetedContextElement || !gameState.virtualClipboard) return;
+
+            const expectedId = targetedContextElement.getAttribute('data-expected');
+            const parentCard = targetedContextElement.closest('.brand-card');
+
+            if (gameState.virtualClipboard.id === expectedId) {
+                targetedContextElement.innerHTML = gameState.virtualClipboard.htmlPayload;
+                targetedContextElement.classList.remove('waiting-paste');
+                targetedContextElement.classList.add('filled');
+                parentCard.classList.add('success-pop');
+                
+                triggerJuicyParticles(targetedContextElement, gameState.virtualClipboard.color);
+                
+                const matchedVaultItem = document.getElementById(`frag-${expectedId}`);
+                if (matchedVaultItem) matchedVaultItem.style.opacity = '0.3';
+
+                gameState.completedTargets++;
+                gameState.virtualClipboard = null;
+                updateClipboardUI();
+                document.querySelectorAll('.dropzone').forEach(dz => dz.classList.remove('waiting-paste'));
+
+                if (gameState.completedTargets === 3) {
+                    setTimeout(advanceSequence, 1200);
+                }
+} else {
+        // --- WRONG MATCH CASE ---
+        
+        // 1. Turn the drop box red (from Suggestion 1)
+        targetedContextElement.classList.add('error-flash');
+        
+        // 2. Create the temporary "Wrong piece!" toast element
+        const toast = document.createElement('div');
+        toast.className = 'error-toast';
+        toast.textContent = 'Wrong piece! ❌';
+        
+        // 3. Append the toast inside the wrapper right above the drop box
+        // (Since the logo-wrapper is relative, the toast will float perfectly over it)
+        const wrapper = targetedContextElement.closest('.logo-wrapper');
+        wrapper.appendChild(toast);
+        
+        // 4. Automatically clear both the red box and the toast after 1 second
+        setTimeout(() => {
+            targetedContextElement.classList.remove('error-flash');
+            toast.remove(); // Safely deletes the element from the webpage
+        }, 1000);
+    }
+            closeCustomMenu();
+        };
+
+        function updateClipboardUI() {
+            if (gameState.virtualClipboard) {
+                clipboardIndicatorNode.textContent = `Clipboard: Filled 🧩`;
+            } else {
+                clipboardIndicatorNode.textContent = `Clipboard: Empty`;
+            }
+        }
+
+        function advanceSequence() {
+            if (gameState.currentRound < gameState.maxRounds) {
+                gameState.currentRound++;
+                setupRound();
+            } else {
+                showVictoryScreen();
+            }
+        }
+
+        function showVictoryScreen() {
+            modalContentNode.innerHTML = `
+                <h2 style="font-size: 2.2rem; margin-bottom: 1rem; color: var(--success);">Fantastic Job! 🏆</h2>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">You have completely mastered both Context Right-Click menu functions and physical system shortcuts!</p>
+                <button class="btn-juicy" id="btn-restart">Play Again 🔄</button>
+            `;
+            document.getElementById('btn-restart').addEventListener('click', () => {
+                modalScreenNode.classList.remove('active');
+                initGame();
+            });
+            modalScreenNode.classList.add('active');
+        }
+
+        function attachGlobalKeyboardHooks() {
+            window.addEventListener('keydown', (e) => {
+                const isModifierPressed = e.ctrlKey || e.metaKey;
+                const activeEl = document.activeElement;
+                if (!activeEl) return;
+
+                if (isModifierPressed && e.key.toLowerCase() === 'c') {
+                    if (activeEl.classList.contains('fragment-item')) {
+                        e.preventDefault();
+                        const targetId = activeEl.id.replace('frag-', '');
+                        const brandRef = gameState.activePool.find(b => b.id === targetId);
+                        if (brandRef) {
+                            targetedContextElement = activeEl;
+                            targetedContextData = brandRef;
+                            window.triggerContextCopy();
+                        }
+                    }
+                }
+
+                if (isModifierPressed && e.key.toLowerCase() === 'v') {
+                    if (activeEl.classList.contains('dropzone') && !activeEl.classList.contains('filled')) {
+                        e.preventDefault();
+                        targetedContextElement = activeEl;
+                        window.triggerContextPaste();
+                    }
+                }
+            });
+        }
+
+        function triggerJuicyParticles(originTarget, paintColor) {
+            const boundary = originTarget.getBoundingClientRect();
+            const spawnX = boundary.left + boundary.width / 2;
+            const spawnY = boundary.top + boundary.height / 2;
+            
+            for (let i = 0; i < 14; i++) {
+                const atom = document.createElement('div');
+                atom.className = 'particle';
+                atom.style.backgroundColor = paintColor || 'var(--primary)';
+                const dimension = Math.random() * 6 + 6;
+                atom.style.width = `${dimension}px`;
+                atom.style.height = `${dimension}px`;
+                atom.style.left = `${spawnX}px`;
+                atom.style.top = `${spawnY}px`;
+                
+                const angle = Math.random() * Math.PI * 2;
+                const range = Math.random() * 50 + 30;
+                atom.style.setProperty('--tx', `${Math.cos(angle) * range}px`);
+                atom.style.setProperty('--ty', `${Math.sin(angle) * range}px`);
+                
+                document.body.appendChild(atom);
+                atom.addEventListener('animationend', () => atom.remove());
+            }
+        }
+    </script>
+</body>
+</html>
