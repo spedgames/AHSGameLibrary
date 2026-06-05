@@ -1,4 +1,34 @@
 [
+    {
+    "id": "click-the-dots",
+    "title": "Click the Dots Mouse Practice",
+    "description": "Keep clicking the red dot as it gets smaller and smaller.",
+    "creatorName": "Teacher Carmina",
+    "category": "General",
+    "compatibility": ["desktop"],
+    "tags": ["numbers", "address", "personal information"],
+    "uploadDate": "2026-06-01"
+  },
+  {
+    "id": "twinkle-twinkle",
+    "title": "Twinkle Twinkle Mouse Practice",
+    "description": "Tap the star to play the notes of the song.",
+    "creatorName": "Teacher Carmina",
+    "category": "General",
+    "compatibility": ["desktop"],
+    "tags": ["numbers", "address", "personal information"],
+    "uploadDate": "2026-06-01"
+  },
+  {
+    "id": "spell-and-pop",
+    "title": "Spell and Pop",
+    "description": "Key in your own words, then type them out to pop the balloons.",
+    "creatorName": "Teacher Carmina",
+    "category": "Literacy",
+    "compatibility": ["desktop"],
+    "tags": ["spelling", "typing", "ICT"],
+    "uploadDate": "2026-06-01"
+  },
   {
     "id": "block-number-quiz",
     "title": "Block Number Quiz",
