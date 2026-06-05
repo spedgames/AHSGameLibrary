@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Click the Dots Mouse Practice</title>
+    <style>
+        /* --- DESIGN SYSTEM --- */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(255, 255, 255, 0.06);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --target-color: #f43f5e;
+            --target-glow: rgba(244, 63, 94, 0.6);
+            --font-main: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        /* --- GLOBAL STYLES --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: var(--font-main);
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- SCREEN MANAGEMENT --- */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            transform: scale(0.95);
+            z-index: 10;
+        }
+
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #fff, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        /* --- DIFFICULTY SELECTION CONTROLS --- */
+        .difficulty-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            padding: 0.85rem 1.5rem;
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            min-height: 48px;
+        }
+
+        .radio-label:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-color);
+        }
+
+        .radio-label input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--text-secondary);
+            border-radius: 50%;
+            outline: none;
+            margin-left: 10px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .radio-label input[type="radio"]:checked {
+            border-color: var(--accent-color);
+        }
+
+        .radio-label input[type="radio"]:checked::before {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .radio-label:has(input:checked) {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--accent-color);
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            background-color: var(--accent-color);
+            color: #0f172a;
+            border: none;
+            border-radius: 50px;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .btn:hover, .btn:focus {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.6);
+            outline: none;
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* --- GAMEPLAY HUD & INSTRUCTIONS --- */
+        #game-hud {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 2rem;
+            pointer-events: none;
+            z-index: 5;
+            font-family: monospace;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+        }
+
+        .hud-metric span {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        #game-instruction {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            z-index: 5;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        /* --- INTERACTIVE TARGET --- */
+        #game-bounds {
+            position: absolute;
+            top: 80px; 
+            bottom: 80px; 
+            left: 20px;
+            right: 20px;
+            pointer-events: none;
+        }
+
+        #target {
+            position: absolute;
+            background-color: var(--target-color);
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 0 20px var(--target-glow);
+            transition: transform 0.05s ease;
+            display: none;
+            transform: translate(-50%, -50%); 
+        }
+
+        #target:active {
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+
+        .score-display {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--accent-color);
+            margin: 1.5rem 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-hud">
+        <div class="hud-metric">Clicks: <span id="hud-clicks">0</span>/10</div>
+        <div class="hud-metric">Time: <span id="hud-timer">0.00</span>s</div>
+    </div>
+
+    <div id="start-screen" class="screen active">
+        <div class="glass-panel">
+            <h1>Click the Dots</h1>
+            <p>Select your difficulty level and click the red dot 10 times, as fast as you can.</p>
+            
+            <div class="difficulty-container">
+                <label class="radio-label">
+                    <span>Easy</span>
+                    <input type="radio" name="difficulty" value="easy" checked>
+                </label>
+                <label class="radio-label">
+                    <span>Medium</span>
+                    <input type="radio" name="difficulty" value="medium">
+                </label>
+                <label class="radio-label">
+                    <span>Hard</span>
+                    <input type="radio" name="difficulty" value="hard">
+                </label>
+            </div>
+
+            <button class="btn" id="start-btn">Start Game</button>
+        </div>
+    </div>
+
+    <div id="game-instruction">Click on the red dot</div>
+
+    <div id="game-bounds">
+        <div id="target"></div>
+    </div>
+
+    <div id="end-screen" class="screen">
+        <div class="glass-panel">
+            <h1>Finished!</h1>
+            <p>Your time:</p>
+            <div class="score-display"><span id="final-time">0.00</span>s</div>
+            <button class="btn" id="restart-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        const state = {
+            currentClicks: 0,
+            totalClicksTarget: 10,
+            startTime: 0,
+            timerInterval: null,
+            initialSize: 140, 
+            minSize: 10,
+            difficulty: 'easy',
+            lastX: null,
+            lastY: null
+        };
+
+        // --- DOM ELEMENTS ---
+        const startScreen = document.getElementById('start-screen');
+        const endScreen = document.getElementById('end-screen');
+        const gameBounds = document.getElementById('game-bounds');
+        const target = document.getElementById('target');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const gameInstruction = document.getElementById('game-instruction');
+        
+        const hudClicks = document.getElementById('hud-clicks');
+        const hudTimer = document.getElementById('hud-timer');
+        const finalTime = document.getElementById('final-time');
+
+        // --- EVENT LISTENERS ---
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', resetToStart);
+        target.addEventListener('mousedown', handleTargetHit);
+        target.addEventListener('touchstart', function(e) {
+            e.preventDefault(); 
+            handleTargetHit();
+        });
+
+        // --- ENGINE LOGIC ---
+
+        function startGame() {
+            const selectedDifficulty = document.querySelector('input[name="difficulty"]:checked');
+            state.difficulty = selectedDifficulty ? selectedDifficulty.value : 'easy';
+
+            startScreen.classList.remove('active');
+            endScreen.classList.remove('active');
+            gameInstruction.style.display = 'block';
+            
+            state.currentClicks = 0;
+            state.lastX = null;
+            state.lastY = null;
+            hudClicks.textContent = state.currentClicks;
+            hudTimer.textContent = "0.00";
+            
+            state.startTime = performance.now();
+            state.timerInterval = setInterval(updateTimer, 10);
+            
+            repositionTarget();
+            target.style.display = 'block';
+        }
+
+        function updateTimer() {
+            const delta = (performance.now() - state.startTime) / 1000;
+            hudTimer.textContent = delta.toFixed(2);
+        }
+
+        function handleTargetHit() {
+            state.currentClicks++;
+            hudClicks.textContent = state.currentClicks;
+
+            if (state.currentClicks >= state.totalClicksTarget) {
+                endGame();
+            } else {
+                repositionTarget();
+            }
+        }
+
+        function repositionTarget() {
+            const progressRatio = state.currentClicks / (state.totalClicksTarget - 1);
+            const currentSize = state.initialSize - (progressRatio * (state.initialSize - state.minSize));
+            
+            target.style.width = `${currentSize}px`;
+            target.style.height = `${currentSize}px`;
+
+            const boundsWidth = gameBounds.clientWidth;
+            const boundsHeight = gameBounds.clientHeight;
+            const radius = currentSize / 2;
+            
+            const minX = radius;
+            const maxX = boundsWidth - radius;
+            const minY = radius;
+            const maxY = boundsHeight - radius;
+
+            let randomX, randomY;
+
+            if (state.lastX === null || state.lastY === null || state.difficulty === 'hard') {
+                randomX = Math.random() * (maxX - minX) + minX;
+                randomY = Math.random() * (maxY - minY) + minY;
+            } else {
+                // Easy uses previous Medium metrics (30% to 50%). 
+                // Medium jumps up to Wide metrics (55% to 75%).
+                let minPercent = state.difficulty === 'easy' ? 0.30 : 0.55;
+                let maxPercent = state.difficulty === 'easy' ? 0.50 : 0.75;
+
+                const maxDist = Math.min(boundsWidth, boundsHeight) * maxPercent;
+                const minDist = Math.min(boundsWidth, boundsHeight) * minPercent;
+
+                let validPositionFound = false;
+                let attempts = 0;
+
+                while (!validPositionFound && attempts < 100) {
+                    attempts++;
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * (maxDist - minDist) + minDist;
+                    
+                    randomX = state.lastX + Math.cos(angle) * distance;
+                    randomY = state.lastY + Math.sin(angle) * distance;
+
+                    if (randomX >= minX && randomX <= maxX && randomY >= minY && randomY <= maxY) {
+                        validPositionFound = true;
+                    }
+                }
+
+                if (!validPositionFound) {
+                    randomX = Math.random() * (maxX - minX) + minX;
+                    randomY = Math.random() * (maxY - minY) + minY;
+                }
+            }
+
+            state.lastX = randomX;
+            state.lastY = randomY;
+
+            target.style.left = `${randomX}px`;
+            target.style.top = `${randomY}px`;
+        }
+
+        function endGame() {
+            clearInterval(state.timerInterval);
+            target.style.display = 'none';
+            gameInstruction.style.display = 'none';
+
+            const totalDuration = ((performance.now() - state.startTime) / 1000).toFixed(2);
+            finalTime.textContent = totalDuration;
+
+            endScreen.classList.add('active');
+        }
+
+        function resetToStart() {
+            endScreen.classList.remove('active');
+            startScreen.classList.add('active');
+            hudClicks.textContent = "0";
+            hudTimer.textContent = "0.00";
+        }
+
+        window.addEventListener('resize', () => {
+            if (target.style.display === 'block') {
+                repositionTarget();
+            }
+        });
+    </script>
+</body>
+</html>

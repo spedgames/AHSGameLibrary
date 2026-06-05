@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Twinkle Twinkle Mouse Practice</title>
+    <style>
+        /* --- CSS VARIABLES & THEME --- */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
+            --panel-bg: rgba(255, 255, 255, 0.08);
+            --panel-border: rgba(255, 255, 255, 0.15);
+            --text-primary: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-gold: #fbbf24;
+            --accent-glow: rgba(251, 191, 36, 0.4);
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* --- RESET & LAYOUT --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-gradient);
+            font-family: var(--font-family);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- GAME CONTAINER --- */
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 1024px;
+            max-height: 768px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        /* --- SCREEN MANAGEMENT --- */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            z-index: 10;
+            background: var(--bg-gradient);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+
+        /* --- UI ELEMENTS & BUTTONS --- */
+        h1 {
+            font-size: 2.5rem;
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            text-align: center;
+            text-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            color: #000;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            min-height: 48px; /* Touch target standard */
+            min-width: 160px;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn:hover, .btn:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.6);
+            outline: none;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        /* --- TOP HUD --- */
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            height: 10%;
+            padding: 0 0.5rem;
+            z-index: 5;
+        }
+
+        .hud-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            padding: 0.5rem 1.2rem;
+            border-radius: 16px;
+            font-size: 1rem;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .hud-card span {
+            color: var(--accent-gold);
+            font-weight: bold;
+        }
+
+        /* --- PLAYSPACE (STAR CANVAS AREA) --- */
+        #play-space {
+            flex-grow: 1;
+            width: 100%;
+            height: 70%;
+            position: relative;
+            border-radius: 24px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        /* --- THE MAGIC STAR --- */
+        #target-star {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            touch-action: manipulation;
+        }
+
+        #target-star.visible {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* SVG Star styling with glow */
+        #target-star svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 12px var(--accent-gold));
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px var(--accent-gold)); }
+            50% { transform: scale(1.1); filter: drop-shadow(0 0 22px #fff); }
+        }
+
+        /* --- LYRICS PANEL --- */
+        #lyrics-container {
+            width: 100%;
+            height: 15%;
+            min-height: 80px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            box-shadow: inset 0 4px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 5;
+        }
+
+        #lyrics-display {
+            font-size: 1.5rem;
+            text-align: center;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+            color: #d1d5db;
+        }
+
+        /* Highlight feature for the current word */
+        .word {
+            display: inline-block;
+            margin: 0 0.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .word.highlight {
+            color: var(--accent-gold);
+            font-weight: bold;
+            transform: scale(1.15);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* --- BACKGROUND PARTICLES (STATIC & AESTHETIC) --- */
+        .bg-star {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: twinkle var(--d, 3s) infinite ease-in-out var(--g, 0s);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.8; }
+        }
+
+        /* --- STATS SCREEN --- */
+        .stat-value {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--accent-gold);
+            margin: 0.5rem 0 1.5rem 0;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="starfield" style="position:absolute; width:100%; height:100%; top:0; left:0; z-index:1; pointer-events:none;"></div>
+
+    <div id="game-container">
+        
+        <div id="start-screen" class="screen">
+            <h1>Twinkle Twinkle Mouse Practice</h1>
+            <p>Tap the shining star to play the notes of twinkle twinkle little star.</p>
+            <button class="btn" id="start-btn">Start Playing</button>
+        </div>
+
+        <div id="hud">
+            <div class="hud-card">Note: <span id="note-progress">0/42</span></div>
+            <div class="hud-card">Time: <span id="timer-display">0.0s</span></div>
+        </div>
+
+        <div id="play-space">
+            <div id="target-star">
+                <svg viewBox="0 0 24 24" fill="#fbbf24">
+                    <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.857 1.4-8.168L.132 9.21l8.2-1.192L12 .587z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div id="lyrics-container">
+            <div id="lyrics-display">Get ready...</div>
+        </div>
+
+        <div id="end-screen" class="screen hidden">
+            <h1>Beautiful Music!</h1>
+            <p>You successfully matched every note of Twinkle Twinkle Little Star.</p>
+            <div class="stat-value"><span id="final-time">0.0</span>s</div>
+            <button class="btn" id="restart-btn">Play Again</button>
+        </div>
+
+    </div>
+
+    <script>
+        /* --- AUDIO SYNTHESIS ENGINE (Web Audio API) --- */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Scientific frequencies for Twinkle Twinkle (Key of C Major)
+        const FREQ = {
+            'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 
+            'G4': 392.00, 'A4': 440.00
+        };
+
+        /* --- GAME DATA --- */
+        // Ordered note array mapped directly to performance sequence
+        const songNotes = [
+            'C4', 'C4', 'G4', 'G4', 'A4', 'A4', 'G4',
+            'F4', 'F4', 'E4', 'E4', 'D4', 'D4', 'C4',
+            'G4', 'G4', 'F4', 'F4', 'E4', 'E4', 'D4',
+            'G4', 'G4', 'F4', 'F4', 'E4', 'E4', 'D4',
+            'C4', 'C4', 'G4', 'G4', 'A4', 'A4', 'G4',
+            'F4', 'F4', 'E4', 'E4', 'D4', 'D4', 'C4'
+        ];
+
+        // Structural lyric segments mapped to syllable counts matching the notes above
+        const songPhrases = [
+            { text: "Twinkle, twinkle, little star,", notesCount: 7, words: ["Twinkle,", "twinkle,", "little", "star,"] },
+            { text: "How I wonder what you are!", notesCount: 7, words: ["How", "I", "wonder", "what", "you", "are!"] },
+            { text: "Up above the world so high,", notesCount: 7, words: ["Up", "above", "the", "world", "so", "high,"] },
+            { text: "Like a diamond in the sky.", notesCount: 7, words: ["Like", "a", "diamond", "in", "the", "sky."] },
+            { text: "Twinkle, twinkle, little star,", notesCount: 7, words: ["Twinkle,", "twinkle,", "little", "star,"] },
+            { text: "How I wonder what you are!", notesCount: 7, words: ["How", "I", "wonder", "what", "you", "are!"] }
+        ];
+
+        /* --- STATE VARIABLES --- */
+        let currentNoteIndex = 0;
+        let phraseIndex = 0;
+        let noteInPhraseIndex = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let isGameActive = false;
+
+        /* --- DOM ELEMENTS --- */
+        const startScreen = document.getElementById('start-screen');
+        const endScreen = document.getElementById('end-screen');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const star = document.getElementById('target-star');
+        const playSpace = document.getElementById('play-space');
+        const lyricsDisplay = document.getElementById('lyrics-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const progressDisplay = document.getElementById('note-progress');
+        const finalTimeDisplay = document.getElementById('final-time');
+
+        /* --- INITIALIZATION --- */
+        window.addEventListener('DOMContentLoaded', () => {
+            generateAmbientBackgroundStars();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Support modern rapid tapping environments securely
+            startBtn.addEventListener('click', startGame);
+            restartBtn.addEventListener('click', resetAndStartGame);
+            
+            // Interaction points for the star element
+            star.addEventListener('mousedown', handleStarClick);
+            star.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Curbs ghost clicks on tactile UI
+                handleStarClick();
+            });
+
+            // Handle UI window resize protection dynamically
+            window.addEventListener('resize', () => {
+                if (isGameActive) repositionStar();
+            });
+        }
+
+        /* --- BACKGROUND DECORATION --- */
+        function generateAmbientBackgroundStars() {
+            const starfield = document.getElementById('starfield');
+            const count = 40;
+            for(let i=0; i<count; i++) {
+                const s = document.createElement('div');
+                s.classList.add('bg-star');
+                s.style.width = s.style.height = `${Math.random() * 3 + 1}px`;
+                s.style.top = `${Math.random() * 100}%`;
+                s.style.left = `${Math.random() * 100}%`;
+                s.style.setProperty('--d', `${Math.random() * 3 + 2}s`);
+                s.style.setProperty('--g', `${Math.random() * 5}s`);
+                starfield.appendChild(s);
+            }
+        }
+
+        /* --- MUSIC SYNTHESIZER ENGINE --- */
+        function playNote(noteName) {
+            if (!FREQ[noteName]) return;
+
+            // Initialize local pipeline node chain
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.type = 'sine'; // Pure sweet bell tone
+            osc.frequency.setValueAtTime(FREQ[noteName], audioCtx.currentTime);
+            
+            // Generate clean envelope to eliminate clicks and pop artifacts
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.03); // Attack
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8); // Decay/Release
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.8);
+        }
+
+        /* --- CORE RUNTIME LOGIC --- */
+	    function startGame() {
+            // Unlock Web Audio Context API policies on modern browsers
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            // Hide the start screen
+            startScreen.classList.add('hidden');
+            
+            isGameActive = true;
+            currentNoteIndex = 0;
+            phraseIndex = 0;
+            noteInPhraseIndex = 0;
+
+            updateLyricsPanel();
+            progressDisplay.textContent = `0/${songNotes.length}`;
+            
+            startTime = performance.now();
+            timerInterval = setInterval(updateTimer, 100);
+            
+            repositionStar();
+            star.classList.add('visible');
+        }
+        function resetAndStartGame() {
+            endScreen.classList.add('hidden');
+            timerDisplay.textContent = "0.0s";
+            startGame();
+        }
+
+        function updateTimer() {
+            if (!isGameActive) return;
+            const elapsed = (performance.now() - startTime) / 1000;
+            timerDisplay.textContent = `${elapsed.toFixed(1)}s`;
+        }
+
+        /* --- POSITION ENGINE --- */
+        function repositionStar() {
+            const padding = 50; // Bound boundaries safely from screen clipping edges
+            const pWidth = playSpace.clientWidth;
+            const pHeight = playSpace.clientHeight;
+
+            // Safe algorithmic location scatter mapping
+            const randomX = padding + Math.random() * (pWidth - padding * 2);
+            const randomY = padding + Math.random() * (pHeight - padding * 2);
+
+            star.style.left = `${randomX}px`;
+            star.style.top = `${randomY}px`;
+        }
+
+        /* --- INTERACTION HANDLER --- */
+        function handleStarClick() {
+            if (!isGameActive || !star.classList.contains('visible')) return;
+
+            // Hide temporarily to create a satisfying popping transition
+            star.classList.remove('visible');
+
+            // Play the synchronized audio node
+            const noteToPlay = songNotes[currentNoteIndex];
+            playNote(noteToPlay);
+
+            // Step progression tracking systems
+            currentNoteIndex++;
+            progressDisplay.textContent = `${currentNoteIndex}/${songNotes.length}`;
+
+            // Parse tracking down to phrase-level text highlights
+            highlightLyricWord(noteInPhraseIndex);
+            noteInPhraseIndex++;
+
+            // Handle transition criteria check gates
+            if (currentNoteIndex >= songNotes.length) {
+                endGame();
+            } else {
+                // If current sub-phrase block completes, move on to the next phrase line structure
+                if (noteInPhraseIndex >= songPhrases[phraseIndex].notesCount) {
+                    phraseIndex++;
+                    noteInPhraseIndex = 0;
+                    updateLyricsPanel();
+                }
+
+                // Smooth execution stagger frame layout adjustments
+                setTimeout(() => {
+                    if (isGameActive) {
+                        repositionStar();
+                        star.classList.add('visible');
+                    }
+                }, 200);
+            }
+        }
+
+        /* --- LYRICS PROCESSING UTILITIES --- */
+        function updateLyricsPanel() {
+            const currentPhrase = songPhrases[phraseIndex];
+            lyricsDisplay.innerHTML = '';
+
+            // Generate isolated safe elements per tracking syllable
+            currentPhrase.words.forEach((wordText, idx) => {
+                const wordSpan = document.createElement('span');
+                wordSpan.classList.add('word');
+                wordSpan.id = `w-${phraseIndex}-${idx}`;
+                wordSpan.textContent = wordText;
+                lyricsDisplay.appendChild(wordSpan);
+            });
+        }
+
+        function highlightLyricWord(noteIdx) {
+            // Remove previous highlights across the current phrase container
+            document.querySelectorAll('.word').forEach(w => w.classList.remove('highlight'));
+
+            // Algorithmic mapping index tracking which syllable aligns to which word text segment
+            let targetWordIdx = 0;
+            
+            if (phraseIndex === 0 || phraseIndex === 4) { // Phrases: "Twinkle, twinkle, little star,"
+                if (noteIdx < 2) targetWordIdx = 0;       // "Twinkle,"
+                else if (noteIdx < 4) targetWordIdx = 1;  // "twinkle,"
+                else if (noteIdx < 6) targetWordIdx = 2;  // "little"
+                else targetWordIdx = 3;                   // "star,"
+            } 
+            else if (phraseIndex === 1 || phraseIndex === 5) { // Phrases: "How I wonder what you are!"
+                if (noteIdx === 0) targetWordIdx = 0;     // "How"
+                else if (noteIdx === 1) targetWordIdx = 1;// "I"
+                else if (noteIdx < 4) targetWordIdx = 2;  // "wonder"
+                else if (noteIdx === 4) targetWordIdx = 3;// "what"
+                else if (noteIdx === 5) targetWordIdx = 4;// "you"
+                else targetWordIdx = 5;                   // "are!"
+            } 
+            else { // Phrases: "Up above..." / "Like a diamond..." (Syllables align 1:1 up to middle double syllables)
+                if (phraseIndex === 2) { // "Up above the world so high"
+                    if (noteIdx === 0) targetWordIdx = 0;     // "Up"
+                    else if (noteIdx < 3) targetWordIdx = 1;  // "above"
+                    else if (noteIdx === 3) targetWordIdx = 2;// "the"
+                    else if (noteIdx === 4) targetWordIdx = 3;// "world"
+                    else if (noteIdx === 5) targetWordIdx = 4;// "so"
+                    else targetWordIdx = 5;                   // "high,"
+                } else { // "Like a diamond in the sky"
+                    if (noteIdx === 0) targetWordIdx = 0;     // "Like"
+                    else if (noteIdx === 1) targetWordIdx = 1;// "a"
+                    else if (noteIdx < 4) targetWordIdx = 2;  // "diamond"
+                    else if (noteIdx === 4) targetWordIdx = 3;// "in"
+                    else if (noteIdx === 5) targetWordIdx = 4;// "the"
+                    else targetWordIdx = 5;                   // "sky."
+                }
+            }
+
+            const targetWordEl = document.getElementById(`w-${phraseIndex}-${targetWordIdx}`);
+            if (targetWordEl) {
+                targetWordEl.classList.add('highlight');
+            }
+        }
+
+        /* --- GAME OVER HANDLER --- */
+        function endGame() {
+            isGameActive = false;
+            clearInterval(timerInterval);
+            star.classList.remove('visible');
+
+            const totalTime = (performance.now() - startTime) / 1000;
+            finalTimeDisplay.textContent = totalTime.toFixed(1);
+
+            // Open up full splash finish panel configuration layer smoothly
+            setTimeout(() => {
+                endScreen.classList.remove('hidden');
+            }, 400);
+        }
+    </script>
+</body>
+</html>
