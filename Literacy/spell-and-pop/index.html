@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spell & Pop — Balloon Typing Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --grass: #5db85d;
+    --grass-dark: #3d8c3d;
+    --text-dark: #2c3e50;
+    --text-mid: #4a5568;
+    --accent: #ff6b6b;
+    --accent2: #4ecdc4;
+    --panel-bg: rgba(255,255,255,0.92);
+    --shadow: 0 8px 32px rgba(44,62,80,0.18);
+    --radius: 20px;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Nunito', sans-serif;
+    user-select: none;
+  }
+
+  #game-root {
+    position: relative;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(180deg, #b3d9f7 0%, #e8f4fd 55%, #d4edda 78%, #8bc34a 85%, #5db85d 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    transition: background 0.5s ease;
+  }
+  /* Background-off: flat neutral sky, decorative elements hidden */
+  #game-root.bg-off {
+    background: #dce8f0;
+  }
+  #game-root.bg-off .cloud,
+  #game-root.bg-off #grass-hill { opacity: 0; transition: opacity 0.4s ease; }
+  .cloud, #grass-hill { transition: opacity 0.4s ease; }
+
+  .cloud { position: absolute; background: white; border-radius: 50px; opacity: 0.85; }
+
+  #grass-hill {
+    position: absolute; bottom: 0; left: -5%;
+    width: 110%; height: 18vh;
+    background: var(--grass);
+    border-radius: 60% 60% 0 0 / 80% 80% 0 0;
+  }
+  #grass-hill::before {
+    content: ''; position: absolute; bottom: 0; left: -2%;
+    width: 104%; height: 100%;
+    background: var(--grass-dark);
+    border-radius: 60% 60% 0 0 / 70% 70% 0 0;
+    z-index: -1;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 10; transition: opacity 0.4s ease;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; }
+  #game-screen { z-index: 5; }
+
+  /* ===== PANELS ===== */
+  .panel {
+    background: var(--panel-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem 2.5rem;
+    max-width: 560px; width: 90vw;
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255,255,255,0.7);
+  }
+
+  /* ===== TITLE SCREEN ===== */
+  #title-screen .game-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2.2rem, 7vw, 3.8rem);
+    color: var(--accent);
+    text-shadow: 3px 3px 0 rgba(255,107,107,0.2);
+    text-align: center; line-height: 1.1; margin-bottom: 0.2rem;
+  }
+  #title-screen .game-subtitle {
+    text-align: center; font-size: 1rem;
+    color: var(--text-mid); margin-bottom: 1.5rem; font-weight: 600;
+  }
+  .section-label {
+    font-size: 0.85rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-mid); margin-bottom: 0.5rem;
+  }
+  #wordlist-area {
+    width: 100%; height: 110px;
+    border: 2px solid #d1e8ff; border-radius: 12px;
+    padding: 0.7rem 1rem;
+    font-family: 'Nunito', sans-serif; font-size: 1rem;
+    color: var(--text-dark); background: rgba(255,255,255,0.9);
+    resize: none; outline: none;
+    transition: border-color 0.2s; line-height: 1.6;
+  }
+  #wordlist-area:focus { border-color: var(--accent2); }
+  .hint-text { font-size: 0.78rem; color: #888; margin-top: 0.35rem; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 0.75rem 2rem; border-radius: 50px; border: none; cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-size: 1.1rem; font-weight: 800;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    min-height: 50px; min-width: 120px;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary {
+    background: var(--accent); color: white;
+    box-shadow: 0 4px 0 rgba(200,60,60,0.4), 0 6px 20px rgba(255,107,107,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(200,60,60,0.4), 0 10px 24px rgba(255,107,107,0.35); }
+  .btn-ghost {
+    background: rgba(255,255,255,0.6); color: var(--text-mid);
+    border: 2px solid rgba(0,0,0,0.1);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.9); }
+  .btn-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; }
+
+  /* ===== TOP-LEFT CONTROLS ===== */
+  #top-left-controls {
+    position: absolute; top: 2vh; left: 1.5vw;
+    z-index: 25; display: flex; gap: 0.4rem; align-items: center;
+  }
+  .ctrl-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,0.82);
+    border: none; border-radius: 50px;
+    padding: 0.38rem 0.85rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700; font-size: 0.82rem;
+    color: var(--text-mid); cursor: pointer;
+    min-height: 44px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: background 0.18s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,1); }
+  .ctrl-btn:active { transform: scale(0.95); }
+  .ctrl-btn.off { opacity: 0.65; }
+
+  /* ===== FX MODAL ===== */
+  #fx-modal-overlay {
+    position: absolute; inset: 0;
+    background: rgba(30,50,70,0.35);
+    backdrop-filter: blur(3px);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  #fx-modal-overlay.open {
+    opacity: 1; pointer-events: all;
+  }
+  #fx-modal {
+    background: rgba(255,255,255,0.97);
+    border-radius: 22px;
+    box-shadow: 0 12px 40px rgba(30,50,70,0.22);
+    padding: 1.8rem 2rem 1.5rem;
+    width: min(320px, 88vw);
+    display: flex; flex-direction: column; gap: 1.1rem;
+    transform: translateY(12px) scale(0.97);
+    transition: transform 0.22s ease;
+  }
+  #fx-modal-overlay.open #fx-modal {
+    transform: translateY(0) scale(1);
+  }
+  .fx-modal-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3rem; color: var(--text-dark);
+    text-align: center;
+  }
+  .fx-rows { display: flex; flex-direction: column; gap: 0.75rem; }
+  .fx-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .fx-row-label {
+    font-weight: 700; font-size: 0.95rem; color: var(--text-mid);
+  }
+  /* Pill toggle button */
+  .pill-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 68px; height: 34px;
+    border-radius: 50px; border: 2px solid transparent;
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.88rem;
+    cursor: pointer; transition: background 0.18s, color 0.18s, border-color 0.18s;
+    background: #e2e8f0; color: #94a3b8; border-color: #e2e8f0;
+  }
+  .pill-toggle.active {
+    background: var(--accent2); color: white; border-color: var(--accent2);
+  }
+  .fx-close-btn {
+    align-self: center;
+    padding: 0.55rem 2rem; border-radius: 50px; border: none;
+    background: var(--accent); color: white;
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1rem;
+    cursor: pointer; min-height: 44px;
+    box-shadow: 0 3px 0 rgba(200,60,60,0.35);
+    transition: transform 0.1s;
+  }
+  .fx-close-btn:hover { transform: translateY(-1px); }
+  .fx-close-btn:active { transform: scale(0.96); }
+
+  /* ===== WORD DISPLAY ===== */
+  /* no wrapping — balloons scale down instead */
+  #word-display {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-wrap: nowrap;       /* KEY: never wrap to a second line */
+    justify-content: center;
+    align-items: flex-end;
+    /* Tight side padding: only 12px each side */
+    max-width: calc(100vw - 24px);
+    z-index: 15;
+    /* gap is set dynamically in JS based on word length */
+  }
+
+  /* ===== BALLOONS ===== */
+  .balloon-wrapper {
+    display: flex; flex-direction: column; align-items: center;
+    position: relative; flex-shrink: 0;
+    /* width/height set inline by JS per-word */
+  }
+
+  .balloon {
+    position: relative;
+    /* size set inline by JS */
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: default;
+  }
+  .balloon::after {
+    content: '';
+    position: absolute; bottom: -2px; left: 50%;
+    transform: translateX(-50%);
+    width: 6px; height: 7px;
+    background: inherit; filter: brightness(0.8);
+    clip-path: polygon(20% 0%, 80% 0%, 60% 100%, 40% 100%);
+    border-radius: 0 0 3px 3px;
+  }
+  .balloon::before {
+    content: ''; position: absolute;
+    top: 14%; left: 18%; width: 28%; height: 22%;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%; transform: rotate(-30deg); z-index: 1;
+  }
+  .balloon-string {
+    width: 2px; background: rgba(0,0,0,0.25); border-radius: 1px;
+    /* height set inline by JS */
+  }
+  .balloon-letter {
+    font-family: 'Fredoka One', cursive;
+    color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    pointer-events: none; position: relative; z-index: 2;
+    /* font-size set inline by JS */
+  }
+
+  /* ---- POP: full effects (default) ---- */
+  .balloon-wrapper.popped .balloon {
+    animation: popBurst 0.38s ease-out forwards;
+  }
+  .balloon-wrapper.popped .balloon-string { opacity: 0; transition: opacity 0.25s; }
+  @keyframes popBurst {
+    0%   { transform: scale(1);   opacity: 1; }
+    30%  { transform: scale(1.4); opacity: 0.8; }
+    60%  { transform: scale(0.3); opacity: 0; }
+    100% { transform: scale(0);   opacity: 0; }
+  }
+
+  /* ---- POP: low-stimulation (no-fx mode) ---- */
+  .balloon-wrapper.popped-quiet .balloon {
+    animation: popFade 0.35s ease-out forwards;
+  }
+  .balloon-wrapper.popped-quiet .balloon-string { opacity: 0; transition: opacity 0.3s; }
+  @keyframes popFade {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Entry animation */
+  .balloon-wrapper.entering {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .balloon-wrapper.entering.in { opacity: 1; transform: translateY(0); }
+
+  /* ===== BURST PARTICLES ===== */
+  .burst { position: absolute; pointer-events: none; z-index: 30; }
+  .burst-particle { position: absolute; width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ===== FEEDBACK TOAST ===== */
+  #feedback {
+    position: absolute; top: 10vh; left: 50%;
+    transform: translateX(-50%) translateY(-16px);
+    background: rgba(255,255,255,0.95); border-radius: 50px;
+    padding: 0.45rem 1.4rem;
+    font-weight: 800; font-size: 1.05rem; color: var(--accent);
+    box-shadow: var(--shadow); opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none; z-index: 50; white-space: nowrap;
+  }
+  #feedback.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== PROGRESS BAR (bottom of screen) ===== */
+  #progress-wrap {
+    position: absolute;
+    bottom: 19vh;
+    left: 50%; transform: translateX(-50%);
+    width: min(420px, 80vw);
+    z-index: 20;
+    display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+  }
+  #progress-track {
+    height: 7px; background: rgba(255,255,255,0.38);
+    border-radius: 10px; overflow: hidden;
+  }
+  #progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 10px; width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* ===== INPUT ZONE ===== */
+  #input-zone {
+    position: absolute; bottom: 20.5vh;
+    left: 50%; transform: translateX(-50%);
+    z-index: 20;
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+  }
+  #type-hint {
+    font-size: 0.82rem; font-weight: 600;
+    color: rgba(255,255,255,0.88);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.35); text-align: center;
+  }
+  #type-input { width: 1px; height: 1px; opacity: 0; position: absolute; pointer-events: none; }
+
+
+  /* ===== END SCREEN ===== */
+  #end-screen .panel { text-align: center; }
+  #end-screen .big-emoji {
+    font-size: 3.5rem; margin-bottom: 0.5rem;
+    animation: bounce 0.8s ease infinite alternate; display: block;
+  }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+  #end-screen h2 { font-family: 'Fredoka One', cursive; font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem; }
+  #end-stats { display: flex; gap: 1rem; justify-content: center; margin: 1rem 0; flex-wrap: wrap; }
+  .stat-box { background: rgba(78,205,196,0.12); border-radius: 12px; padding: 0.6rem 1.2rem; min-width: 90px; }
+  .stat-box .num { font-family: 'Fredoka One', cursive; font-size: 1.8rem; color: var(--accent2); }
+  .stat-box .lbl { font-size: 0.78rem; font-weight: 700; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.06em; }
+  .word-review { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin: 1rem 0 0; max-height: 100px; overflow-y: auto; }
+  .word-tag { background: rgba(255,107,107,0.12); color: var(--accent); border-radius: 50px; padding: 0.2rem 0.7rem; font-size: 0.85rem; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="game-root">
+
+  <div class="cloud" style="top:8%;left:5%;width:100px;height:28px;">
+    <div style="position:absolute;top:-20px;left:15px;width:45px;height:45px;border-radius:50%;background:white;"></div>
+    <div style="position:absolute;top:-14px;left:42px;width:35px;height:35px;border-radius:50%;background:white;"></div>
+  </div>
+  <div class="cloud" style="top:14%;left:30%;width:130px;height:32px;opacity:0.7;">
+    <div style="position:absolute;top:-22px;left:20px;width:50px;height:50px;border-radius:50%;background:white;"></div>
+    <div style="position:absolute;top:-15px;left:55px;width:38px;height:38px;border-radius:50%;background:white;"></div>
+  </div>
+  <div class="cloud" style="top:6%;right:20%;width:90px;height:24px;opacity:0.6;">
+    <div style="position:absolute;top:-16px;left:12px;width:38px;height:38px;border-radius:50%;background:white;"></div>
+    <div style="position:absolute;top:-10px;left:38px;width:28px;height:28px;border-radius:50%;background:white;"></div>
+  </div>
+  <div id="grass-hill"></div>
+
+  <!-- TITLE SCREEN -->
+  <div class="screen" id="title-screen">
+    <div class="panel">
+      <div class="game-title">🎈 Spell &amp; Pop!</div>
+      <div class="game-subtitle">Type each letter to pop the balloons</div>
+      <div class="section-label">Your Word List</div>
+      <textarea id="wordlist-area" placeholder="Enter words separated by spaces or new lines&#10;e.g. cat dog elephant&#10;     apple banana cherry"></textarea>
+      <div class="hint-text">💡 One word per line, or separate with spaces. Words play in order.</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="start-btn">🚀 Start Game</button>
+        <button class="btn btn-ghost" id="use-default-btn">Use Sample Words</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen hidden" id="game-screen">
+
+    <div id="top-left-controls">
+      <button class="ctrl-btn" id="menu-btn">🏠 Home</button>
+      <button class="ctrl-btn" id="adjust-fx-btn">🎛 Adjust FX</button>
+    </div>
+
+    <!-- FX Modal -->
+    <div id="fx-modal-overlay">
+      <div id="fx-modal">
+        <div class="fx-modal-title">Adjust Effects</div>
+        <div class="fx-rows">
+          <div class="fx-row">
+            <span class="fx-row-label">🔊 Sound</span>
+            <button class="pill-toggle active" id="sound-pill" data-setting="sound">On</button>
+          </div>
+          <div class="fx-row">
+            <span class="fx-row-label">✨ Visual FX</span>
+            <button class="pill-toggle active" id="fx-pill" data-setting="fx">On</button>
+          </div>
+          <div class="fx-row">
+            <span class="fx-row-label">🌄 Background</span>
+            <button class="pill-toggle active" id="bg-pill" data-setting="bg">On</button>
+          </div>
+        </div>
+        <button class="fx-close-btn" id="fx-close-btn">Done</button>
+      </div>
+    </div>
+
+    <div id="feedback"></div>
+    <div id="word-display"></div>
+
+    <!-- Progress bar sits just above the grass hill -->
+    <div id="progress-wrap">
+      <div id="progress-track"><div id="progress-fill"></div></div>
+    </div>
+
+    <div id="input-zone">
+      <div id="type-hint">⌨️ Just start typing!</div>
+      <input type="text" id="type-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Type letters here"/>
+
+    </div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div class="screen hidden" id="end-screen">
+    <div class="panel">
+      <span class="big-emoji" id="end-emoji">🎉</span>
+      <h2 id="end-title">Amazing!</h2>
+      <p id="end-msg" style="color:var(--text-mid);font-size:1rem;margin-bottom:0.5rem;"></p>
+      <div id="end-stats">
+        <div class="stat-box"><div class="num" id="stat-score">0</div><div class="lbl">Score</div></div>
+        <div class="stat-box"><div class="num" id="stat-words">0</div><div class="lbl">Words</div></div>
+        <div class="stat-box"><div class="num" id="stat-accuracy">0%</div><div class="lbl">Accuracy</div></div>
+      </div>
+      <div style="font-size:0.85rem;font-weight:700;color:var(--text-mid);margin-bottom:0.4rem;">Words played:</div>
+      <div class="word-review" id="word-review"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="play-again-btn">🔄 Play Again</button>
+        <button class="btn btn-ghost" id="change-words-btn">✏️ Change Words</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  SPELL & POP
+// ============================================================
+
+const BALLOON_COLORS = [
+  '#ff6b6b','#ff9f43','#ffd166','#06d6a0',
+  '#4ecdc4','#118ab2','#7b2d8b','#ff4fa3',
+  '#f7971e','#00b09b','#e040fb'
+];
+
+const DEFAULT_WORDS = [
+  'cat','dog','bird','fish','frog',
+  'apple','mango','cloud','river','stone'
+];
+
+// ---- Balloon sizing constants ----
+// Max balloon size (px)
+const BALLOON_W_MAX = 78;
+const BALLOON_H_MAX = 94;
+// Min balloon size before we just can't fit
+const BALLOON_W_MIN = 32;
+// String height proportional to balloon
+const STRING_RATIO = 0.32;
+// Max gap between balloons
+const GAP_MAX = 14;
+const GAP_MIN = 4;
+
+// ---- State ----
+let wordList = [], currentWordIndex = 0, currentLetterIndex = 0;
+let score = 0, totalKeypresses = 0, correctKeypresses = 0;
+let feedbackTimer = null, gameActive = false;
+let soundEnabled = true, fxEnabled = true, bgEnabled = true;
+
+// ---- Audio ----
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playPopSound() {
+  if (!soundEnabled) return;
+  try {
+    const c = getAudio();
+    if (c.state === 'suspended') c.resume();
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.connect(gain);
+    gain.connect(c.destination);
+
+    const baseFreq = 520 + (currentLetterIndex * 38);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(baseFreq, c.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.3, c.currentTime + 0.06);
+
+    // Short attack to avoid abrupt click, then decay
+    gain.gain.setValueAtTime(0.0001, c.currentTime);
+    gain.gain.linearRampToValueAtTime(0.17, c.currentTime + 0.01);  // 10ms attack
+    gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.18);
+
+    osc.start(c.currentTime);
+    osc.stop(c.currentTime + 0.18);
+  } catch(e) {}
+}
+function playWordCompleteSound() {
+  if (!soundEnabled) return;
+  try {
+    const c = getAudio();
+    [523, 659, 784, 1047].forEach((f, i) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type = 'triangle';
+      const t = c.currentTime + i * 0.1;
+      o.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(0.13, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      o.start(t); o.stop(t + 0.22);
+    });
+  } catch(e){}
+}
+
+
+// ---- DOM refs ----
+const titleScreen   = document.getElementById('title-screen');
+const gameScreen    = document.getElementById('game-screen');
+const endScreen     = document.getElementById('end-screen');
+const wordlistArea  = document.getElementById('wordlist-area');
+const startBtn      = document.getElementById('start-btn');
+const useDefaultBtn = document.getElementById('use-default-btn');
+const playAgainBtn  = document.getElementById('play-again-btn');
+const changeWordsBtn= document.getElementById('change-words-btn');
+const menuBtn       = document.getElementById('menu-btn');
+const adjustFxBtn   = document.getElementById('adjust-fx-btn');
+const fxModalOverlay= document.getElementById('fx-modal-overlay');
+const fxCloseBtn    = document.getElementById('fx-close-btn');
+const soundPill     = document.getElementById('sound-pill');
+const fxPill        = document.getElementById('fx-pill');
+const bgPill        = document.getElementById('bg-pill');
+const gameRoot      = document.getElementById('game-root');
+const wordDisplay   = document.getElementById('word-display');
+const typeInput     = document.getElementById('type-input');
+const feedbackEl    = document.getElementById('feedback');
+const progressFill  = document.getElementById('progress-fill');
+
+// ---- Helpers ----
+function showScreen(s) {
+  [titleScreen, gameScreen, endScreen].forEach(x => x.classList.add('hidden'));
+  s.classList.remove('hidden');
+}
+
+function parseWords(raw) {
+  return raw.trim().split(/[\s\n,]+/)
+    .map(w => w.replace(/[^a-zA-Z]/g,'').toLowerCase())
+    .filter(w => w.length > 0);
+}
+
+function focusInput() {
+  typeInput.focus();
+}
+
+function updateProgress() {
+  const pct = Math.round((currentWordIndex / wordList.length) * 100);
+  progressFill.style.width = pct + '%';
+}
+
+// ---- Balloon sizing ----
+// Given a word length and available viewport width, compute the ideal
+// balloon width so all balloons fit on ONE row without wrapping.
+function computeBalloonSize(letterCount) {
+  // Available width: viewport minus 24px padding (12px each side)
+  const available = window.innerWidth - 24;
+
+  // Try the max size first, stepping down until it fits
+  for (let w = BALLOON_W_MAX; w >= BALLOON_W_MIN; w -= 2) {
+    const gap = Math.max(GAP_MIN, Math.min(GAP_MAX, Math.floor(w * 0.15)));
+    const totalNeeded = letterCount * w + (letterCount - 1) * gap;
+    if (totalNeeded <= available) {
+      const h = Math.round(w * (BALLOON_H_MAX / BALLOON_W_MAX));
+      const strH = Math.round(h * STRING_RATIO);
+      const fontSize = Math.round(w * 0.38);
+      return { w, h, gap, strH, fontSize };
+    }
+  }
+  // Absolute minimum — squeeze to fit
+  const gap = GAP_MIN;
+  const w = Math.max(BALLOON_W_MIN, Math.floor((available - (letterCount - 1) * gap) / letterCount));
+  const h = Math.round(w * (BALLOON_H_MAX / BALLOON_W_MAX));
+  const strH = Math.round(h * STRING_RATIO);
+  const fontSize = Math.round(w * 0.38);
+  return { w, h, gap, strH, fontSize };
+}
+
+// ---- Load word ----
+function loadWord() {
+  currentLetterIndex = 0;
+  const word = wordList[currentWordIndex];
+  wordDisplay.innerHTML = '';
+  typeInput.value = '';
+  updateProgress();
+
+  const { w, h, gap, strH, fontSize } = computeBalloonSize(word.length);
+
+  // Apply gap to the container
+  wordDisplay.style.gap = gap + 'px';
+
+  word.split('').forEach((letter, i) => {
+    const color = BALLOON_COLORS[i % BALLOON_COLORS.length];
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'balloon-wrapper entering';
+    wrapper.dataset.index = i;
+
+    const balloon = document.createElement('div');
+    balloon.className = 'balloon';
+    balloon.style.cssText = `background:${color}; width:${w}px; height:${h}px;`;
+
+    const letterEl = document.createElement('span');
+    letterEl.className = 'balloon-letter';
+    letterEl.style.fontSize = fontSize + 'px';
+    letterEl.textContent = letter.toUpperCase();
+
+    const stringEl = document.createElement('div');
+    stringEl.className = 'balloon-string';
+    stringEl.style.height = strH + 'px';
+
+    balloon.appendChild(letterEl);
+    wrapper.appendChild(balloon);
+    wrapper.appendChild(stringEl);
+    wordDisplay.appendChild(wrapper);
+
+    // Staggered entry
+    setTimeout(() => wrapper.classList.add('in'), 30 + i * 52);
+    setTimeout(() => {
+      wrapper.classList.remove('entering','in');
+      wrapper.style.opacity = '1';
+    }, 30 + i * 52 + 340);
+  });
+}
+
+// ---- Pop balloon ----
+function popBalloon(index) {
+  const wrappers = wordDisplay.querySelectorAll('.balloon-wrapper');
+  const wrapper = wrappers[index];
+  if (!wrapper) return;
+
+  if (fxEnabled) {
+    // Full effects: burst particles + scale animation
+    const balloon = wrapper.querySelector('.balloon');
+    const bRect = balloon.getBoundingClientRect();
+    spawnBurst(bRect, balloon.style.background);
+    wrapper.classList.add('popped');
+  } else {
+    // Low-stimulation: just fade
+    wrapper.classList.add('popped-quiet');
+  }
+}
+
+// ---- Burst particles ----
+function spawnBurst(rect, color) {
+  const gr = document.getElementById('game-root').getBoundingClientRect();
+  const cx = rect.left - gr.left + rect.width / 2;
+  const cy = rect.top - gr.top + rect.height / 2;
+
+  const container = document.createElement('div');
+  container.className = 'burst';
+  container.style.left = cx + 'px';
+  container.style.top = cy + 'px';
+
+  for (let i = 0; i < 9; i++) {
+    const p = document.createElement('div');
+    p.className = 'burst-particle';
+    const angle = (360 / 9) * i + Math.random() * 12;
+    const dist = 26 + Math.random() * 32;
+    const dx = Math.cos(angle * Math.PI / 180) * dist;
+    const dy = Math.sin(angle * Math.PI / 180) * dist;
+    p.style.cssText = `background:${color}; transform:translate(-50%,-50%); opacity:1;`;
+    container.appendChild(p);
+
+    const start = performance.now();
+    const dur = 300 + Math.random() * 180;
+    (function anim(ts) {
+      const t = Math.min((ts - start) / dur, 1);
+      const e = 1 - Math.pow(1 - t, 2);
+      p.style.transform = `translate(calc(-50% + ${dx*e}px), calc(-50% + ${dy*e}px))`;
+      p.style.opacity = String(1 - t);
+      if (t < 1) requestAnimationFrame(anim); else p.remove();
+    })(performance.now());
+  }
+
+  document.getElementById('game-root').appendChild(container);
+  setTimeout(() => container.remove(), 620);
+}
+
+// ---- Feedback ----
+function showFeedback(msg, good) {
+  feedbackEl.textContent = msg;
+  feedbackEl.style.color = good ? '#06d6a0' : '#ff6b6b';
+  feedbackEl.classList.add('show');
+  clearTimeout(feedbackTimer);
+  feedbackTimer = setTimeout(() => feedbackEl.classList.remove('show'), 1100);
+}
+
+// ---- Handle typed letter ----
+let wordTransitioning = false; // lock input during between-word pause
+
+function handleLetter(letter) {
+  if (!gameActive || wordTransitioning) return;
+  const word = wordList[currentWordIndex];
+  if (!word) return;
+
+  const expected = word[currentLetterIndex];
+  if (!expected) return; // extra safety: no letter at this index
+
+  totalKeypresses++;
+
+  if (letter.toLowerCase() === expected.toLowerCase()) {
+    correctKeypresses++;
+    score += 10;
+    playPopSound();
+    popBalloon(currentLetterIndex);
+    currentLetterIndex++;
+
+    if (currentLetterIndex >= word.length) {
+      wordTransitioning = true; // block input until next word loads
+      score += 20;
+      playWordCompleteSound();
+      showFeedback(`✨ "${word.toUpperCase()}"! +20 bonus`, true);
+      currentWordIndex++;
+      if (currentWordIndex >= wordList.length) {
+        setTimeout(endGame, 750);
+      } else {
+        setTimeout(() => { wordTransitioning = false; loadWord(); }, 850);
+      }
+    }
+  } else {
+    showFeedback('✗ Try again!', false);
+    // Shake current target balloon
+    const wrappers = wordDisplay.querySelectorAll('.balloon-wrapper');
+    const target = wrappers[currentLetterIndex]?.querySelector('.balloon');
+    if (target && !wrappers[currentLetterIndex].classList.contains('popped') &&
+                  !wrappers[currentLetterIndex].classList.contains('popped-quiet')) {
+      target.style.transition = 'transform 0.1s';
+      target.style.transform = 'rotate(-10deg)';
+      setTimeout(() => { target.style.transform = 'rotate(10deg)'; }, 100);
+      setTimeout(() => { target.style.transform = ''; target.style.transition = ''; }, 220);
+    }
+  }
+}
+
+// ---- Start / End ----
+function startGame(words) {
+  wordList = words;
+  currentWordIndex = 0; currentLetterIndex = 0;
+  score = 0; totalKeypresses = 0; correctKeypresses = 0;
+  gameActive = true;
+  wordTransitioning = false;
+  progressFill.style.width = '0%';
+  showScreen(gameScreen);
+  loadWord();
+  focusInput();
+}
+
+function endGame() {
+  gameActive = false;
+  const accuracy = totalKeypresses > 0
+    ? Math.round((correctKeypresses / totalKeypresses) * 100) : 100;
+  let emoji = '🎈', title = 'Good job!', msg = '';
+  if (accuracy >= 95)      { emoji='🏆'; title='Perfect!';    msg="You're a spelling superstar!"; }
+  else if (accuracy >= 80) { emoji='🎉'; title='Amazing!';    msg='Great work, keep it up!'; }
+  else if (accuracy >= 60) { emoji='👍'; title='Well done!';  msg='Practice makes perfect!'; }
+  else                     { emoji='💪'; title='Keep going!'; msg="You'll do even better next time!"; }
+
+  document.getElementById('end-emoji').textContent = emoji;
+  document.getElementById('end-title').textContent = title;
+  document.getElementById('end-msg').textContent = msg;
+  document.getElementById('stat-score').textContent = score;
+  document.getElementById('stat-words').textContent = wordList.length;
+  document.getElementById('stat-accuracy').textContent = accuracy + '%';
+  document.getElementById('word-review').innerHTML =
+    wordList.map(w => `<span class="word-tag">${w}</span>`).join('');
+
+  progressFill.style.width = '100%';
+  setTimeout(() => showScreen(endScreen), 400);
+}
+
+// ---- FX Modal ----
+function openFxModal() {
+  fxModalOverlay.classList.add('open');
+}
+function closeFxModal() {
+  fxModalOverlay.classList.remove('open');
+  focusInput();
+}
+function setPill(pill, enabled) {
+  pill.textContent = enabled ? 'On' : 'Off';
+  pill.classList.toggle('active', enabled);
+}
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  setPill(soundPill, soundEnabled);
+}
+function toggleFx() {
+  fxEnabled = !fxEnabled;
+  setPill(fxPill, fxEnabled);
+}
+function toggleBg() {
+  bgEnabled = !bgEnabled;
+  setPill(bgPill, bgEnabled);
+  gameRoot.classList.toggle('bg-off', !bgEnabled);
+  // Directly set visibility on clouds and grass so inline styles don't interfere
+  const clouds = document.querySelectorAll('.cloud');
+  const grass = document.getElementById('grass-hill');
+  const vis = bgEnabled ? '' : '0';
+  clouds.forEach(c => c.style.opacity = vis);
+  if (grass) grass.style.opacity = vis;
+}
+
+// ---- Events ----
+document.addEventListener('keydown', e => {
+  // Warm up AudioContext on very first keypress so there's no init delay
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+  if (!gameActive || fxModalOverlay.classList.contains('open')) return;
+  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) handleLetter(e.key);
+  if (e.key === 'Escape') closeFxModal();
+});
+
+
+startBtn.addEventListener('click', () => {
+  const raw = wordlistArea.value.trim();
+  if (!raw) { wordlistArea.style.borderColor = '#ff6b6b'; setTimeout(() => wordlistArea.style.borderColor='', 1200); return; }
+  const words = parseWords(raw);
+  if (!words.length) { wordlistArea.style.borderColor = '#ff6b6b'; return; }
+  startGame(words);
+});
+useDefaultBtn.addEventListener('click', () => {
+  wordlistArea.value = DEFAULT_WORDS.join('\n');
+  wordlistArea.style.borderColor = '#06d6a0';
+  setTimeout(() => wordlistArea.style.borderColor = '', 1000);
+});
+playAgainBtn.addEventListener('click', () => startGame([...wordList]));
+changeWordsBtn.addEventListener('click', () => { gameActive = false; showScreen(titleScreen); });
+menuBtn.addEventListener('click', () => { gameActive = false; showScreen(titleScreen); });
+adjustFxBtn.addEventListener('click', openFxModal);
+fxCloseBtn.addEventListener('click', closeFxModal);
+soundPill.addEventListener('click', toggleSound);
+fxPill.addEventListener('click', toggleFx);
+bgPill.addEventListener('click', toggleBg);
+// Close modal when clicking the dark overlay outside the panel
+fxModalOverlay.addEventListener('click', e => { if (e.target === fxModalOverlay) closeFxModal(); });
+
+document.addEventListener('click', e => {
+  if (gameActive && !e.target.closest('#top-left-controls') && !e.target.closest('#fx-modal-overlay')) focusInput();
+});
+gameScreen.addEventListener('touchstart', e => {
+  if (gameActive && !e.target.closest('#top-left-controls') && !e.target.closest('#fx-modal-overlay')) typeInput.focus();
+}, { passive: true });
+
+
+</script>
+</body>
+</html>
