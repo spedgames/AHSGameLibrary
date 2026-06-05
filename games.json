@@ -1,4 +1,14 @@
 [
+   {
+    "id": "logo-puzzles",
+    "title": "Logo Puzzles",
+    "description": "Practice right-click copy and paste to complete logo puzzles.",
+    "creatorName": "Teacher Carmina",
+    "category": "General",
+    "compatibility": ["desktop"],
+    "tags": ["copy", "paste", "ICT", "mouse", "keyboard", "digital literacy"],
+    "uploadDate": "2026-06-05"
+  },
     {
     "id": "click-the-dots",
     "title": "Click the Dots Mouse Practice",
@@ -6,8 +16,18 @@
     "creatorName": "Teacher Carmina",
     "category": "General",
     "compatibility": ["desktop"],
-    "tags": ["numbers", "address", "personal information"],
-    "uploadDate": "2026-06-01"
+    "tags": ["ICT", "mouse", "digital literacy"],
+    "uploadDate": "2026-06-05"
+  },
+  {
+    "id": "file-explorer",
+    "title": "File Explorer",
+    "description": "Find treasures within the file folders in this Windows mockup.",
+    "creatorName": "Teacher Carmina",
+    "category": "General",
+    "compatibility": ["desktop"],
+    "tags": ["ICT", "mouse", "digital literacy"],
+    "uploadDate": "2026-06-05"
   },
   {
     "id": "twinkle-twinkle",
@@ -16,8 +36,8 @@
     "creatorName": "Teacher Carmina",
     "category": "General",
     "compatibility": ["desktop"],
-    "tags": ["numbers", "address", "personal information"],
-    "uploadDate": "2026-06-01"
+    "tags": ["ICT", "mouse", "digital literacy"],
+    "uploadDate": "2026-06-05"
   },
   {
     "id": "spell-and-pop",
@@ -26,8 +46,8 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop"],
-    "tags": ["spelling", "typing", "ICT"],
-    "uploadDate": "2026-06-01"
+    "tags": ["spelling", "typing", "ICT", "digital literacy"],
+    "uploadDate": "2026-06-05"
   },
   {
     "id": "block-number-quiz",
