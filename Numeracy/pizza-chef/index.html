@@ -3,15 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Pizza Chef</title>
+<title>Pizza Recipe Maker</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{
-  margin:0;padding:0;height:100%;
+html{
+  height:100%;height:-webkit-fill-available;
+}
+body{
+  margin:0;padding:0;
+  min-height:100%;min-height:-webkit-fill-available;
   font-family:Nunito,sans-serif;
   background:linear-gradient(160deg,#fdf6ec 0%,#ede0cc 100%);
   overscroll-behavior:none;touch-action:none;
+  display:flex;flex-direction:column;
 }
 
 /* ═══════════════════════════════════════
@@ -94,8 +99,13 @@ html,body{
    GAME LAYOUT
 ═══════════════════════════════════════ */
 #game{
-  height:100dvh;min-height:100vh;
-  display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;
+  /* Fill the viewport reliably across all mobile browsers */
+  flex:1 0 auto;
+  height:100vh;height:-webkit-fill-available;
+  display:grid;grid-template-rows:auto 1fr auto;
+  overflow:hidden;
+  /* Clamp to actual visible area so nothing is pushed off-screen */
+  max-height:100vh;max-height:-webkit-fill-available;
 }
 
 /* ── RECIPE PANEL (top) ── */
@@ -191,7 +201,9 @@ html,body{
 #ingredientsBar{
   background:linear-gradient(135deg,#3d2000,#5c3200);
   border-top:3px solid #2a1500;
-  padding:8px 10px env(safe-area-inset-bottom,10px);
+  padding:8px 10px 10px;
+  /* Respect iPhone home indicator, ignored by browsers that don't support it */
+  padding-bottom:max(10px,env(safe-area-inset-bottom,10px));
   display:flex;justify-content:center;align-items:center;
   gap:clamp(8px,2vw,28px);flex-shrink:0;position:relative;
 }
@@ -348,7 +360,7 @@ img{-webkit-user-drag:none;user-select:none}
 <!-- ════════ START SCREEN ════════ -->
 <div id="startScreen">
   <div class="pizza-icon">🍕</div>
-  <h1>Pizza Chef</h1>
+  <h1>Pizza Recipe<br>Maker</h1>
   <p class="subtitle">How many pizzas will you make today?</p>
   <div>
     <label>Recipe Mode — choose your order</label>
@@ -375,7 +387,7 @@ img{-webkit-user-drag:none;user-select:none}
     <div id="pizzaZone">
       <img id="peel" src="assets/peel.png">
       <img id="pizza" src="assets/pizza_base.png">
-      <button id="finishBtn" onclick="handleFinish()">🍕 Bake!</button>
+      <button id="finishBtn" onclick="handleFinish()">🍕 Done!</button>
     </div>
   </div>
   <div id="ingredientsBar">
@@ -413,7 +425,7 @@ img{-webkit-user-drag:none;user-select:none}
 <!-- ════════ END SCREEN (recipe mode) ════════ -->
 <div id="endScreen">
   <div id="endBox">
-    <div class="trophy">👨🏻‍🍳</div>
+    <div class="trophy">🏆</div>
     <h1>All Done!</h1>
     <p id="endMsg"></p>
     <div class="order-list" id="endList"></div>
@@ -674,7 +686,7 @@ function buildSnapshot(){
     img.className="snap-top";
     img.src=td.src;
     // td.rx/ry are fractions of pizzaZone dimensions
-    const sz=snapSize*0.15;
+    const sz=snapSize*0.10;
     img.style.width=img.style.height=sz+"px";
     img.style.left=(td.rx*snapSize-sz/2)+"px";
     img.style.top=(td.ry*snapSize-sz/2)+"px";
