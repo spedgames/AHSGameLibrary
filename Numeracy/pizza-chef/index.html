@@ -81,7 +81,7 @@ body{
   border:4px solid #f59e0b;padding:clamp(24px,4vw,44px) clamp(24px,5vw,52px);
   border-radius:28px;text-align:center;max-width:420px;width:100%;
   box-shadow:0 20px 60px rgba(0,0,0,.35);
-  animation:popIn .4s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;
+  animation: calmSlideUp 0.45s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 #endBox .trophy{font-size:clamp(2.5rem,8vw,4rem)}
 #endBox h1{margin:8px 0 6px;font-size:clamp(1.5rem,5vw,2.2rem);color:#7b3f00}
@@ -241,7 +241,7 @@ body{
   border:4px solid #f59e0b;padding:36px 44px;border-radius:28px;
   text-align:center;min-width:280px;max-width:90vw;
   box-shadow:0 20px 60px rgba(0,0,0,.35);
-  animation:popIn .4s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;
+  animation: calmSlideUp 0.45s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 #box h1{margin:0 0 8px;font-size:clamp(1.6rem,5vw,2.4rem);color:#7b3f00}
 #box p{color:#a0632a;font-weight:700;margin:0 0 20px}
@@ -269,7 +269,7 @@ body{
   border:4px solid #f59e0b;border-radius:28px;
   text-align:center;width:min(480px,94vw);
   box-shadow:0 20px 60px rgba(0,0,0,.35);
-  animation:popIn .4s cubic-bezier(.34,1.56,.64,1);
+  animation: calmSlideUp 0.45s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   position:relative;overflow:hidden;
   padding:24px 28px 28px;
 }
@@ -311,17 +311,16 @@ body{
 #fpBox .btn-home{background:linear-gradient(135deg,#fff8ef,#ffe0b2);color:#7b3f00;border:2px solid #f59e0b}
 #fpBox button:hover{transform:scale(1.05)}
 
-@keyframes popIn{
-  from{transform:scale(.4) rotate(-8deg);opacity:0}
-  to{transform:scale(1) rotate(0deg);opacity:1}
-}
-.confetti{
-  position:absolute;width:10px;height:14px;border-radius:3px;
-  animation:confettiFall 1.2s ease-in forwards;pointer-events:none;
-}
-@keyframes confettiFall{
-  0%{transform:translateY(-40px) rotate(0deg);opacity:1}
-  100%{transform:translateY(320px) rotate(720deg);opacity:0}
+/* ── CALMER MODAL ARRIVAL (Gentle Slide Up & Fade) ── */
+@keyframes calmSlideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* ── FINISHED BUTTON ── */
@@ -344,12 +343,16 @@ body{
 @keyframes btnPulse{50%{box-shadow:0 6px 28px rgba(46,125,50,.7)}}
 #finishBtn.visible{animation:btnPulse 1.4s ease-in-out infinite}
 
-@keyframes pizzaBounce{
-  0%{transform:scale(1)}30%{transform:scale(1.18) rotate(5deg)}
-  60%{transform:scale(0.93) rotate(-3deg)}80%{transform:scale(1.07) rotate(2deg)}
-  100%{transform:scale(1) rotate(0)}
+/* ── CALMER PIZZA CELEBRATION (Gentle Radiance Glow) ── */
+@keyframes pizzaGlow {
+  0% { filter: drop-shadow(0 0 0px rgba(245, 158, 11, 0)); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.6)); transform: scale(1.02); }
+  100% { filter: drop-shadow(0 0 0px rgba(245, 158, 11, 0)); transform: scale(1); }
 }
-.pizza-celebrate{animation:pizzaBounce .7s ease-in-out}
+.pizza-celebrate {
+  animation: pizzaGlow 1.2s ease-in-out;
+}
+  
 @keyframes shake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-8px)}}
 .shake{animation:shake .35s}
 img{-webkit-user-drag:none;user-select:none}
@@ -584,23 +587,7 @@ function dismissHint(){
   note.classList.add("hiding");
   setTimeout(()=>note.remove(),260);
 }
-
-/* ══════════════════════════════════════════
-   CONFETTI
-══════════════════════════════════════════ */
-function launchConfetti(container){
-  const colors=["#ff9800","#f44336","#4caf50","#2196f3","#ffeb3b","#e91e63","#ff5722"];
-  for(let i=0;i<28;i++){
-    const c=document.createElement("div");c.className="confetti";
-    c.style.background=colors[Math.floor(Math.random()*colors.length)];
-    c.style.left=Math.random()*100+"%";c.style.top="0px";
-    c.style.animationDelay=Math.random()*0.6+"s";
-    c.style.animationDuration=(0.9+Math.random()*0.6)+"s";
-    c.style.transform=`rotate(${Math.random()*360}deg)`;
-    container.appendChild(c);setTimeout(()=>c.remove(),1800);
-  }
-}
-
+  
 /* ══════════════════════════════════════════
    RECIPE MODE: PER-PIZZA SUCCESS
 ══════════════════════════════════════════ */
@@ -616,7 +603,6 @@ function showPizzaSuccess(){
   document.getElementById("modalBtn").textContent=isLast?"🏁 See Results":"Next Pizza →";
   setTimeout(()=>{
     modal.style.display="flex";
-    setTimeout(()=>launchConfetti(document.getElementById("box")),100);
   },700);
 }
 function nextPizza(){
@@ -630,7 +616,6 @@ function showEndScreen(){
   document.getElementById("endMsg").textContent=`You made ${n} pizza${n>1?"s":""}! Great job, chef! 👨‍🍳`;
   document.getElementById("endList").innerHTML=orderList.map((r,i)=>`🍕 ${i+1}. ${r.name}`).join("<br>");
   document.getElementById("endScreen").style.display="flex";
-  setTimeout(()=>launchConfetti(document.getElementById("endBox")),200);
 }
 
 /* ══════════════════════════════════════════
@@ -714,7 +699,6 @@ function showFreePlayModal(){
   setTimeout(()=>{
     buildSnapshot();
     document.getElementById("fpModal").style.display="flex";
-    setTimeout(()=>launchConfetti(document.getElementById("fpBox")),100);
   },700);
 }
 
