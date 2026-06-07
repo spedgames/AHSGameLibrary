@@ -725,21 +725,24 @@
             const now = audioContext.currentTime;
             
             if (profileType === 'correct') {
-                const osc = audioContext.createOscillator();
-                const gain = audioContext.createGain();
-                
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523.25, now);
-                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.12);
-                
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-                
-                osc.connect(gain);
-                gain.connect(audioContext.destination);
-                osc.start(now);
-                osc.stop(now + 0.25);
-            } 
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    
+    // Set to Triangle wave to match Focus Pulse settings
+    osc.type = 'triangle';
+    // Set fixed frequency to 440Hz (No pitch slides)
+    osc.frequency.setValueAtTime(440, now);
+    
+    // Initial volume balance
+    gain.gain.setValueAtTime(0.1, now);
+    // Rapid exponential volume drop over 0.06 seconds
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+    
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.start(now);
+    osc.stop(now + 0.06); // Stop the oscillator precisely at 60ms
+}
             else if (profileType === 'success') {
                 const notes = [523.25, 659.25, 783.99, 1046.50];
                 notes.forEach((freq, idx) => {
