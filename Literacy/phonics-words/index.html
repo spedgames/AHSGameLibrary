@@ -709,7 +709,7 @@ const WORD_LIST = {
     {w:'led',v:'e',i:'l',f:'d'},{w:'leg',v:'e',i:'l',f:'g'},{w:'let',v:'e',i:'l',f:'t'},
     {w:'men',v:'e',i:'m',f:'n'},{w:'met',v:'e',i:'m',f:'t'},{w:'net',v:'e',i:'n',f:'t'},
     {w:'peg',v:'e',i:'p',f:'g'},{w:'pen',v:'e',i:'p',f:'n'},{w:'pet',v:'e',i:'p',f:'t'},
-    {w:'red',v:'e',i:'r',f:'d'},{w:'ref',v:'e',i:'r',f:'f'},{w:'rev',v:'e',i:'r',f:'v'},
+    {w:'red',v:'e',i:'r',f:'d'},{w:'ref',v:'e',i:'r',f:'f'},
     {w:'set',v:'e',i:'s',f:'t'},{w:'ten',v:'e',i:'t',f:'n'},{w:'vet',v:'e',i:'v',f:'t'},
     {w:'web',v:'e',i:'w',f:'b'},{w:'wed',v:'e',i:'w',f:'d'},{w:'wet',v:'e',i:'w',f:'t'},
     {w:'yes',v:'e',i:'y',f:'s'},{w:'yet',v:'e',i:'y',f:'t'},{w:'zed',v:'e',i:'z',f:'d'},
@@ -1342,7 +1342,7 @@ function onAnswered() {
 function setupChooseMode() {
   document.getElementById('choose-mode-ui').style.display = 'block';
   document.getElementById('spell-mode-ui').style.display = 'none';
-  document.getElementById('round-info').textContent = 'Listen and choose the word 👆';
+  document.getElementById('round-info').textContent = 'Tap to listen 👇';
 
   const options = generateOptions(
     state.currentWord, state.format,
