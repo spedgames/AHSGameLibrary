@@ -366,10 +366,31 @@ body{
   }
 }
 
+/* ── DIALED-DOWN PIZZA BOUNCE (Playful but Low-Stimulation) ── */
+@keyframes pizzaBounce {
+  0% { 
+    transform: scale(1) rotate(0deg); 
+  }
+  30% { 
+    /* Original was scale(1.18) rotate(5deg) - reduced the stretch and twist */
+    transform: scale(1.06) rotate(1.5deg); 
+  }
+  60% { 
+    /* Original was scale(0.93) rotate(-3deg) - smoothed out the squish */
+    transform: scale(0.97) rotate(-1deg); 
+  }
+  80% { 
+    /* Original was scale(1.07) rotate(2deg) - subtle settle down */
+    transform: scale(1.02) rotate(0.5deg); 
+  }
+  100% { 
+    transform: scale(1) rotate(0deg); 
+  }
+}
+
 .pizza-celebrate {
-  /* Keeps the pizza perfectly still (no transform/scale changes) */
-  transform: none !important;
-  animation: pizzaBacklight 1.4s ease-in-out;
+  /* Keeps the ease-in-out curve from pizza_edit.html but acts much softer */
+  animation: pizzaBounce .7s ease-in-out;
 }
   
 @keyframes shake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-8px)}}
