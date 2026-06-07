@@ -839,14 +839,13 @@
                 optionsContainer.appendChild(btn);
             });
 
-            // Pronounce word — if audio already unlocked by a prior gesture, speak now.
-            // Otherwise pulse the button to invite the user to tap (mobile gesture requirement).
-            if (audioUnlocked) {
-                speakWord(gameState.correctAnswer);
-            } else {
-                btnAudio.classList.add('playing');
-                document.getElementById('audio-label').textContent = '👆 Tap to hear!';
-            }
+            // Ensure options and engine states are fully unlocked for manual prompt entry
+            gameState.lockInput = false;
+            optionsContainer.classList.remove('locked');
+
+            // Pulse the button to invite child interaction explicitly
+            btnAudio.classList.add('playing');
+            document.getElementById('audio-label').textContent = '👆 Tap to hear!';
         }
 
         // --- AUDIO UNLOCK FOR MOBILE ---
