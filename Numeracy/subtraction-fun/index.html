@@ -24,7 +24,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100dvh;
-            padding: 20px;
+            padding: 10px;
             overflow: auto;
         }
 
@@ -77,7 +77,6 @@
             border-bottom: 1px solid #eee;
         }
 
-        /* Toggle Switch UI */
         .switch {
             position: relative;
             display: inline-block;
@@ -109,21 +108,54 @@
         #game-container {
             background: var(--white);
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
             border-radius: 30px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-            padding: 40px;
+            padding: 30px;
             text-align: center;
-            min-height: 520px;
+            min-height: 480px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             position: relative;
-            /* CRITICAL FIX: Ensures overlay doesn't leak out of rounded corners */
             overflow: hidden; 
         }
 
-        /* Animations */
+        /* 2x2 Grid for Start Screen */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .settings-group {
+            background: #fdfdfd;
+            padding: 10px;
+            border-radius: 15px;
+            border: 2px solid #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .toggle-group { display: flex; justify-content: center; gap: 5px; }
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + span {
+            background: var(--soft-mint);
+            border: 2px solid #76e076;
+            font-weight: bold;
+        }
+        .toggle-group span {
+            background: #eee;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
         @keyframes soft-pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.02); box-shadow: 0 0 40px var(--success-glow); }
@@ -141,16 +173,16 @@
         .animate-wrong { animation: gentle-slide 0.3s ease-in-out; }
 
         .screen { display: none; }
-        .active { display: flex; flex-direction: column; gap: 15px; }
+        .active { display: flex; flex-direction: column; }
 
-        h1 { color: var(--dark-gray); font-size: 2.2rem; margin: 0; }
-        h2 { font-size: 3.5rem; margin: 20px 0; color: var(--dark-gray); min-height: 1.2em;}
+        h1 { color: var(--dark-gray); font-size: 1.8rem; margin: 0; }
+        h2 { font-size: 3rem; margin: 15px 0; color: var(--dark-gray); min-height: 1.2em;}
         
         .answer-slot {
             display: inline-block;
-            min-width: 60px;
+            min-width: 50px;
             border-bottom: 5px solid var(--sky-blue);
-            margin-left: 12px;
+            margin-left: 10px;
             vertical-align: bottom;
             color: #2e7d32;
         }
@@ -160,8 +192,8 @@
             border: none;
             border-radius: 15px;
             color: white;
-            padding: 15px 30px;
-            font-size: 1.2rem;
+            padding: 12px 25px;
+            font-size: 1.1rem;
             font-weight: 700;
             cursor: pointer;
             box-shadow: 0 5px 0 #cc8400;
@@ -169,37 +201,15 @@
         }
         .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #cc8400; }
 
-        .settings-group {
-            background: #fdfdfd;
-            padding: 15px;
-            border-radius: 20px;
-            border: 2px solid #f0f0f0;
-        }
-
-        .toggle-group { display: flex; justify-content: center; gap: 8px; }
-        input[type="radio"] { display: none; }
-        input[type="radio"]:checked + span {
-            background: var(--soft-mint);
-            border: 2px solid #76e076;
-            font-weight: bold;
-        }
-        .toggle-group span {
-            background: #eee;
-            padding: 10px 18px;
-            border-radius: 12px;
-            cursor: pointer;
-            display: inline-block;
-        }
-
         #visual-area {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 12px;
-            min-height: 130px;
+            gap: 10px;
+            min-height: 110px;
         }
 
-        .icon-wrapper { position: relative; width: 65px; height: 65px; transition: 0.5s; }
+        .icon-wrapper { position: relative; width: 55px; height: 55px; transition: 0.5s; }
         .apple-icon { width: 100%; height: 100%; fill: #ff4d4d; }
         .strike-line {
             position: absolute;
@@ -215,21 +225,21 @@
         .number-rail {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            gap: 12px;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .num-btn {
             background: #f8f8f8;
             border: 2px solid #e0e0e0;
-            border-radius: 15px;
-            font-size: 1.6rem;
-            padding: 12px 0;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            padding: 10px 0;
             cursor: pointer;
             font-weight: 700;
         }
         .num-btn:hover { background: var(--sky-blue); color: white; }
 
-        /* FEEDBACK SCREEN UPDATES */
         .feedback-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -239,42 +249,34 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
-            /* Match parent rounding */
             border-radius: 30px; 
         }
 
-        .checkmark { 
-            font-size: 4.5rem; 
-            color: #4CAF50; 
-            margin-bottom: 30px; 
-            font-weight: 900;
-            line-height: 1.1;
-        }
-        
-        .celebration-emoji {
-            display: block;
-            font-size: 6rem;
-            margin-bottom: 10px;
-            animation: star-bounce 1s infinite ease-in-out;
-        }
+        .checkmark { font-size: 3.5rem; color: #4CAF50; margin-bottom: 20px; font-weight: 900; }
+        .celebration-emoji { font-size: 5rem; margin-bottom: 10px; animation: star-bounce 1s infinite ease-in-out; }
 
         #progress-container {
             position: fixed;
-            bottom: 0; left: 0; width: 100%; height: 15px;
+            bottom: 0; left: 0; width: 100%; height: 12px;
             background: rgba(0,0,0,0.1);
             display: none;
         }
-        #progress-fill {
-            height: 100%; width: 0%;
-            background: var(--soft-mint);
-            transition: 0.4s;
+        #progress-fill { height: 100%; width: 0%; background: var(--soft-mint); transition: 0.4s; }
+
+        /* Responsive tweak for very narrow screens */
+        @media (max-width: 400px) {
+            .options-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 1.4rem; }
         }
     </style>
 </head>
 <body>
 
 <button id="settings-trigger" title="Teacher Settings" onclick="game.toggleSettings(true)">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+    </svg>
 </button>
 
 <div id="settings-overlay" onclick="game.toggleSettings(false)">
@@ -299,29 +301,43 @@
 <div id="game-container">
     <div id="start-screen" class="screen active">
         <h1>🍎 Subtraction Fun</h1>
-        <div class="settings-group">
-            <span style="font-weight:700">Trials:</span>
-            <div class="toggle-group">
-                <label><input type="radio" name="trials" value="5" checked><span>5</span></label>
-                <label><input type="radio" name="trials" value="7"><span>7</span></label>
-                <label><input type="radio" name="trials" value="10"><span>10</span></label>
+        
+        <div class="options-grid">
+            <div class="settings-group">
+                <span style="font-weight:700">Trials:</span>
+                <div class="toggle-group">
+                    <label><input type="radio" name="trials" value="5" checked><span>5</span></label>
+                    <label><input type="radio" name="trials" value="7"><span>7</span></label>
+                    <label><input type="radio" name="trials" value="10"><span>10</span></label>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <span style="font-weight:700">Difficulty:</span>
+                <div class="toggle-group">
+                    <label><input type="radio" name="diff" value="5" checked><span>5</span></label>
+                    <label><input type="radio" name="diff" value="10"><span>10</span></label>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <span style="font-weight:700">Mode:</span>
+                <div class="toggle-group">
+                    <label><input type="radio" name="mode" value="guided" checked><span>Guide</span></label>
+                    <label><input type="radio" name="mode" value="easy"><span>Easy</span></label>
+                    <label><input type="radio" name="mode" value="hard"><span>Hard</span></label>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <span style="font-weight:700">Number of Options:</span>
+                <div class="toggle-group">
+                    <label><input type="radio" name="options-count" value="4"><span>4</span></label>
+                    <label><input type="radio" name="options-count" value="all" checked><span>All</span></label>
+                </div>
             </div>
         </div>
-        <div class="settings-group">
-            <span style="font-weight:700">Difficulty:</span>
-            <div class="toggle-group">
-                <label><input type="radio" name="diff" value="5" checked><span>Up to 5</span></label>
-                <label><input type="radio" name="diff" value="10"><span>Up to 10</span></label>
-            </div>
-        </div>
-        <div class="settings-group">
-            <span style="font-weight:700">Mode:</span>
-            <div class="toggle-group">
-                <label><input type="radio" name="mode" value="guided" checked><span>Guided</span></label>
-                <label><input type="radio" name="mode" value="easy"><span>Easy</span></label>
-                <label><input type="radio" name="mode" value="hard"><span>Hard</span></label>
-            </div>
-        </div>
+
         <button class="btn" onclick="game.start()">START GAME</button>
     </div>
 
@@ -336,7 +352,7 @@
 
     <div id="result-screen" class="screen">
         <h1>Round Complete!</h1>
-        <h2 id="final-score" style="color:var(--bright-orange); font-size: 4rem;">0 / 5</h2>
+        <h2 id="final-score" style="color:var(--bright-orange); font-size: 3.5rem;">0 / 5</h2>
         <button class="btn" onclick="game.reset()">Play Again</button>
     </div>
 
@@ -356,7 +372,7 @@
 
     const game = {
         score: 0, questionCount: 0, maxQuestions: 5,
-        minuend: 0, subtrahend: 0, difficulty: 5, mode: 'guided',
+        minuend: 0, subtrahend: 0, difficulty: 5, mode: 'guided', optionsCount: 'all',
         isSubtracted: false, isAnswered: false,
         audioCtx: null,
 
@@ -377,24 +393,32 @@
             document.getElementById('progress-container').style.display = show ? 'block' : 'none';
         },
 
-        playSound() {
-            if (!document.getElementById('sound-toggle').checked) return;
-            if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
-            const osc = this.audioCtx.createOscillator();
-            const gain = this.audioCtx.createGain();
-            osc.connect(gain); gain.connect(this.audioCtx.destination);
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(523.25, this.audioCtx.currentTime); // C5
-            osc.frequency.exponentialRampToValueAtTime(880, this.audioCtx.currentTime + 0.1); // A5
-            
-            gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.5);
-            
-            osc.start();
-            osc.stop(this.audioCtx.currentTime + 0.5);
-        },
+playSound() {
+    if (!document.getElementById('sound-toggle').checked) return;
+    if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Play a quick, bright Arpeggio (two notes slightly offset to create a chord)
+    const playNote = (pitch, delay) => {
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+        
+        osc.type = 'triangle'; // Softer, warmer sound than a harsh 'sine' or 'square'
+        osc.frequency.setValueAtTime(pitch, this.audioCtx.currentTime + delay);
+        
+        // Quick "ting" fade out
+        gain.gain.setValueAtTime(0, this.audioCtx.currentTime + delay);
+        gain.gain.linearRampToValueAtTime(0.1, this.audioCtx.currentTime + delay + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + delay + 0.4);
+        
+        osc.start(this.audioCtx.currentTime + delay);
+        osc.stop(this.audioCtx.currentTime + delay + 0.4);
+    };
+
+    playNote(523.25, 0);    // Note 1: Middle C
+    playNote(659.25, 0.08); // Note 2: E5 (plays 80ms later for a sparkly chime effect)
+},
 
         updateProgressBar() {
             const percent = (this.questionCount / this.maxQuestions) * 100;
@@ -405,22 +429,42 @@
             this.difficulty = parseInt(document.querySelector('input[name="diff"]:checked').value);
             this.maxQuestions = parseInt(document.querySelector('input[name="trials"]:checked').value);
             this.mode = document.querySelector('input[name="mode"]:checked').value;
+            this.optionsCount = document.querySelector('input[name="options-count"]:checked').value;
             this.score = 0; this.questionCount = 0;
             this.updateProgressBar();
             this.showScreen('game-arena');
             this.generateQuestion();
-            this.renderNumberRail();
         },
 
         renderNumberRail() {
             const rail = document.getElementById('number-rail');
             rail.innerHTML = '';
-            for(let i=0; i<=10; i++) {
-                const b = document.createElement('button');
-                b.className = 'num-btn';
-                b.innerText = i;
-                b.onclick = () => this.checkAnswer(i);
-                rail.appendChild(b);
+            const correct = this.minuend - this.subtrahend;
+
+            if (this.optionsCount === '4') {
+                rail.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                let validStarts = [];
+                for (let offset = 0; offset <= 3; offset++) {
+                    let start = correct - offset;
+                    if (start >= 0 && start + 3 <= 10) validStarts.push(start);
+                }
+                const randomStart = validStarts[Math.floor(Math.random() * validStarts.length)];
+                for (let i = randomStart; i <= randomStart + 3; i++) {
+                    const b = document.createElement('button');
+                    b.className = 'num-btn';
+                    b.innerText = i;
+                    b.onclick = () => this.checkAnswer(i);
+                    rail.appendChild(b);
+                }
+            } else {
+                rail.style.gridTemplateColumns = 'repeat(6, 1fr)';
+                for(let i=0; i<=10; i++) {
+                    const b = document.createElement('button');
+                    b.className = 'num-btn';
+                    b.innerText = i;
+                    b.onclick = () => this.checkAnswer(i);
+                    rail.appendChild(b);
+                }
             }
         },
 
@@ -452,6 +496,7 @@
                     visualArea.appendChild(div);
                 }
             }
+            this.renderNumberRail();
         },
 
         visualizeSubtraction() {
@@ -459,7 +504,7 @@
             const icons = document.querySelectorAll('.icon-wrapper');
             let count = 0;
             for(let i = this.minuend - 1; count < this.subtrahend; i--) {
-                setTimeout(() => icons[i].classList.add('crossed-out', 'active-cross'), count * 150);
+                setTimeout(() => { if(icons[i]) icons[i].classList.add('crossed-out', 'active-cross'); }, count * 150);
                 count++;
             }
             this.isSubtracted = true;
@@ -476,7 +521,6 @@
                 document.getElementById('answer-display').innerText = val;
                 container.classList.add('animate-correct');
                 this.playSound();
-                // Delay showing feedback so they see the completed equation
                 setTimeout(() => document.getElementById('feedback').style.display = 'flex', 1100);
             } else {
                 void container.offsetWidth; container.classList.add('animate-wrong');
