@@ -395,7 +395,7 @@
         const targetBin = document.getElementById(`bin-${correctType}`);
         const rect = targetBin.getBoundingClientRect();
         if(x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-            playSound(600, 'triangle', 0.3);
+            playSound(430, 'sine', 0.1);
             score++;
             document.getElementById('score').innerText = score;
             spawnItem();
