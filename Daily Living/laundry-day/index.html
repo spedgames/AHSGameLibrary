@@ -195,12 +195,15 @@
 
         .label { font-weight: 900; color: var(--text); letter-spacing: 1px; }
 
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-10px); }
-            40%, 80% { transform: translateX(10px); }
-        }
-        .shake { animation: shake 0.4s ease-in-out; }
+/* Smooth, low-stimulation error feedback */
+@keyframes errorPulse {
+    0% { box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #dcdcdc; }
+    50% { box-shadow: 0 0 20px rgba(255, 71, 87, 0.6); border-color: #ff4757; }
+    100% { box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #dcdcdc; }
+}
+.error-notice {
+    animation: errorPulse 0.4s ease-in-out;
+}
     </style>
 </head>
 <body>
@@ -399,18 +402,29 @@
             score++;
             document.getElementById('score').innerText = score;
             spawnItem();
-        } else {
-            const otherType = correctType === 'white' ? 'color' : 'white';
-            const otherRect = document.getElementById(`bin-${otherType}`).getBoundingClientRect();
-            if(x >= otherRect.left && x <= otherRect.right && y >= otherRect.top && y <= otherRect.bottom) {
-                document.getElementById('game-container').classList.add('shake');
-                setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 400);
-            }
-            const el = document.querySelector('.clothing-item');
+        }} else {
+        const otherType = correctType === 'white' ? 'color' : 'white';
+        const otherRect = document.getElementById(`bin-${otherType}`).getBoundingClientRect();
+        
+        // Find the current clothing item card
+        const el = document.querySelector('.clothing-item');
+        
+        if(x >= otherRect.left && x <= otherRect.right && y >= otherRect.top && y <= otherRect.bottom) {
+            // REMOVED: Full-screen container shake
+            // CHANGED: Apply a gentle visual cue directly to the item card instead
             if (el) {
-                el.style.left = '50%'; el.style.top = '50%'; el.style.transform = 'translate(-50%, -50%)';
+                el.classList.add('error-notice');
+                setTimeout(() => el.classList.remove('error-notice'), 400);
             }
         }
+        
+        // Snap the card smoothly back to the center starting position
+        if (el) {
+            el.style.left = '50%'; 
+            el.style.top = '50%'; 
+            el.style.transform = 'translate(-50%, -50%)';
+        }
+    }
         document.querySelectorAll('.basket').forEach(b => b.classList.remove('hover-basket'));
     }
 
