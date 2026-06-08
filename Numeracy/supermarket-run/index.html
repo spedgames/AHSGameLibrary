@@ -262,7 +262,7 @@
     <div id="ui">
         <!-- In-game instructions -->
         <div id="ingame-instructions">
-            🕹️ <b>Move</b> with arrow keys or on-screen arrows<br>
+            🕹️ <b>Move</b> with arrow keys<br>
             🛒 <b>Collect</b> items: walk up &amp; press <b>Spacebar</b> or tap <b>🛒</b>
         </div>
 
@@ -397,16 +397,16 @@
         // Payment setup
         const grid = document.getElementById('money-selection');
         const notes = [
-            {v:1,   i:'https://www.leftovercurrency.com/app/uploads/2017/04/1-singapore-dollar-coin-third-series-obverse-1.jpg'},
-            {v:2,   i:'https://www.leftovercurrency.com/app/uploads/2016/11/2-singapore-dollars-banknote-president-encik-yusof-bin-ishak-obverse-1.jpg'},
-            {v:5,   i:'https://www.leftovercurrency.com/app/uploads/2016/11/5-singapore-dollars-banknote-president-encik-yusof-bin-ishak-obverse-1.jpg'},
-            {v:10,  i:'https://www.leftovercurrency.com/app/uploads/2016/11/10-singapore-dollars-banknote-president-encik-yusof-bin-ishak-obverse-1.jpg'}
+            {v:1,   i:'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/1d.png'},
+            {v:2,   i:'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/2d.png'},
+            {v:5,   i:'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/5d.png'},
+            {v:10,  i:'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/10d.png'}
         ];
         const coins = [
-            {v:0.05, i:'https://www.leftovercurrency.com/app/uploads/2017/04/5-cents-coin-singapore-third-series-obverse-1.jpg', label:'5¢'},
-            {v:0.1,  i:'https://www.hobbyofkings.com/cdn/shop/files/Singapore-10-Cents-Coin-KM346-2013-2019-Nickel-plated-steel.jpg', label:'10¢'},
-            {v:0.2,  i:'https://www.hobbyofkings.com/cdn/shop/files/Singapore-20-Cents-Coin-KM347-2013-2019-Nickel-plated-steel-5_1024x.jpg', label:'20¢'},
-            {v:0.5,  i:'https://www.hobbyofkings.com/cdn/shop/files/Singapore-50-Cents-Coin-KM348-2013-2019-Nickel-plated-steel.jpg', label:'50¢'}
+            {v:0.05, i:'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/5c.png', label:'5¢'},
+            {v:0.1,  i:'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/10c.png', label:'10¢'},
+            {v:0.2,  i:'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/20c.png', label:'20¢'},
+            {v:0.5,  i:'https://spedgames.github.io/AHSGameLibrary/Numeracy/fish-shop/asset/50c.png', label:'50¢'}
         ];
         notes.forEach(n => grid.innerHTML += `<button class="m-btn m-note" data-value="${n.v}" onclick="handleSelect(this,'note')"><img src="${n.i}"><small>$${n.v}</small></button>`);
         coins.forEach(c => grid.innerHTML += `<button class="m-btn m-cent" data-value="${c.v}" onclick="handleSelect(this,'cent')"><img src="${c.i}" class="coin-img"><small>${c.label}</small></button>`);
