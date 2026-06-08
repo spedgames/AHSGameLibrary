@@ -7,12 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --wall-color: #fdf6e3;
-            --tile-color: #bdc3c7;
             --primary: #2563eb;
             --secondary: #7c3aed;
             --danger: #ef4444;
-            --text: #1e293b;
             --top-bar: #2d3436;
             --safari-bg: #74B9FF;
         }
@@ -32,14 +29,26 @@
 
         #game-container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; }
 
+        /* UI Elements with smooth fade transitions */
+        #top-bar, #controls, .screen {
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .hidden { 
+            opacity: 0 !important; 
+            visibility: hidden !important; 
+            pointer-events: none !important;
+        }
+
         #top-bar {
             position: absolute; top: 0; width: 100%; height: 60px;
             background: var(--top-bar); display: flex; align-items: center;
-            justify-content: center; z-index: 80; color: white;
+            justify-content: space-between; padding: 0 20px; z-index: 80; color: white;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-bottom: 3px solid var(--primary);
         }
 
-        .timer-display { font-size: 1.8rem; font-weight: 800; letter-spacing: 1px; }
+        .hud-display { font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; }
+        .timer-display { font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; }
         .timer-warning { color: var(--danger); animation: blink 0.5s infinite; }
 
         @keyframes blink { 50% { opacity: 0.5; } }
@@ -57,8 +66,6 @@
                 linear-gradient(90deg, rgba(255,255,255,0.1) 2px, transparent 2px);
             background-size: 40px 40px;
         }
-
-        .hidden { display: none !important; }
 
         h1 { font-size: 3.5rem; margin: 0; color: var(--primary); letter-spacing: -2px; }
         #start-screen h1 { color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.2); }
@@ -96,7 +103,7 @@
         #controls {
             position: absolute; bottom: 30px; width: 100%;
             display: flex; justify-content: space-around; align-items: center;
-            padding: 0 20px; z-index: 90; pointer-events: none;
+            padding: 0 20px; z-index: 90;
         }
 
         .d-pad { display: grid; grid-template-columns: repeat(3, 75px); gap: 10px; pointer-events: auto; }
@@ -115,20 +122,22 @@
             font-size: 1.5rem;
         }
 
-        @media (min-width: 1025px) { #controls { display: none; } }
+        @media (min-width: 1025px) { #controls { display: none !important; } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="top-bar" class="hidden">
-        <div class="timer-display">TIME LEFT: <span id="timer">15</span>s</div>
+        <div class="hud-display">ROUND: <span id="round-indicator">1/5</span></div>
+        <div class="timer-display">TIME: <span id="timer">15</span>s</div>
+        <div class="hud-display">SCORE: <span id="score-indicator">0</span></div>
     </div>
 
     <div id="start-screen" class="screen">
         <h1>Restroom Rush 🚻</h1>
         <div class="instructions">
-            Find the correct restroom before time runs out!
+            Find the correct restroom before time runs out!<br>Can you survive all 5 rounds?
         </div>
         <div class="controls-hint">
             Use <b>Arrow Keys</b> to move & <b>Enter/Space</b> to go inside.
@@ -171,17 +180,38 @@ const characterPairs = [
     { male: '🧍🏿‍♂️', female: '🧍🏿‍♀️' }
 ];
 
+const themes = [
+    { wall: '#fdf6e3', base: '#eee8d5', floor: '#95a5a6', line: '#7f8c8d' }, 
+    { wall: '#2c3e50', base: '#1a252f', floor: '#4a5568', line: '#2d3748' }, // Neutral Slate instead of purple
+    { wall: '#fdf5e6', base: '#ffe4c4', floor: '#cd853f', line: '#8b4513' }, 
+    { wall: '#e0f7fa', base: '#b2ebf2', floor: '#009688', line: '#00796b' }, 
+    { wall: '#eceff1', base: '#cfd8dc', floor: '#607d8b', line: '#455a64' }  
+];
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const keys = {};
+
+let currentRound = 1;
+const maxRounds = 5;
+let baseSpeed = 8;
+let totalScore = 0;
+let currentTheme = themes[0];
+
 let player = { x: 0, y: 0, w: 70, h: 120, speed: 8, emoji: '', gender: '' };
 let doors = [];
-let gameState = 'START';
+let gameState = 'START'; 
 let countdown = 15;
 let timerInterval;
 let activePair = null;
 let loadedImages = {};
 let wrongFeedback = { active: false, x: 0, y: 0, timer: 0 };
+
+// Transition overlay variables
+let transitionAlpha = 0;
+let transitionTitle = "";
+let transitionSub = "";
+let sceneFadeAlpha = 0; // Handes the new level fade in
 
 function preloadAssets(callback) {
     let loadedCount = 0;
@@ -203,7 +233,7 @@ function init() {
         document.getElementById('start-btn').classList.remove('hidden');
     });
 
-    document.getElementById('start-btn').onclick = startGame;
+    document.getElementById('start-btn').onclick = startFullGame;
     document.getElementById('retry-btn').onclick = resetGame;
 
     const bindBtn = (id, key) => {
@@ -227,31 +257,57 @@ function init() {
     requestAnimationFrame(gameLoop);
 }
 
-function startGame() {
+function startFullGame() {
+    currentRound = 1;
+    totalScore = 0;
+    document.getElementById('score-indicator').innerText = totalScore;
+    document.getElementById('start-screen').classList.add('hidden');
+    
+    // Wipe previous entities to prevent the scene from flashing during fade
+    doors = [];
+    player.emoji = '';
+    
+    // Slight delay so the screen can fade out before the game begins
+    setTimeout(startRound, 500);
+}
+
+function startRound() {
+    sceneFadeAlpha = 0.8; // Trigger canvas fade-in effect
+
+    document.getElementById('round-indicator').innerText = `${currentRound}/${maxRounds}`;
+    currentTheme = themes[(currentRound - 1) % themes.length];
+
     const charPair = characterPairs[Math.floor(Math.random() * characterPairs.length)];
     const isBoy = Math.random() < 0.5;
     player.gender = isBoy ? 'male' : 'female';
     player.emoji = isBoy ? charPair.male : charPair.female;
+    player.speed = baseSpeed + (currentRound - 1) * 1.5;
 
     const pIdx = Math.floor(Math.random() * assetPairs.length);
     activePair = { male: loadedImages[`p${pIdx}_male`], female: loadedImages[`p${pIdx}_female`] };
 
     gameState = 'PLAY';
     countdown = 15;
-    document.getElementById('start-screen').classList.add('hidden');
+    
+    const timerEl = document.getElementById('timer');
+    timerEl.innerText = countdown;
+    timerEl.parentElement.classList.remove('timer-warning');
+
     document.getElementById('top-bar').classList.remove('hidden');
     document.getElementById('controls').classList.remove('hidden');
     
+    clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         countdown--;
-        const el = document.getElementById('timer');
-        el.innerText = countdown;
-        if (countdown <= 5) el.parentElement.classList.add('timer-warning');
-        else el.parentElement.classList.remove('timer-warning');
+        timerEl.innerText = countdown;
+        if (countdown <= 5) timerEl.parentElement.classList.add('timer-warning');
+        else timerEl.parentElement.classList.remove('timer-warning');
         
         if (countdown <= 0) {
             clearInterval(timerInterval);
-            endLevel(false, "Time's up!");
+            triggerTransition("Time's Up! ⏰", "", () => {
+                endGameSequence(false, `Time ran out on Round ${currentRound}! You were the ${player.gender}.`);
+            });
         }
     }, 1000);
 
@@ -260,15 +316,35 @@ function startGame() {
 
 function setupLevel() {
     player.x = canvas.width / 2 - 35;
-    player.y = canvas.height - 220;
-    const spacing = canvas.width / 2;
+    player.y = canvas.height - 200;
+    
     doors = [{ type: 'male', img: activePair.male }, { type: 'female', img: activePair.female }].sort(() => Math.random() - 0.5);
-    doors.forEach((d, i) => { 
-        d.w = 140; d.h = 240; 
-        d.x = (spacing * (i + 0.5)) - 70; 
-        d.y = 80; 
-        d.openRatio = 0; 
-    });
+    
+    const doorW = 140;
+    const gap = 30;
+    const margin = 20;
+    let x1, x2;
+
+    if (canvas.width < (doorW * 2 + gap + margin * 2)) {
+        const totalW = doorW * 2 + gap;
+        x1 = (canvas.width - totalW) / 2;
+        x2 = x1 + doorW + gap;
+    } else {
+        x1 = Math.random() * (canvas.width - doorW - margin * 2) + margin;
+        let attempts = 0;
+        do {
+            x2 = Math.random() * (canvas.width - doorW - margin * 2) + margin;
+            attempts++;
+            if (attempts > 100) {
+                x2 = (x1 > canvas.width / 2) ? x1 - doorW - gap : x1 + doorW + gap;
+                break;
+            }
+        } while (Math.abs(x1 - x2) < doorW + gap);
+    }
+
+    doors[0].x = x1;
+    doors[1].x = x2;
+    doors.forEach((d) => { d.w = doorW; d.h = 240; d.y = 80; d.openRatio = 0; });
 }
 
 function handleAction() {
@@ -279,30 +355,59 @@ function handleAction() {
     if (d) {
         if (d.type === player.gender) {
             clearInterval(timerInterval);
-            endLevel(true);
+            let roundPoints = countdown * 10;
+            totalScore += roundPoints;
+            document.getElementById('score-indicator').innerText = totalScore;
+
+            if (currentRound < maxRounds) {
+                triggerTransition(`Round ${currentRound} Cleared!`, `+${roundPoints} Points`, () => {
+                    currentRound++;
+                    startRound();
+                });
+            } else {
+                triggerTransition("All Rounds Cleared! 🎉", `+${roundPoints} Points`, () => {
+                    endGameSequence(true, `Splendid job! You successfully survived all ${maxRounds} rounds!`);
+                });
+            }
         } else {
-            // WRONG CHOICE LOGIC
             wrongFeedback = { active: true, x: d.x + d.w/2, y: d.y + d.h/2, timer: 30 };
-            player.y += 100; // Push back
+            player.y += 100;
             player.y = Math.min(canvas.height - player.h, player.y);
         }
     }
 }
 
-function endLevel(win, msg) {
+function triggerTransition(title, sub, callback) {
+    gameState = 'TRANSITION';
+    transitionAlpha = 0;
+    transitionTitle = title;
+    transitionSub = sub;
+    
+    // Pause for 1.8 seconds before executing the callback
+    setTimeout(callback, 1800);
+}
+
+function endGameSequence(win, msg) {
     gameState = 'END';
     document.getElementById('end-screen').classList.remove('hidden');
-    document.getElementById('end-title').innerText = win ? "Success! 🎉" : "Oh no! ❌";
-    document.getElementById('end-msg').innerText = msg || (win ? `Great job finding the right door!` : `Time's up! You were the ${player.gender}.`);
+    document.getElementById('end-title').innerText = win ? "Ultimate Success! 🎉" : "Game Over! ❌";
+    document.getElementById('end-msg').innerHTML = `${msg}<br><br><b>Final Score: ${totalScore}</b>`;
 }
 
 function resetGame() {
     document.getElementById('end-screen').classList.add('hidden');
     document.getElementById('top-bar').classList.add('hidden');
     document.getElementById('controls').classList.add('hidden');
-    document.getElementById('start-screen').classList.remove('hidden');
-    document.getElementById('timer').innerText = "15";
-    gameState = 'START';
+    
+    // Wipe previous entities to prevent the scene from flashing during fade
+    doors = [];
+    player.emoji = '';
+    
+    setTimeout(() => {
+        document.getElementById('start-screen').classList.remove('hidden');
+        document.getElementById('timer').innerText = "15";
+        gameState = 'START';
+    }, 500); 
 }
 
 function resize() {
@@ -313,19 +418,26 @@ function resize() {
 
 function update() {
     if (gameState !== 'PLAY') return;
+    
     const s = player.speed;
     if (keys['ArrowUp']) player.y -= s;
     if (keys['ArrowDown']) player.y += s;
     if (keys['ArrowLeft']) player.x -= s;
     if (keys['ArrowRight']) player.x += s;
 
+    // Constrain X bounds
     player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
-    player.y = Math.max(140, Math.min(canvas.height - player.h, player.y));
+    
+    // Constrain Y bounds (Prevent character from flying over the wall baseboard)
+    // Floor begins at Y 320, Baseboard at 310. Using 220 ensures feet stay on the tiles.
+    player.y = Math.max(220, Math.min(canvas.height - player.h, player.y));
 
     doors.forEach(d => {
         const dist = Math.abs((player.x + player.w/2) - (d.x + d.w/2));
         const near = dist < 120 && player.y < d.y + d.h + 100;
-        d.openRatio = near ? Math.min(d.openRatio + 0.12, 0.4) : Math.max(d.openRatio - 0.12, 0);
+        
+        // Open max 15% (0.15) for a slight visual peek
+        d.openRatio = near ? Math.min(d.openRatio + 0.12, 0.15) : Math.max(d.openRatio - 0.12, 0);
     });
 
     if (wrongFeedback.active) {
@@ -336,19 +448,20 @@ function update() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+    if (!currentTheme) return;
+
     // Floor
-    ctx.fillStyle = '#95a5a6';
+    ctx.fillStyle = currentTheme.floor;
     ctx.fillRect(0, 320, canvas.width, canvas.height);
-    ctx.strokeStyle = '#7f8c8d';
+    ctx.strokeStyle = currentTheme.line;
     ctx.lineWidth = 1;
     for(let i=0; i<canvas.width; i+=60) { ctx.beginPath(); ctx.moveTo(i, 320); ctx.lineTo(i, canvas.height); ctx.stroke(); }
     for(let j=320; j<canvas.height; j+=60) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke(); }
 
     // Wall
-    ctx.fillStyle = '#fdf6e3';
+    ctx.fillStyle = currentTheme.wall;
     ctx.fillRect(0, 0, canvas.width, 320);
-    ctx.fillStyle = '#eee8d5';
+    ctx.fillStyle = currentTheme.base;
     ctx.fillRect(0, 310, canvas.width, 10);
 
     // Doors
@@ -400,9 +513,37 @@ function draw() {
     }
 
     // Player
-    ctx.font = "110px serif";
-    ctx.textAlign = "center";
-    ctx.fillText(player.emoji, player.x + player.w/2, player.y + 80);
+    if (player.emoji) {
+        ctx.font = "110px serif";
+        ctx.textAlign = "center";
+        ctx.fillText(player.emoji, player.x + player.w/2, player.y + 80);
+    }
+
+    // Round clear text overlay
+    if (gameState === 'TRANSITION') {
+        transitionAlpha = Math.min(transitionAlpha + 0.05, 1); 
+        
+        ctx.fillStyle = `rgba(0, 0, 0, ${transitionAlpha * 0.7})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = `rgba(255, 255, 255, ${transitionAlpha})`;
+        ctx.font = 'bold 50px Poppins';
+        ctx.textAlign = 'center';
+        ctx.fillText(transitionTitle, canvas.width / 2, canvas.height / 2 - 10);
+        
+        if (transitionSub) {
+            ctx.fillStyle = `rgba(252, 211, 77, ${transitionAlpha})`;
+            ctx.font = 'bold 35px Poppins';
+            ctx.fillText(transitionSub, canvas.width / 2, canvas.height / 2 + 50);
+        }
+    }
+
+    // New scene gradual fade-in
+    if (gameState === 'PLAY' && sceneFadeAlpha > 0) {
+        ctx.fillStyle = `rgba(0, 0, 0, ${sceneFadeAlpha})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        sceneFadeAlpha = Math.max(0, sceneFadeAlpha - 0.05);
+    }
 }
 
 function gameLoop() {
