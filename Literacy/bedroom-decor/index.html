@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>My Bedroom Decorator 🏠</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body, html { width: 100%; height: 100%; overflow: hidden; font-family: 'Nunito', sans-serif; background: #1a1a2e; }
+  #app { width: 100vw; height: 100dvh; position: relative; }
+  #canvas { width: 100%; height: 100%; display: block; }
+  #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  #top-bar {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(255,255,255,0.93); border-radius: 22px;
+    padding: 7px 10px; display: flex; align-items: center; gap: 10px;
+    pointer-events: all; box-shadow: 0 2px 16px rgba(0,0,0,0.13);
+  }
+  #top-bar h1 { font-size: 15px; font-weight: 800; color: #3a3a5c; white-space: nowrap; }
+  .cam-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    background: #f0eeff; color: #6c5ce7; font-size: 14px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; transition: all 0.15s; flex-shrink: 0;
+    font-family: 'Nunito', sans-serif; user-select: none;
+  }
+  .cam-btn:hover { background: #6c5ce7; color: white; transform: scale(1.1); }
+  .cam-btn:active { transform: scale(0.95); }
+
+  #furniture-panel {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.97); border-radius: 22px 22px 0 0;
+    pointer-events: all; box-shadow: 0 -4px 24px rgba(0,0,0,0.11);
+    padding: 11px 16px env(safe-area-inset-bottom, 12px);
+  }
+  #furniture-panel-inner { padding: 10px 16px 14px; }
+  #panel-tabs { display: flex; gap: 8px; margin-bottom: 11px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 15px; border-radius: 15px; border: none;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: all 0.18s; background: #f0eeff; color: #9b8ec4;
+    font-family: 'Nunito', sans-serif;
+  }
+  .tab-btn.active { background: #6c5ce7; color: white; }
+  #items-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+  #items-row::-webkit-scrollbar { height: 4px; }
+  #items-row::-webkit-scrollbar-thumb { background: #d0caff; border-radius: 2px; }
+
+  .item-card {
+    flex: 0 0 72px; background: white; border: 2px solid #f0eeff;
+    border-radius: 15px; padding: 9px 4px 7px; cursor: pointer;
+    text-align: center; transition: all 0.18s; user-select: none;
+  }
+  .item-card:hover { border-color: #6c5ce7; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(108,92,231,0.15); }
+  .item-card.selected { border-color: #6c5ce7; background: #f0eeff; }
+  .item-icon { font-size: 26px; line-height: 1; }
+  .item-name { font-size: 10px; font-weight: 700; color: #555; margin-top: 5px; }
+
+  #side-controls {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 9px; pointer-events: all;
+  }
+  .ctrl-btn {
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 0 13px; height: 38px; min-width: 78px; border-radius: 20px; border: none;
+    background: rgba(255,255,255,0.95); color: #3a3a5c;
+    font-size: 12px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.13); transition: all 0.15s;
+    font-family: 'Nunito', sans-serif; white-space: nowrap; touch-action: manipulation;
+  }
+  .ctrl-btn .btn-icon { font-size: 15px; line-height: 1; }
+  .ctrl-btn:active { background: #6c5ce7; color: white; transform: scale(0.96); }
+  .ctrl-btn.danger:active { background: #e74c3c; color: white; }
+
+  #color-panel {
+    position: absolute; left: 12px; bottom: 90px;
+    background: rgba(255,255,255,0.97); border-radius: 18px;
+    pointer-events: all; box-shadow: 0 2px 14px rgba(0,0,0,0.13); overflow: hidden;
+  }
+  #color-panel-toggle {
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 10px 13px; cursor: pointer; user-select: none; touch-action: manipulation;
+    font-size: 11px; font-weight: 800; color: #6c5ce7; white-space: nowrap;
+  }
+  #color-panel-toggle .toggle-arrow { font-size: 10px; transition: transform 0.3s; display: inline-block; }
+  #color-panel-toggle .toggle-arrow.open { transform: rotate(180deg); }
+  #color-panel-body {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(.4,0,.2,1), opacity 0.25s;
+    opacity: 0; padding: 0 12px;
+  }
+  #color-panel-body.open { max-height: 300px; opacity: 1; padding: 0 12px 10px; }
+  #color-panel h3 {
+    font-size: 10px; font-weight: 800; color: #aaa;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 9px; padding-top: 10px;
+  }
+  .color-group { margin-bottom: 10px; }
+  .color-label { font-size: 10px; color: #bbb; font-weight: 700; margin-bottom: 5px; }
+  .color-swatches { display: flex; flex-wrap: wrap; gap: 5px; width: 84px; }
+  .swatch {
+    width: 19px; height: 19px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: transform 0.15s;
+  }
+  .swatch:hover, .swatch.active { transform: scale(1.25); border-color: #333; }
+
+  #hint {
+    position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
+    background: rgba(108,92,231,0.91); color: white; border-radius: 14px;
+    padding: 7px 16px; font-size: 12px; font-weight: 700;
+    pointer-events: none; transition: opacity 0.5s; white-space: nowrap;
+  }
+  #selected-info {
+    position: absolute; top: 64px; right: 14px;
+    background: rgba(255,255,255,0.93); border-radius: 12px;
+    padding: 8px 13px; font-size: 11px; color: #555;
+    font-weight: 700; pointer-events: none; display: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  #placing-indicator {
+    position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
+    background: rgba(46,213,115,0.92); color: white; border-radius: 14px;
+    padding: 7px 16px; font-size: 12px; font-weight: 700;
+    pointer-events: none; display: none; white-space: nowrap;
+  }
+
+  /* ── Mode selector screen ── */
+  #mode-screen {
+    position: fixed; inset: 0; background: linear-gradient(135deg,#667eea,#f093fb);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 200; gap: 18px; padding: 24px 16px;
+  }
+  #mode-screen h1 { font-size: 22px; font-weight: 800; color: white; text-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+  #mode-screen > div > p { font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 600; margin-top: 4px; }
+  #mode-cards { display: flex; flex-direction: row; gap: 14px; justify-content: center; flex-wrap: nowrap; }
+  .mode-card {
+    background: white; border-radius: 20px; padding: 20px 18px;
+    cursor: pointer; text-align: center; width: 200px; flex-shrink: 0;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18); transition: all 0.2s;
+    border: 3px solid transparent; touch-action: manipulation;
+  }
+  .mode-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.22); border-color: #6c5ce7; }
+  .mode-card:active { transform: scale(0.97); }
+  .mode-card .mode-icon { font-size: 36px; margin-bottom: 8px; }
+  .mode-card h2 { font-size: 15px; font-weight: 800; color: #3a3a5c; margin-bottom: 5px; }
+  .mode-card p { font-size: 11px; color: #555; font-weight: 600; line-height: 1.45; }
+  .mode-card.quiz-card { background: linear-gradient(135deg,#ffecd2,#fcb69f); }
+  .mode-card.quiz-card h2 { color: #c0392b; }
+  .mode-card.quiz-card p { color: #8b3a0f; }
+
+  /* ── Quiz modal ── */
+  #quiz-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    display: none; align-items: center; justify-content: center;
+    z-index: 300; backdrop-filter: blur(4px);
+  }
+  #quiz-overlay.show { display: flex; }
+  #quiz-box {
+    background: white; border-radius: 28px; padding: 28px 24px 24px;
+    width: min(420px, 92vw); box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+    text-align: center; animation: popIn 0.25s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  #quiz-question { font-size: 18px; font-weight: 800; color: #3a3a5c; margin-bottom: 16px; }
+  #quiz-canvas-wrap {
+    width: 180px; height: 180px; margin: 0 auto 20px;
+    border-radius: 20px; overflow: hidden;
+    background: linear-gradient(135deg,#f0eeff,#e8f5ff);
+    box-shadow: 0 4px 16px rgba(108,92,231,0.15);
+  }
+  #quiz-canvas { width: 100%; height: 100%; display: block; }
+  #quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .quiz-opt {
+    padding: 12px 8px; border-radius: 14px; border: 2px solid #f0eeff;
+    background: #f8f7ff; font-size: 13px; font-weight: 700; color: #3a3a5c;
+    cursor: pointer; transition: all 0.15s; font-family: 'Nunito', sans-serif;
+  }
+  .quiz-opt:hover { border-color: #6c5ce7; background: #f0eeff; transform: scale(1.03); }
+  .quiz-opt.correct { background: #d4f8e8; border-color: #1dd1a1; color: #0a7a55; animation: bounce 0.3s; }
+  .quiz-opt.wrong { background: #ffe0e0; border-color: #ff6b6b; color: #c0392b; animation: shake 0.3s; }
+  @keyframes bounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  #quiz-feedback {
+    margin-top: 14px; font-size: 14px; font-weight: 800; min-height: 22px;
+    color: #1dd1a1;
+  }
+  #quiz-continue {
+    margin-top: 14px; padding: 11px 28px; border-radius: 16px; border: none;
+    background: #6c5ce7; color: white; font-size: 14px; font-weight: 800;
+    cursor: pointer; display: none; font-family: 'Nunito', sans-serif;
+    transition: all 0.15s;
+  }
+  #quiz-continue:hover { background: #5a4bd1; transform: scale(1.04); }
+
+  /* ── Furniture colour picker ── */
+  #furniture-panel { padding: 10px 16px 16px; }
+  #item-color-bar {
+    display: none; align-items: center; gap: 6px;
+    padding: 8px 4px 4px; flex-wrap: nowrap; overflow-x: auto;
+  }
+  #item-color-bar::-webkit-scrollbar { display: none; }
+  #item-color-label { font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; flex-shrink: 0; }
+  .item-swatch {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    cursor: pointer; border: 2px solid transparent; transition: transform 0.15s;
+  }
+  .item-swatch:hover, .item-swatch.active { transform: scale(1.3); border-color: #333; }
+  .item-card.locked { opacity: 0.55; cursor: pointer; }
+  .item-card.locked .item-icon { filter: grayscale(1); }
+  .item-card.locked .item-name { color: #aaa; }
+  .lock-icon { font-size: 14px; margin-top: 2px; }
+
+  /* ── Congrats modal ── */
+  #congrats-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; align-items: center; justify-content: center;
+    z-index: 400; backdrop-filter: blur(6px); padding: 20px;
+  }
+  #congrats-overlay.show { display: flex; }
+  #congrats-box {
+    background: white; border-radius: 28px; padding: 32px 28px 26px;
+    width: min(380px, 100%); text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: popIn 0.35s cubic-bezier(.34,1.56,.64,1);
+  }
+  #congrats-box .congrats-emoji { font-size: 56px; margin-bottom: 10px; }
+  #congrats-box h2 { font-size: 22px; font-weight: 800; color: #3a3a5c; margin-bottom: 8px; }
+  #congrats-box p { font-size: 14px; color: #666; font-weight: 600; line-height: 1.5; margin-bottom: 22px; }
+  .congrats-stars { font-size: 28px; letter-spacing: 4px; margin-bottom: 16px; }
+  .congrats-btn {
+    display: block; width: 100%; padding: 13px; border-radius: 16px; border: none;
+    font-size: 14px; font-weight: 800; cursor: pointer;
+    font-family: 'Nunito', sans-serif; margin-bottom: 10px; touch-action: manipulation;
+    transition: all 0.15s;
+  }
+  .congrats-btn.primary { background: #6c5ce7; color: white; }
+  .congrats-btn.primary:active { background: #5a4bd1; transform: scale(0.98); }
+  .congrats-btn.secondary { background: #f0eeff; color: #6c5ce7; }
+  .congrats-btn.secondary:active { background: #e0d8ff; transform: scale(0.98); }
+
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="canvas"></canvas>
+  <div id="ui">
+    <div id="top-bar">
+      <button class="cam-btn" id="cam-left">&#9664;</button>
+      <h1 id="top-title">🏠 My Bedroom</h1>
+      <button class="cam-btn" id="cam-right">&#9654;</button>
+    </div>
+
+    <div id="hint">Pick a piece of furniture below to get started!</div>
+    <div id="placing-indicator">Click in the room to place it!</div>
+    <div id="selected-info">Selected — rotate ↻ or delete ✕</div>
+
+    <div id="color-panel">
+      <div id="color-panel-body">
+        <h3>Paint</h3>
+        <div class="color-group">
+          <div class="color-label">Walls</div>
+          <div class="color-swatches" id="wall-swatches"></div>
+        </div>
+        <div class="color-group">
+          <div class="color-label">Floor</div>
+          <div class="color-swatches" id="floor-swatches"></div>
+        </div>
+      </div>
+      <div id="color-panel-toggle">
+        🎨 Paint <span class="toggle-arrow">▲</span>
+      </div>
+    </div>
+
+    <div id="side-controls">
+      <button class="ctrl-btn" id="btn-up" title="Move up" style="display:none"><span class="btn-icon">↑</span> Up</button>
+      <button class="ctrl-btn" id="btn-down" title="Move down" style="display:none"><span class="btn-icon">↓</span> Down</button>
+      <button class="ctrl-btn" id="btn-rotate" title="Rotate 45°"><span class="btn-icon">↻</span> Turn</button>
+      <button class="ctrl-btn danger" id="btn-delete" title="Delete selected"><span class="btn-icon">🗑</span> Trash</button>
+      <button class="ctrl-btn" id="btn-undo" title="Undo last placed"><span class="btn-icon">↩</span> Undo</button>
+      <button class="ctrl-btn" id="btn-screenshot" title="Save photo"><span class="btn-icon">📷</span> Photo</button>
+    </div>
+
+    <div id="furniture-panel">
+      <div id="item-color-bar">
+        <span id="item-color-label">Colour:</span>
+      </div>
+      <div id="items-row"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Mode selector -->
+<div id="mode-screen">
+  <div style="text-align:center">
+    <div style="font-size:40px;margin-bottom:6px">🏠</div>
+    <h1>Bedroom Decorator</h1>
+    <p>Choose how you want to play!</p>
+  </div>
+  <div id="mode-cards">
+    <div class="mode-card" id="btn-freeplay">
+      <div class="mode-icon">🎨</div>
+      <h2>Free Play</h2>
+      <p>Place any furniture you like and decorate your dream bedroom!</p>
+    </div>
+    <div class="mode-card quiz-card" id="btn-namemode">
+      <div class="mode-icon">🧠</div>
+      <h2>Name the Furniture</h2>
+      <p>Learn the names! Identify each piece before you can use it.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- Congrats modal -->
+<div id="congrats-overlay">
+  <div id="congrats-box">
+    <div class="congrats-emoji">🏆</div>
+    <div class="congrats-stars">⭐⭐⭐</div>
+    <h2>You named them all!</h2>
+    <p>Amazing work! You've learned the names of all the furniture. Now go decorate your dream bedroom!</p>
+    <button class="congrats-btn primary" id="btn-congrats-continue">🛋️ Keep Decorating</button>
+    <button class="congrats-btn secondary" id="btn-congrats-menu">🏠 Start Menu</button>
+  </div>
+</div>
+
+<!-- Quiz modal -->
+<div id="quiz-overlay">
+  <div id="quiz-box">
+    <div id="quiz-question">What is this called?</div>
+    <div id="quiz-canvas-wrap"><canvas id="quiz-canvas"></canvas></div>
+    <div id="quiz-options"></div>
+    <div id="quiz-feedback"></div>
+    <button id="quiz-continue">Place it in the room! →</button>
+  </div>
+</div>
+
+<script>
+const FURNITURE = {
+  all: [
+    { id:'bed',       name:'Bed',       icon:'🛏️', color:0x8B5E3C, w:1.8, h:0.6,  d:2.2, type:'bed' },
+    { id:'desk',      name:'Desk',      icon:'🖥️', color:0x8B5E3C, w:1.4, h:0.75, d:0.65, type:'desk' },
+    { id:'chair',     name:'Chair',     icon:'🪑', color:0x8B5E3C, w:0.55,h:0.95, d:0.55, type:'chair' },
+    { id:'bookshelf', name:'Bookshelf', icon:'📚', color:0x8B5E3C, w:0.8, h:1.5,  d:0.35, type:'shelf' },
+    { id:'wardrobe',  name:'Wardrobe',  icon:'🚪', color:0x8B5E3C, w:1.2, h:1.9,  d:0.55, type:'wardrobe' },
+    { id:'drawers',   name:'Drawers',   icon:'🗄️', color:0x8B5E3C, w:0.9, h:0.85, d:0.45, type:'dresser' },
+    { id:'plant',     name:'Plant',     icon:'🌿', color:0x0be881, w:0.3, h:0.55, d:0.3,  type:'plant', canFloat:true },
+    { id:'rug',       name:'Rug',       icon:'🔶', color:0xff4d4d, w:1.8, h:0.03, d:1.2,  type:'rug' },
+    { id:'teddybear', name:'Teddy Bear',icon:'🧸', color:0xff9f43, w:0.28,h:0.35, d:0.22, type:'teddy', canFloat:true },
+    { id:'poster',    name:'Poster',    icon:'🖼️', color:0xa29bfe, w:0.6, h:0.85, d:0.05, type:'poster', wall:true, canFloat:true },
+  ]
+};
+
+const WALL_COLORS = [0xffffff,0xffccd5,0xc3fbd8,0xc8e6ff,0xfff5b8,0xe8d5ff,0xffd6a5,0xb8f0ff,0xffc8f0];
+const FLOOR_COLORS = [0xf4c07a,0xe8a87c,0xffe0a0];
+
+// Per-furniture colour palette options
+const ITEM_COLORS = {
+  bed:       [0x8B5E3C,0x4a2c0a,0xff6b9d,0xff9f43,0x54a0ff,0x5f27cd,0x1dd1a1,0xff4d4d],
+  desk:      [0x8B5E3C,0x4a2c0a,0x54a0ff,0xd4a96a,0xff9f43,0x1dd1a1,0xff6b6b,0xffd32a],
+  chair:     [0x8B5E3C,0x4a2c0a,0xff6b6b,0x54a0ff,0x1dd1a1,0xffd32a,0x5f27cd,0xff9f43],
+  bookshelf: [0x8B5E3C,0x4a2c0a,0x5f27cd,0xff6b6b,0x54a0ff,0x1dd1a1,0xd4a96a,0xff9f43],
+  wardrobe:  [0x8B5E3C,0x4a2c0a,0x1dd1a1,0x54a0ff,0xff6b9d,0xffd32a,0xff9f43,0xff6b6b],
+  drawers:   [0x8B5E3C,0x4a2c0a,0xff9f43,0x54a0ff,0xff6b9d,0x1dd1a1,0xffd32a,0xff6b6b],
+  plant:     [0x0be881,0x05c46b,0x54a0ff,0xff6b9d,0xffd32a,0xff6b6b,0xa29bfe,0xff9f43],
+  rug:       [0xff4d4d,0x54a0ff,0xffd32a,0x1dd1a1,0xff6b9d,0x5f27cd,0xff9f43,0xeeeeee],
+  teddybear: [0xff9f43,0xff6b9d,0xd4956a,0x54a0ff,0x1dd1a1,0xffd32a,0xff6b6b,0x4a2c0a],
+  poster:    [0xa29bfe,0xff6b9d,0x54a0ff,0xffd32a,0x1dd1a1,0xff6b6b,0xff9f43,0xffffff],
+};
+
+// Track chosen colour per furniture id (starts at def.color)
+const selectedItemColors = {};
+FURNITURE.all.forEach(d => { selectedItemColors[d.id] = d.color; });
+
+let scene, camera, renderer, raycaster, mouse;
+let placedObjects = [];
+let selectedObj = null;
+let activeCategory = 'all';
+let selectedFurniture = null;
+let isDragging = false, prevMouse = {x:0,y:0};
+let mouseDownPos = {x:0,y:0}, mouseMovedFar = false;
+let wallColor = WALL_COLORS[6];
+let floorColor = FLOOR_COLORS[0];
+let floorMesh, wallMeshes = [];
+let hintTimeout;
+
+function init() {
+  const canvas = document.getElementById('canvas');
+  const W = window.innerWidth, H = window.innerHeight;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf0eeff);
+  scene.fog = new THREE.Fog(0xf0eeff, 12, 24);
+
+  camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 50);
+  camera.position.set(0, 3.8, 6.5);
+  camera.lookAt(0, 0.5, 0);
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(W, H);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.toneMappingExposure = 1.0;
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.72);
+  scene.add(ambient);
+
+  const sun = new THREE.DirectionalLight(0xffffff, 0.28);
+  sun.position.set(3, 5, 4);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.near = 0.5;
+  sun.shadow.camera.far = 22;
+  sun.shadow.camera.left = -6;
+  sun.shadow.camera.right = 6;
+  sun.shadow.camera.top = 6;
+  sun.shadow.camera.bottom = -6;
+  sun.shadow.radius = 4;
+  sun.shadow.bias = -0.001;
+  scene.add(sun);
+
+  // Cool bounce light from the opposite side — adds depth
+  const fill = new THREE.DirectionalLight(0xffffff, 0.15);
+  fill.position.set(-3, 2, -2);
+  scene.add(fill);
+
+  const bounce = new THREE.DirectionalLight(0xffffff, 0.08);
+  bounce.position.set(0, -2, 0);
+  scene.add(bounce);
+
+  buildRoom();
+
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+
+  canvas.addEventListener('mousedown', onMouseDown);
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
+  canvas.addEventListener('touchstart', onTouchStart, {passive:true});
+  canvas.addEventListener('touchmove', onTouchMove, {passive:true});
+  canvas.addEventListener('touchend', onTouchEnd, {passive:true});
+
+  setupUI();
+  renderItems('sleep');
+  animate();
+  showHint('Pick furniture below, then click the room to place it!', 4000);
+}
+
+function buildRoom() {
+  const rW=7, rD=6, rH=3.6, hw=rW/2, hd=rD/2;
+  const matFloor = new THREE.MeshLambertMaterial({ color: floorColor });
+  const matWall = () => new THREE.MeshLambertMaterial({ color: wallColor });
+
+  floorMesh = new THREE.Mesh(new THREE.BoxGeometry(rW, 0.1, rD), matFloor);
+  floorMesh.position.y = -0.05;
+  floorMesh.receiveShadow = true;
+  floorMesh.userData.isFloor = true;
+  scene.add(floorMesh);
+
+  const backW = new THREE.Mesh(new THREE.BoxGeometry(rW, rH, 0.12), matWall());
+  backW.position.set(0, rH/2, -hd); backW.receiveShadow = true;
+  scene.add(backW); wallMeshes.push(backW);
+
+  // Side walls as thin floor-level markers only — no tall walls that block the view
+  // Instead add low skirting-height wall indicators so the room reads clearly
+  const skirting = () => new THREE.MeshLambertMaterial({color:0xf5f5f5});
+  const leftBase = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.18, rD), skirting());
+  leftBase.position.set(-hw+0.04, 0.09, 0); scene.add(leftBase);
+  const rightBase = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.18, rD), skirting());
+  rightBase.position.set(hw-0.04, 0.09, 0); scene.add(rightBase);
+  const frontBase = new THREE.Mesh(new THREE.BoxGeometry(rW, 0.18, 0.08), skirting());
+  frontBase.position.set(0, 0.09, hd-0.04); scene.add(frontBase);
+
+  // No ceiling — keeps the room open and viewable from above
+
+  // Floor planks
+  const plankMat = new THREE.MeshLambertMaterial({color:0xc49a5a});
+  for(let i=-3;i<3;i++) {
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.012, rD), plankMat);
+    plank.position.set(i+0.5, 0.006, 0);
+    scene.add(plank);
+  }
+
+  // Window
+  const frameMat = new THREE.MeshLambertMaterial({color:0xffffff});
+  const glassMat = new THREE.MeshLambertMaterial({color:0xb3d9ff, transparent:true, opacity:0.55});
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.3, 0.09), frameMat);
+  frame.position.set(1.5, 2.1, -hd+0.05); scene.add(frame);
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.0, 0.04), glassMat);
+  glass.position.set(1.5, 2.1, -hd+0.07); scene.add(glass);
+  const crossH = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 0.06), frameMat);
+  crossH.position.set(1.5, 2.1, -hd+0.09); scene.add(crossH);
+  const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.0, 0.06), frameMat);
+  crossV.position.set(1.5, 2.1, -hd+0.09); scene.add(crossV);
+  const winLight = new THREE.PointLight(0xfff5e0, 0.4, 4.0);
+  winLight.position.set(1.5, 2.3, -2.5); scene.add(winLight);
+
+  // Ceiling light fitting on back wall instead
+  const ceilLightBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,0.04,12), new THREE.MeshLambertMaterial({color:0xffffff}));
+  ceilLightBase.position.set(0, rH-0.05, -hd+0.12); scene.add(ceilLightBase);
+}
+
+function mat(color) { return new THREE.MeshLambertMaterial({color}); }
+
+function buildFurniture(def) {
+  const g = new THREE.Group();
+  const m = () => mat(def.color);
+
+  switch(def.type) {
+    case 'bed': {
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(def.w,0.18,def.d), m()); frame.position.y=0.09; g.add(frame);
+      const mattress = new THREE.Mesh(new THREE.BoxGeometry(def.w-0.1,0.18,def.d-0.1), mat(0xfff0f8)); mattress.position.y=0.27; g.add(mattress);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(def.w,0.65,0.12), m()); head.position.set(0,0.42,-def.d/2+0.06); g.add(head);
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(def.w,0.28,0.1), m()); foot.position.set(0,0.19,def.d/2-0.05); g.add(foot);
+      [[def.w/2-0.08,-def.d/2+0.12],[def.w/2-0.08,def.d/2-0.12],[-def.w/2+0.08,-def.d/2+0.12],[-def.w/2+0.08,def.d/2-0.12]].forEach(([x,z])=>{
+        const leg=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.12,0.1),m()); leg.position.set(x,0.06,z); g.add(leg);
+      });
+      const p1=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.1,0.38),mat(0xffec8b)); p1.position.set(0.35,0.42,-def.d/2+0.35); g.add(p1);
+      const p2=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.1,0.38),mat(0xffb3de)); p2.position.set(-0.35,0.42,-def.d/2+0.35); g.add(p2);
+      const bl=new THREE.Mesh(new THREE.BoxGeometry(def.w-0.15,0.07,1.3),mat(0x48dbfb)); bl.position.set(0,0.415,0.2); g.add(bl);
+      break;
+    }
+    case 'bunk': {
+      const postH = def.h;
+      [[def.w/2-0.05,-def.d/2+0.1],[def.w/2-0.05,def.d/2-0.1],[-def.w/2+0.05,-def.d/2+0.1],[-def.w/2+0.05,def.d/2-0.1]].forEach(([x,z])=>{
+        const post=new THREE.Mesh(new THREE.BoxGeometry(0.08,postH,0.08),m()); post.position.set(x,postH/2,z); g.add(post);
+      });
+      [0.38,def.h-0.28].forEach(y=>{
+        const bed=new THREE.Mesh(new THREE.BoxGeometry(def.w,0.1,def.d),m()); bed.position.y=y; g.add(bed);
+        const mtt=new THREE.Mesh(new THREE.BoxGeometry(def.w-0.06,0.1,def.d-0.06),mat(y===0.38?0xffb3de:0x48dbfb)); mtt.position.set(0,y+0.1,0); g.add(mtt);
+      });
+      const rail=new THREE.Mesh(new THREE.BoxGeometry(def.w,0.1,0.04),m()); rail.position.set(0,def.h-0.1,def.d/2-0.02); g.add(rail);
+      const lad=new THREE.Mesh(new THREE.BoxGeometry(0.04,def.h,0.04),m()); lad.position.set(def.w/2-0.02,def.h/2,def.d/2+0.02); g.add(lad);
+      [0.25,0.6,0.95,1.3].forEach(y=>{const r=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.04,0.14),m()); r.position.set(def.w/2-0.02,y,def.d/2+0.07); g.add(r);});
+      break;
+    }
+    case 'chair': {
+      const seat=new THREE.Mesh(new THREE.BoxGeometry(def.w,0.08,def.d),m()); seat.position.y=0.44; g.add(seat);
+      const back=new THREE.Mesh(new THREE.BoxGeometry(def.w,0.4,0.08),m()); back.position.set(0,0.68,-def.d/2+0.04); g.add(back);
+      [[def.w/2-0.06,def.d/2-0.06],[def.w/2-0.06,-def.d/2+0.06],[-def.w/2+0.06,def.d/2-0.06],[-def.w/2+0.06,-def.d/2+0.06]].forEach(([x,z])=>{
+        const leg=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.44,0.05),mat(def.color-0x111111)); leg.position.set(x,0.22,z); g.add(leg);
+      });
+      const cush=new THREE.Mesh(new THREE.BoxGeometry(def.w-0.06,0.06,def.d-0.06),mat(0xff8fab)); cush.position.y=0.49; g.add(cush);
+      break;
+    }
+    case 'desk': {
+      const top=new THREE.Mesh(new THREE.BoxGeometry(def.w,0.06,def.d),m()); top.position.y=def.h-0.03; g.add(top);
+      [[def.w/2-0.05,def.d/2-0.05],[def.w/2-0.05,-def.d/2+0.05],[-def.w/2+0.05,def.d/2-0.05],[-def.w/2+0.05,-def.d/2+0.05]].forEach(([x,z])=>{
+        const leg=new THREE.Mesh(new THREE.BoxGeometry(0.07,def.h-0.06,0.07),m()); leg.position.set(x,(def.h-0.06)/2,z); g.add(leg);
+      });
+      const mon=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.38,0.04),mat(0x2d3436)); mon.position.set(-0.2,def.h+0.22,-def.d/2+0.1); g.add(mon);
+      const scr=new THREE.Mesh(new THREE.BoxGeometry(0.56,0.34,0.01),mat(0x48dbfb)); scr.position.set(-0.2,def.h+0.22,-def.d/2+0.13); g.add(scr);
+      const mbase=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.02,0.1),mat(0x54a0ff)); mbase.position.set(-0.2,def.h+0.01,-def.d/2+0.1); g.add(mbase);
+      const ms=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.02,0.1),mat(0xff6b6b)); ms.position.set(0.3,def.h+0.01,0.05); g.add(ms);
+      break;
+    }
+    case 'shelf': {
+      const back=new THREE.Mesh(new THREE.BoxGeometry(def.w,def.h,0.05),m()); back.position.set(0,def.h/2,-def.d/2+0.025); g.add(back);
+      const bookC=[0xff4d4d,0x48dbfb,0x0be881,0xffd32a,0xf368e0,0xff9f43,0xa29bfe,0xff6b9d];
+      for(let i=0;i<4;i++){
+        const sh=new THREE.Mesh(new THREE.BoxGeometry(def.w,0.04,def.d),m()); sh.position.y=0.1+i*(def.h-0.1)/3.5; g.add(sh);
+        let bx=-def.w/2+0.05;
+        while(bx<def.w/2-0.05){
+          const bw=0.07+Math.random()*0.04, bh=0.2+Math.random()*0.15;
+          const book=new THREE.Mesh(new THREE.BoxGeometry(bw,bh,def.d-0.08),mat(bookC[Math.floor(Math.random()*bookC.length)]));
+          book.position.set(bx+bw/2,sh.position.y+bh/2+0.02,0); g.add(book); bx+=bw+0.01;
+        }
+      }
+      break;
+    }
+    case 'wardrobe': {
+      const body=new THREE.Mesh(new THREE.BoxGeometry(def.w,def.h,def.d),m()); body.position.y=def.h/2; g.add(body);
+      const d1=new THREE.Mesh(new THREE.BoxGeometry(def.w/2-0.02,def.h-0.06,0.04),m()); d1.position.set(-def.w/4,def.h/2,def.d/2+0.02); g.add(d1);
+      const d2=d1.clone(); d2.position.set(def.w/4,def.h/2,def.d/2+0.02); g.add(d2);
+      [[-0.05,def.h/2],[def.w/2-0.05,def.h/2]].forEach(([x,y])=>{
+        const k=new THREE.Mesh(new THREE.SphereGeometry(0.03,8,8),mat(0xffd32a)); k.position.set(x,y,def.d/2+0.05); g.add(k);
+      });
+      break;
+    }
+    case 'dresser': {
+      const body=new THREE.Mesh(new THREE.BoxGeometry(def.w,def.h,def.d),m()); body.position.y=def.h/2; g.add(body);
+      const drawerCols=[0xffb3de,0xb3ecff,0xb3ffda];
+      for(let i=0;i<3;i++){
+        const dr=new THREE.Mesh(new THREE.BoxGeometry(def.w-0.06,0.18,0.04),mat(drawerCols[i])); dr.position.set(0,0.12+i*0.24,def.d/2+0.02); g.add(dr);
+        const k=new THREE.Mesh(new THREE.SphereGeometry(0.025,8,8),mat(0xffd32a)); k.position.set(0,0.12+i*0.24,def.d/2+0.05); g.add(k);
+      }
+      break;
+    }
+    case 'lamp': {
+      const base=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.1,0.06,8),mat(0x888888)); base.position.y=0.03; g.add(base);
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,def.h-0.15,8),mat(0xaaaaaa)); pole.position.y=def.h/2; g.add(pole);
+      const shade=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.16,0.2,8,1,true),m()); shade.position.y=def.h-0.05; g.add(shade);
+      const glow=new THREE.PointLight(def.color,0.35,1.4); glow.position.y=def.h-0.1; g.add(glow);
+      break;
+    }
+    case 'plant': {
+      const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.08,0.18,8),mat(0xff6b6b)); pot.position.y=0.09; g.add(pot);
+      const soil=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.03,8),mat(0x8B5E3C)); soil.position.y=0.195; g.add(soil);
+      const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.25,6),mat(0x05c46b)); stem.position.y=0.345; g.add(stem);
+      const lC=[0x0be881,0x05c46b,0x00d2d3,0x1dd1a1];
+      for(let i=0;i<6;i++){
+        const a=(i/6)*Math.PI*2;
+        const leaf=new THREE.Mesh(new THREE.SphereGeometry(0.12,6,4),mat(lC[i%4]));
+        leaf.scale.set(0.6,0.5,0.6); leaf.position.set(Math.cos(a)*0.1,0.48+Math.random()*0.08,Math.sin(a)*0.1); g.add(leaf);
+      }
+      const top=new THREE.Mesh(new THREE.SphereGeometry(0.13,6,4),mat(0x0be881)); top.position.y=0.58; g.add(top);
+      break;
+    }
+    case 'cactus': {
+      const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.055,0.12,8),mat(0xff9f43)); pot.position.y=0.06; g.add(pot);
+      const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.32,8),mat(0x05c46b)); trunk.position.y=0.28; g.add(trunk);
+      const arm1=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.14,6),mat(0x05c46b));
+      arm1.rotation.z=Math.PI/3; arm1.position.set(0.1,0.36,0); g.add(arm1);
+      const arm2=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.12,6),mat(0x05c46b));
+      arm2.rotation.z=-Math.PI/3; arm2.position.set(-0.09,0.32,0); g.add(arm2);
+      const top=new THREE.Mesh(new THREE.SphereGeometry(0.055,6,4),mat(0x0be881)); top.position.y=0.46; g.add(top);
+      break;
+    }
+    case 'rug': {
+      const rug=new THREE.Mesh(new THREE.BoxGeometry(def.w,0.03,def.d),m()); rug.position.y=0.015; g.add(rug);
+      const pat=new THREE.Mesh(new THREE.BoxGeometry(def.w-0.18,0.04,def.d-0.18),mat(0xffd32a)); pat.position.y=0.02; g.add(pat);
+      const cen=new THREE.Mesh(new THREE.BoxGeometry(def.w*0.4,0.05,def.d*0.4),mat(0xffffff)); cen.position.y=0.025; g.add(cen);
+      break;
+    }
+    case 'poster': {
+      const frame=new THREE.Mesh(new THREE.BoxGeometry(def.w+0.06,def.h+0.06,0.04),mat(0xd4b483)); g.add(frame);
+      const canvas2=new THREE.Mesh(new THREE.BoxGeometry(def.w,def.h,0.02),m()); canvas2.position.z=0.025; g.add(canvas2);
+      const star=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.14,0.01),mat(0xfdcb6e)); star.position.set(0,0.15,0.04); g.add(star);
+      const bar=new THREE.Mesh(new THREE.BoxGeometry(def.w-0.1,0.06,0.01),mat(0xfdcb6e)); bar.position.set(0,-0.2,0.04); g.add(bar);
+      break;
+    }
+    case 'clock': {
+      const face=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.05,16),m());
+      face.rotation.x=Math.PI/2; g.add(face);
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(0.17,0.022,8,16),mat(0xd4b483)); rim.position.z=0.025; g.add(rim);
+      const hour=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.1,0.02),mat(0x333333)); hour.position.set(0,0.05,0.04); g.add(hour);
+      const min=new THREE.Mesh(new THREE.BoxGeometry(0.015,0.13,0.02),mat(0x333333)); min.position.set(0.05,0.06,0.04); g.add(min);
+      break;
+    }
+    case 'rainbow': {
+      [0xff6b6b,0xfeca57,0x48dbfb,0x1dd1a1,0x5f27cd].forEach((c,i)=>{
+        const arc=new THREE.Mesh(new THREE.TorusGeometry(0.3-i*0.04,0.025,8,12,Math.PI),mat(c));
+        arc.position.y=-0.02; g.add(arc);
+      });
+      break;
+    }
+    case 'starmobile': {
+      const cyl=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.015,8),mat(0xaaaaaa)); cyl.position.y=0.5; g.add(cyl);
+      const sph=new THREE.Mesh(new THREE.SphereGeometry(0.06,6,4),mat(0xfdcb6e)); sph.position.y=0.5; g.add(sph);
+      const cols=[0xff6b6b,0x48dbfb,0x0be881,0xa29bfe,0xffb3de];
+      for(let i=0;i<5;i++){
+        const a=(i/5)*Math.PI*2;
+        const s=new THREE.Mesh(new THREE.SphereGeometry(0.045,5,4),mat(cols[i]));
+        s.position.set(Math.cos(a)*0.18,0.28+Math.sin(a)*0.06,Math.sin(a)*0.18); g.add(s);
+        const thread=new THREE.Mesh(new THREE.BoxGeometry(0.009,0.22,0.009),mat(0xcccccc));
+        thread.position.set(Math.cos(a)*0.1,0.375,Math.sin(a)*0.1); g.add(thread);
+      }
+      break;
+    }
+    case 'fairylights': {
+      const wire=new THREE.Mesh(new THREE.BoxGeometry(def.w,0.01,0.01),mat(0x888888)); g.add(wire);
+      const lCols=[0xffd32a,0xff6b9d,0x48dbfb,0x0be881,0xff6b6b,0xa29bfe];
+      for(let i=0;i<12;i++){
+        const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.025,6,4),mat(lCols[i%5]));
+        bulb.position.set(-def.w/2+i*(def.w/11),-(0.02+Math.sin(i)*0.02),0); g.add(bulb);
+      }
+      break;
+    }
+    case 'globe': {
+      const stand=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.07,0.12,8),mat(0xc0a060)); stand.position.y=0.06; g.add(stand);
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.18,8),mat(0xd4b483)); pole.position.y=0.24; g.add(pole);
+      const sphere=new THREE.Mesh(new THREE.SphereGeometry(0.12,12,8),m()); sphere.position.y=0.36; g.add(sphere);
+      const land=new THREE.Mesh(new THREE.SphereGeometry(0.125,8,6),mat(0x0be881));
+      land.position.set(0.02,0.36,0); land.scale.set(0.55,0.85,0.5); g.add(land);
+      break;
+    }
+    case 'penciljar': {
+      const jar=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.065,0.16,8),mat(0xffd32a)); jar.position.y=0.08; g.add(jar);
+      const pCols=[0xff6b6b,0xff9f43,0x48dbfb,0x0be881,0xf368e0];
+      for(let i=0;i<5;i++){
+        const a=(i/5)*Math.PI*2;
+        const p=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.26,6),mat(pCols[i]));
+        p.position.set(Math.cos(a)*0.04,0.23,Math.sin(a)*0.04); g.add(p);
+      }
+      break;
+    }
+    case 'ball': {
+      const ball=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,8),m()); ball.position.y=0.15; g.add(ball);
+      const seam=new THREE.Mesh(new THREE.TorusGeometry(0.1,0.012,6,12),mat(0x333333)); seam.position.y=0.15; g.add(seam);
+      const seam2=seam.clone(); seam2.rotation.y=Math.PI/2; g.add(seam2);
+      break;
+    }
+    case 'guitar': {
+      const body=new THREE.Mesh(new THREE.SphereGeometry(0.13,8,6),m()); body.position.y=0.2; body.scale.set(1,1.2,0.6); g.add(body);
+      const body2=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,6),m()); body2.position.y=0.42; body2.scale.set(0.9,0.9,0.6); g.add(body2);
+      const neck=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.55,0.04),mat(0xffd32a)); neck.position.y=0.72; g.add(neck);
+      const head=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.1,0.04),mat(0xffd32a)); head.position.y=1.02; g.add(head);
+      const sound=new THREE.Mesh(new THREE.TorusGeometry(0.04,0.008,6,10),mat(0x2d3436)); sound.position.set(0,0.25,0.08); sound.rotation.x=Math.PI/2; g.add(sound);
+      for(let i=0;i<4;i++){const str=new THREE.Mesh(new THREE.BoxGeometry(0.004,0.6,0.004),mat(0xeeeeee)); str.position.set(-0.015+i*0.01,0.72,0.03); g.add(str);}
+      break;
+    }
+    case 'telescope': {
+      const base2=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.12,0.08,8),mat(0xff9f43)); base2.position.y=0.04; g.add(base2);
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.45,8),mat(0xffd32a)); pole.position.y=0.29; g.add(pole);
+      const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.065,0.055,0.42,10),m());
+      tube.position.y=0.55; tube.rotation.z=Math.PI/6; g.add(tube);
+      const lens=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,0.04,10),mat(0x48dbfb)); lens.rotation.z=Math.PI/6; lens.position.set(0.12,0.7,0); g.add(lens);
+      break;
+    }
+    case 'spaceship': {
+      const body=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.08,0.4,8),mat(0x74b9ff)); body.position.y=0.3; g.add(body);
+      const nose=new THREE.Mesh(new THREE.ConeGeometry(0.12,0.2,8),mat(0xffd32a)); nose.position.y=0.6; g.add(nose);
+      const fin=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.12,0.03),mat(0xff6b6b)); fin.position.y=0.12; g.add(fin);
+      const fin2=fin.clone(); fin2.rotation.y=Math.PI/2; g.add(fin2);
+      const window2=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,6),mat(0x48dbfb)); window2.position.set(0,0.38,0.1); g.add(window2);
+      break;
+    }
+    case 'easel': {
+      const canvas3=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.42,0.02),mat(0xfff8f0)); canvas3.position.set(0,0.78,0); g.add(canvas3);
+      const frame2=new THREE.Mesh(new THREE.BoxGeometry(0.59,0.46,0.025),mat(0xd4b483)); frame2.position.set(0,0.78,-0.01); g.add(frame2);
+      const leg1=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.85,0.025),mat(0xd4b483)); leg1.rotation.z=0.15; leg1.position.set(-0.2,0.42,0.08); g.add(leg1);
+      const leg2=leg1.clone(); leg2.rotation.z=-0.15; leg2.position.set(0.2,0.42,0.08); g.add(leg2);
+      const leg3=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.75,0.025),mat(0xd4b483)); leg3.rotation.x=0.2; leg3.position.set(0,0.35,-0.18); g.add(leg3);
+      const tray=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.05,0.08),mat(0xc4a073)); tray.position.set(0,0.52,0.04); g.add(tray);
+      const paint=[0xff4d4d,0x48dbfb,0xffd32a];
+      paint.forEach((c,i)=>{const t=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.02,0.06,6),mat(c)); t.position.set(-0.1+i*0.1,0.57,0.04); g.add(t);});
+      break;
+    }
+    case 'teddy': {
+      const body=new THREE.Mesh(new THREE.SphereGeometry(0.13,8,6),m()); body.position.y=0.18; body.scale.set(1,1.1,0.9); g.add(body);
+      const head=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,6),m()); head.position.y=0.37; g.add(head);
+      const e1=new THREE.Mesh(new THREE.SphereGeometry(0.035,6,4),m()); e1.position.set(-0.07,0.46,0.06); g.add(e1);
+      const e2=e1.clone(); e2.position.set(0.07,0.46,0.06); g.add(e2);
+      const nose=new THREE.Mesh(new THREE.SphereGeometry(0.02,6,4),mat(0xff6b9d)); nose.position.set(0,0.37,0.1); g.add(nose);
+      const eyes=[[-0.04,0.4,0.09],[0.04,0.4,0.09]].forEach(([x,y,z])=>{const e=new THREE.Mesh(new THREE.SphereGeometry(0.013,5,4),mat(0x333333)); e.position.set(x,y,z); g.add(e);});
+      const arm1=new THREE.Mesh(new THREE.SphereGeometry(0.06,6,4),m()); arm1.position.set(-0.17,0.22,0); arm1.scale.set(0.7,1,0.7); g.add(arm1);
+      const arm2=arm1.clone(); arm2.position.set(0.17,0.22,0); g.add(arm2);
+      break;
+    }
+    case 'toybox': {
+      const box=new THREE.Mesh(new THREE.BoxGeometry(def.w,def.h*0.8,def.d),m()); box.position.y=def.h*0.4; g.add(box);
+      const lid=new THREE.Mesh(new THREE.BoxGeometry(def.w,def.h*0.15,def.d),mat(def.color-0x200000)); lid.position.y=def.h*0.88; g.add(lid);
+      const star=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.12,0.02),mat(0xffd32a)); star.position.set(0,def.h*0.5,def.d/2+0.01); g.add(star);
+      break;
+    }
+    case 'basket': {
+      const bask=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.14,0.38,10),m()); bask.position.y=0.19; g.add(bask);
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(0.18,0.02,6,12),mat(def.color-0x101010)); rim.position.y=0.38; g.add(rim);
+      break;
+    }
+    case 'wallshelf': {
+      const sh=new THREE.Mesh(new THREE.BoxGeometry(def.w,def.h,def.d),m()); g.add(sh);
+      const br1=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.1,def.d),m()); br1.position.set(-def.w/2+0.08,-0.06,0); g.add(br1);
+      const br2=br1.clone(); br2.position.set(def.w/2-0.08,-0.06,0); g.add(br2);
+      break;
+    }
+    case 'curtain': {
+      const c1=new THREE.Mesh(new THREE.BoxGeometry(def.h,def.w,def.d),mat(def.color)); c1.position.y=def.h/2; g.add(c1);
+      const fold=new THREE.Mesh(new THREE.BoxGeometry(def.h,def.w*0.1,def.d*0.5),mat(def.color-0x100010)); fold.position.y=def.h/2; g.add(fold);
+      break;
+    }
+    default: {
+      const main=new THREE.Mesh(new THREE.BoxGeometry(def.w,def.h,def.d),m()); main.position.y=def.h/2; g.add(main);
+      break;
+    }
+  }
+
+  g.traverse(c => { if(c.isMesh){ c.castShadow=true; c.receiveShadow=true; }});
+  g.userData.defId = def.id;
+  g.userData.def = def;
+  return g;
+}
+
+function getFloorPos(e) { return clientToFloor(e.clientX, e.clientY); }
+
+function getClickedObj(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y = -((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse, camera);
+  const meshes = [];
+  placedObjects.forEach(grp => grp.traverse(c => { if(c.isMesh) meshes.push(c); }));
+  const hits = raycaster.intersectObjects(meshes);
+  if(hits.length > 0) {
+    let obj = hits[0].object;
+    while(obj.parent && !placedObjects.includes(obj)) obj = obj.parent;
+    if(placedObjects.includes(obj)) return obj;
+  }
+  return null;
+}
+
+// --- Camera rotation via buttons ---
+// Theta limits keep the camera inside the room looking inward.
+// The room front wall is at z=+3, back at z=-3. We restrict theta so
+// the camera never passes behind a side wall.
+const CAM_STEP = Math.PI / 8;        // 22.5° per press
+const CAM_THETA_MIN = -Math.PI * 0.72; // left limit  (~-130°)
+const CAM_THETA_MAX =  Math.PI * 0.72; // right limit (~+130°)
+
+function rotateCameraBy(delta) {
+  const sph = new THREE.Spherical();
+  sph.setFromVector3(camera.position);
+  sph.theta = Math.max(CAM_THETA_MIN, Math.min(CAM_THETA_MAX, sph.theta + delta));
+  // Keep a comfortable viewing height — phi stays fixed
+  camera.position.setFromSpherical(sph);
+  camera.lookAt(0, 0.5, 0);
+}
+
+// Hold-to-repeat for camera buttons
+let camInterval = null;
+function startCamRotate(dir) {
+  rotateCameraBy(dir * CAM_STEP);
+  camInterval = setInterval(() => rotateCameraBy(dir * CAM_STEP), 180);
+}
+function stopCamRotate() { clearInterval(camInterval); camInterval = null; }
+
+// --- Drag state for moving placed furniture ---
+let draggingObj = null;
+let dragOffset = new THREE.Vector3();
+// We only start a drag after the pointer has moved a few pixels,
+// so a quick tap still counts as a click (select).
+const DRAG_THRESHOLD = 6;
+
+function clientToFloor(cx, cy) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((cx - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((cy - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const tgt = new THREE.Vector3();
+  raycaster.ray.intersectPlane(plane, tgt);
+  return tgt;
+}
+
+function clientToWall(cx, cy) {
+  // Project onto the back wall plane (z = -2.88)
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((cx - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((cy - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 2.88);
+  const tgt = new THREE.Vector3();
+  raycaster.ray.intersectPlane(plane, tgt);
+  return tgt;
+}
+
+function onMouseDown(e) {
+  if(e.target !== renderer.domElement) return;
+  mouseDownPos = {x: e.clientX, y: e.clientY};
+  prevMouse = {...mouseDownPos};
+  mouseMovedFar = false;
+
+  if(selectedFurniture) return;
+
+  const hit = getClickedObjOrChar(e);
+  if(hit?.isChar) {
+    // Start dragging the character
+    draggingCharacter = true;
+    draggingObj = null;
+    charState = 'idle';
+    if(charPoseTimer) { clearTimeout(charPoseTimer); charPoseTimer = null; }
+    return;
+  }
+  if(hit?.obj) {
+    const obj = hit.obj;
+    draggingObj = obj;
+    if(!selectedObj || selectedObj !== obj) selectObject(obj);
+    const isWall = obj.userData.def?.wall;
+    if(isWall) {
+      const wp = clientToWall(e.clientX, e.clientY);
+      if(wp) dragOffset.set(obj.position.x - wp.x, obj.position.y - wp.y, 0);
+    } else {
+      const fp = clientToFloor(e.clientX, e.clientY);
+      if(fp) dragOffset.set(obj.position.x - fp.x, 0, obj.position.z - fp.z);
+    }
+  }
+}
+
+function onMouseMove(e) {
+  if(e.target !== renderer.domElement && !draggingObj && !draggingCharacter) return;
+  const dx = e.clientX - mouseDownPos.x, dy = e.clientY - mouseDownPos.y;
+  if(Math.sqrt(dx*dx + dy*dy) > DRAG_THRESHOLD) mouseMovedFar = true;
+
+  if(draggingCharacter && mouseMovedFar && character) {
+    const fp = clientToFloor(e.clientX, e.clientY);
+    if(fp) {
+      character.position.x = Math.max(-2.8, Math.min(2.8, fp.x));
+      character.position.z = Math.max(-2.3, Math.min(2.3, fp.z));
+      character.position.y = 0;
+    }
+    return;
+  }
+
+  if(draggingObj && mouseMovedFar) {
+    const isWall = draggingObj.userData.def?.wall;
+    if(isWall) {
+      const wp = clientToWall(e.clientX, e.clientY);
+      if(wp) {
+        draggingObj.position.x = Math.max(-3.0, Math.min(3.0, wp.x + dragOffset.x));
+        draggingObj.position.y = Math.max(0.2, Math.min(3.2, wp.y + dragOffset.y));
+      }
+    } else {
+      const fp = clientToFloor(e.clientX, e.clientY);
+      if(fp) {
+        draggingObj.position.x = Math.max(-3.0, Math.min(3.0, fp.x + dragOffset.x));
+        draggingObj.position.z = Math.max(-2.5, Math.min(2.5, fp.z + dragOffset.z));
+      }
+    }
+  }
+}
+
+function onMouseUp(e) {
+  if(draggingCharacter) {
+    draggingCharacter = false;
+    // After drop, resume interactions from new position
+    if(character) {
+      charState = 'posing';
+      charPoseTimer = setTimeout(pickNextInteraction, 1200);
+    }
+    mouseMovedFar = false;
+    return;
+  }
+
+  if(e.target !== renderer.domElement) { draggingObj = null; mouseMovedFar = false; return; }
+
+  if(!mouseMovedFar) {
+    if(selectedFurniture) {
+      const fp = clientToFloor(e.clientX, e.clientY);
+      if(fp) {
+        fp.x = Math.max(-3.0, Math.min(3.0, fp.x));
+        fp.z = Math.max(-2.5, Math.min(2.5, fp.z));
+        placeFurniture(selectedFurniture, fp);
+      }
+    } else {
+      const hit = getClickedObjOrChar(e);
+      if(hit?.obj && !hit.isChar) selectObject(hit.obj);
+      else if(!hit) { deselectAll(); hideItemColorBar(); }
+    }
+  }
+  draggingObj = null;
+  mouseMovedFar = false;
+}
+
+function onClick(e) { /* handled in onMouseUp */ }
+
+// Touch equivalents
+function onTouchStart(e) {
+  if(e.touches.length !== 1) return;
+  const t = e.touches[0];
+  mouseDownPos = {x: t.clientX, y: t.clientY};
+  prevMouse = {...mouseDownPos};
+  mouseMovedFar = false;
+
+  if(selectedFurniture) return;
+
+  const hit = getClickedObjOrChar({clientX: t.clientX, clientY: t.clientY});
+  if(hit?.isChar) {
+    draggingCharacter = true; draggingObj = null;
+    charState = 'idle';
+    if(charPoseTimer) { clearTimeout(charPoseTimer); charPoseTimer = null; }
+    return;
+  }
+  if(hit?.obj) {
+    const obj = hit.obj;
+    draggingObj = obj;
+    if(!selectedObj || selectedObj !== obj) selectObject(obj);
+    const isWall = obj.userData.def?.wall;
+    if(isWall) {
+      const wp = clientToWall(t.clientX, t.clientY);
+      if(wp) dragOffset.set(obj.position.x - wp.x, obj.position.y - wp.y, 0);
+    } else {
+      const fp = clientToFloor(t.clientX, t.clientY);
+      if(fp) dragOffset.set(obj.position.x - fp.x, 0, obj.position.z - fp.z);
+    }
+  }
+}
+
+function onTouchMove(e) {
+  if(e.touches.length !== 1) return;
+  const t = e.touches[0];
+  const dx = t.clientX - mouseDownPos.x, dy = t.clientY - mouseDownPos.y;
+  if(Math.sqrt(dx*dx + dy*dy) > DRAG_THRESHOLD) mouseMovedFar = true;
+
+  if(draggingCharacter && mouseMovedFar && character) {
+    const fp = clientToFloor(t.clientX, t.clientY);
+    if(fp) {
+      character.position.x = Math.max(-2.8, Math.min(2.8, fp.x));
+      character.position.z = Math.max(-2.3, Math.min(2.3, fp.z));
+      character.position.y = 0;
+    }
+    return;
+  }
+
+  if(draggingObj && mouseMovedFar) {
+    const isWall = draggingObj.userData.def?.wall;
+    if(isWall) {
+      const wp = clientToWall(t.clientX, t.clientY);
+      if(wp) {
+        draggingObj.position.x = Math.max(-3.0, Math.min(3.0, wp.x + dragOffset.x));
+        draggingObj.position.y = Math.max(0.2, Math.min(3.2, wp.y + dragOffset.y));
+      }
+    } else {
+      const fp = clientToFloor(t.clientX, t.clientY);
+      if(fp) {
+        draggingObj.position.x = Math.max(-3.0, Math.min(3.0, fp.x + dragOffset.x));
+        draggingObj.position.z = Math.max(-2.5, Math.min(2.5, fp.z + dragOffset.z));
+      }
+    }
+  }
+}
+
+function onTouchEnd(e) {
+  const last = e.changedTouches[0];
+  if(draggingCharacter) {
+    draggingCharacter = false;
+    if(character) { charState = 'posing'; charPoseTimer = setTimeout(pickNextInteraction, 1200); }
+    mouseMovedFar = false; return;
+  }
+  if(!mouseMovedFar) {
+    if(selectedFurniture) {
+      const fp = clientToFloor(last.clientX, last.clientY);
+      if(fp) {
+        fp.x = Math.max(-3.0, Math.min(3.0, fp.x));
+        fp.z = Math.max(-2.5, Math.min(2.5, fp.z));
+        placeFurniture(selectedFurniture, fp);
+      }
+    } else {
+      const hit = getClickedObjOrChar({clientX: last.clientX, clientY: last.clientY});
+      if(hit?.obj && !hit.isChar) selectObject(hit.obj);
+      else if(!hit) { deselectAll(); hideItemColorBar(); }
+    }
+  }
+  draggingObj = null;
+  mouseMovedFar = false;
+}
+
+function placeFurniture(def, pos) {
+  const group = buildFurniture(def);
+  if(def.wall) {
+    group.position.set(pos.x, 1.5, -2.88);
+  } else {
+    group.position.set(pos.x, 0, pos.z);
+  }
+  scene.add(group);
+  placedObjects.push(group);
+
+  // Deselect panel item — user must click again for another copy
+  selectedFurniture = null;
+  document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('placing-indicator').style.display = 'none';
+  hideItemColorBar();
+
+  // Select the newly placed object
+  selectObject(group);
+  showHint('Placed! Click it to select, drag to move 🏠', 2500);
+}
+
+function selectObject(obj) {
+  deselectAll();
+  selectedObj = obj;
+  obj.traverse(c => {
+    if(c.isMesh && !c.userData._sel) {
+      c.userData._sel=true;
+      c.material = c.material.clone();
+      c.material.emissive = new THREE.Color(0x332255);
+      c.material.emissiveIntensity = 0.3;
+    }
+  });
+  document.getElementById('selected-info').style.display='block';
+  const canFloat = obj.userData.def?.canFloat;
+  document.getElementById('btn-up').style.display = canFloat ? 'flex' : 'none';
+  document.getElementById('btn-down').style.display = canFloat ? 'flex' : 'none';
+}
+function deselectAll() {
+  if(selectedObj) {
+    selectedObj.traverse(c => {
+      if(c.isMesh && c.userData._sel) {
+        c.material.emissive=new THREE.Color(0x000000); c.material.emissiveIntensity=0; delete c.userData._sel;
+      }
+    });
+    selectedObj=null;
+  }
+  document.getElementById('selected-info').style.display='none';
+  document.getElementById('btn-up').style.display='none';
+  document.getElementById('btn-down').style.display='none';
+}
+
+function setupUI() {
+  // Camera arrow buttons
+  const camL = document.getElementById('cam-left');
+  const camR = document.getElementById('cam-right');
+  camL.addEventListener('mousedown', () => startCamRotate(1));
+  camR.addEventListener('mousedown', () => startCamRotate(-1));
+  ['mouseup','mouseleave'].forEach(ev => { camL.addEventListener(ev, stopCamRotate); camR.addEventListener(ev, stopCamRotate); });
+  camL.addEventListener('touchstart', (e) => { e.preventDefault(); startCamRotate(1); }, {passive:false});
+  camR.addEventListener('touchstart', (e) => { e.preventDefault(); startCamRotate(-1); }, {passive:false});
+  ['touchend','touchcancel'].forEach(ev => { camL.addEventListener(ev, stopCamRotate); camR.addEventListener(ev, stopCamRotate); });
+
+  // Paint panel toggle (collapsed by default)
+  const paintToggle = document.getElementById('color-panel-toggle');
+  const paintBody = document.getElementById('color-panel-body');
+  const paintArrow = paintToggle.querySelector('.toggle-arrow');
+  paintToggle.addEventListener('click', () => {
+    const isOpen = paintBody.classList.toggle('open');
+    paintArrow.classList.toggle('open', isOpen);
+    // Round top corners only when open
+    document.getElementById('color-panel').style.borderRadius = isOpen ? '18px' : '18px';
+  });
+  document.getElementById('btn-up').addEventListener('click', () => {
+    if(selectedObj) { selectedObj.position.y = Math.min(selectedObj.position.y + 0.1, 3.0); }
+  });
+  document.getElementById('btn-down').addEventListener('click', () => {
+    if(selectedObj) { selectedObj.position.y = Math.max(selectedObj.position.y - 0.1, 0); }
+  });
+  document.getElementById('btn-rotate').addEventListener('click',()=>{
+    if(selectedObj){ selectedObj.rotation.y+=Math.PI/4; showHint('Rotated! 🔄',1200); }
+    else showHint('Select an item first!',1500);
+  });
+  document.getElementById('btn-delete').addEventListener('click',()=>{
+    if(selectedObj){ scene.remove(selectedObj); placedObjects=placedObjects.filter(o=>o!==selectedObj); deselectAll(); showHint('Removed!',1000); }
+    else showHint('Select an item first!',1500);
+  });
+  document.getElementById('btn-undo').addEventListener('click',()=>{
+    if(placedObjects.length>0){ const last=placedObjects.pop(); if(last===selectedObj) deselectAll(); scene.remove(last); showHint('Undone!',1000); }
+  });
+  buildSwatches('wall-swatches', WALL_COLORS, (c,el)=>{
+    wallColor=c; wallMeshes.forEach(w=>w.material.color.setHex(c));
+    document.querySelectorAll('#wall-swatches .swatch').forEach(s=>s.classList.remove('active')); el.classList.add('active');
+  });
+  buildSwatches('floor-swatches', FLOOR_COLORS, (c,el)=>{
+    floorColor=c; floorMesh.material.color.setHex(c);
+    document.querySelectorAll('#floor-swatches .swatch').forEach(s=>s.classList.remove('active')); el.classList.add('active');
+  });
+  setTimeout(()=>{ document.querySelector('#wall-swatches .swatch:nth-child(7)').classList.add('active'); document.querySelector('#floor-swatches .swatch:nth-child(1)').classList.add('active'); },100);
+}
+
+function buildSwatches(id, colors, onPick) {
+  const el=document.getElementById(id);
+  colors.forEach(c=>{ const s=document.createElement('div'); s.className='swatch'; s.style.background='#'+c.toString(16).padStart(6,'0'); s.addEventListener('click',()=>onPick(c,s)); el.appendChild(s); });
+}
+
+// ── Game mode ──────────────────────────────────────────────
+let gameMode = 'freeplay'; // 'freeplay' | 'name'
+let unlockedItems = new Set(); // item ids unlocked in name mode
+let quizTarget = null;        // def being quizzed
+let quizAnswered = false;
+let quizRenderer = null, quizScene = null, quizCamera = null, quizAnimId = null;
+
+// Flat list of all furniture for generating wrong answers
+function allFurnitureDefs() {
+  return FURNITURE.all;
+}
+
+function totalItems() { return allFurnitureDefs().length; }
+
+function updateScoreBadge() { /* score badge removed */ }
+
+// ── Mode selector ───────────────────────────────────────────
+document.getElementById('btn-freeplay').addEventListener('click', () => {
+  gameMode = 'freeplay';
+  document.getElementById('mode-screen').style.display = 'none';
+  document.getElementById('top-title').textContent = '🏠 My Bedroom';
+  showHint('Pick furniture below to get started!', 3000);
+});
+
+document.getElementById('btn-namemode').addEventListener('click', () => {
+  gameMode = 'name';
+  document.getElementById('mode-screen').style.display = 'none';
+  document.getElementById('top-title').textContent = '🧠 Name the Furniture';
+  updateScoreBadge();
+  renderItems('all');
+  showHint('Tap ??? to identify furniture and unlock it!', 4000);
+});
+
+function showItemColorBar(def) {
+  const bar = document.getElementById('item-color-bar');
+  // Remove old swatches (keep label)
+  bar.querySelectorAll('.item-swatch').forEach(s => s.remove());
+  const colors = ITEM_COLORS[def.id] || [];
+  colors.forEach(c => {
+    const s = document.createElement('div');
+    s.className = 'item-swatch';
+    s.style.background = '#' + c.toString(16).padStart(6,'0');
+    if(c === selectedItemColors[def.id]) s.classList.add('active');
+    s.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectedItemColors[def.id] = c;
+      // Update live if this furniture is currently selected for placing
+      if(selectedFurniture && selectedFurniture.id === def.id) {
+        selectedFurniture = {...selectedFurniture, color: c};
+      }
+      bar.querySelectorAll('.item-swatch').forEach(x => x.classList.remove('active'));
+      s.classList.add('active');
+    });
+    bar.appendChild(s);
+  });
+  bar.style.display = colors.length ? 'flex' : 'none';
+}
+
+function hideItemColorBar() {
+  document.getElementById('item-color-bar').style.display = 'none';
+}
+
+// ── renderItems — quiz-aware ────────────────────────────────
+function renderItems(cat) {
+  const row = document.getElementById('items-row');
+  row.innerHTML = '';
+  hideItemColorBar();
+  FURNITURE.all.forEach(def => {
+    const card = document.createElement('div');
+    const isLocked = gameMode === 'name' && !unlockedItems.has(def.id);
+    card.className = 'item-card' + (isLocked ? ' locked' : '');
+
+    if(isLocked) {
+      card.innerHTML = `<div class="item-icon" style="filter:grayscale(1)">❓</div><div class="item-name" style="color:#aaa">???</div><div class="lock-icon">🔒</div>`;
+      card.addEventListener('click', () => openQuiz(def));
+    } else {
+      card.innerHTML = `<div class="item-icon">${def.icon}</div><div class="item-name">${def.name}</div>`;
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        // Use the player's chosen colour for this furniture
+        const coloredDef = {...def, color: selectedItemColors[def.id] ?? def.color};
+        selectedFurniture = coloredDef;
+        deselectAll();
+        showItemColorBar(def);
+
+        document.getElementById('placing-indicator').style.display = 'block';
+        document.getElementById('placing-indicator').textContent = `Click in the room to place the ${def.name}!`;
+        showHint('', 0);
+      });
+    }
+    row.appendChild(card);
+  });
+}
+
+// ── Quiz system ─────────────────────────────────────────────
+function openQuiz(def) {
+  quizTarget = def;
+  quizAnswered = false;
+  document.getElementById('quiz-feedback').textContent = '';
+  document.getElementById('quiz-continue').style.display = 'none';
+  document.getElementById('quiz-question').textContent = 'What is this called?';
+
+  // Build 3 wrong answers from other items
+  const others = allFurnitureDefs().filter(d => d.id !== def.id);
+  const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
+  const options = [def, ...shuffled].sort(() => Math.random() - 0.5);
+
+  const optEl = document.getElementById('quiz-options');
+  optEl.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.textContent = opt.name;
+    btn.addEventListener('click', () => handleQuizAnswer(opt.id === def.id, btn));
+    optEl.appendChild(btn);
+  });
+
+  document.getElementById('quiz-overlay').classList.add('show');
+  startQuizPreview(def);
+}
+
+function handleQuizAnswer(correct, btn) {
+  if(quizAnswered) return;
+  quizAnswered = true;
+
+  document.querySelectorAll('.quiz-opt').forEach(b => b.style.pointerEvents = 'none');
+
+  if(correct) {
+    btn.classList.add('correct');
+    document.getElementById('quiz-feedback').textContent = '🎉 Correct! You can now place it!';
+    document.getElementById('quiz-feedback').style.color = '#1dd1a1';
+    document.getElementById('quiz-continue').style.display = 'inline-block';
+    unlockedItems.add(quizTarget.id);
+    updateScoreBadge();
+    // Check if all items are now named
+    if(unlockedItems.size === totalItems()) {
+      setTimeout(() => { closeQuiz(); showCongratsModal(); }, 1200);
+    }
+  } else {
+    btn.classList.add('wrong');
+    // Highlight the correct one
+    document.querySelectorAll('.quiz-opt').forEach(b => {
+      if(b.textContent === quizTarget.name) b.classList.add('correct');
+    });
+    document.getElementById('quiz-feedback').textContent = `Not quite! It\'s a ${quizTarget.name}. Try again next time!`;
+    document.getElementById('quiz-feedback').style.color = '#ff6b6b';
+    setTimeout(closeQuiz, 2200);
+  }
+}
+
+document.getElementById('quiz-continue').addEventListener('click', () => {
+  closeQuiz();
+  // Auto-select the just-unlocked item for placing
+  selectedFurniture = quizTarget;
+  renderItems(activeCategory);
+  document.getElementById('placing-indicator').style.display = 'block';
+  document.getElementById('placing-indicator').textContent = `Click in the room to place the ${quizTarget.name}!`;
+  showHint(`${quizTarget.name} unlocked! 🎉 Place it anywhere.`, 3000);
+});
+
+function closeQuiz() {
+  document.getElementById('quiz-overlay').classList.remove('show');
+  stopQuizPreview();
+  renderItems(activeCategory);
+}
+
+// ── Congrats modal ──────────────────────────────────────────
+function showCongratsModal() {
+  document.getElementById('congrats-overlay').classList.add('show');
+  launchCharacter();
+}
+
+document.getElementById('btn-congrats-continue').addEventListener('click', () => {
+  document.getElementById('congrats-overlay').classList.remove('show');
+});
+
+document.getElementById('btn-congrats-menu').addEventListener('click', () => {
+  document.getElementById('congrats-overlay').classList.remove('show');
+  // Reset state
+  unlockedItems.clear();
+  placedObjects.forEach(o => scene.remove(o));
+  placedObjects = [];
+  selectedObj = null;
+  removeCharacter();
+  renderItems('all');
+  updateScoreBadge();
+  document.getElementById('mode-screen').style.display = 'flex';
+});
+
+// ── Screenshot ──────────────────────────────────────────────
+document.getElementById('btn-screenshot').addEventListener('click', () => {
+  // Render one fresh frame to make sure canvas is up to date
+  renderer.render(scene, camera);
+  const dataURL = renderer.domElement.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = dataURL;
+  a.download = 'my-bedroom.png';
+  a.click();
+  showHint('📷 Saved!', 1800);
+});
+
+// ── Low-poly character ──────────────────────────────────────
+let character = null;
+let charMixer = null;
+let charTarget = null;
+let charState = 'idle'; // idle | walking | posing
+let charAnimId = null;
+let charPoseTimer = null;
+
+const CHAR_COLORS = { skin: 0xffe0c0, hair: 0x1a1a1a, top: 0x74b9ff, shorts: 0x1e3a5f, shoe: 0x222222 };
+
+function launchCharacter() {
+  removeCharacter();
+  character = buildCharacter();
+  character.position.set(-4, 0, 0);
+  character.rotation.y = Math.PI / 2;
+  scene.add(character);
+  walkCharacterTo(new THREE.Vector3(0, 0, 0.5), () => pickNextInteraction());
+}
+
+function removeCharacter() {
+  if(charPoseTimer) { clearTimeout(charPoseTimer); charPoseTimer = null; }
+  if(character) { scene.remove(character); character = null; }
+  charState = 'idle';
+  draggingCharacter = false;
+}
+
+function buildCharacter() {
+  const g = new THREE.Group();
+  const S = 1.25;
+  const legH=0.34*S, legW=0.115*S, legD=0.115*S;
+  const shortH=0.13*S;
+  const bodyH=0.36*S, bodyW=0.32*S, bodyD=0.20*S;
+  const armH=0.28*S, armW=0.10*S;
+  const headS=0.26*S;
+  const legTopY=legH, bodyMidY=legTopY+bodyH/2;
+
+  // Legs — shorts colour
+  const legMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.shorts});
+  const legL=new THREE.Mesh(new THREE.BoxGeometry(legW,legH,legD),legMat);
+  legL.position.set(-legW*0.6,legH/2,0);
+  const legR=new THREE.Mesh(new THREE.BoxGeometry(legW,legH,legD),legMat);
+  legR.position.set(legW*0.6,legH/2,0);
+  g.add(legL,legR);
+
+  // Shoes
+  const shoeMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.shoe});
+  const shoeL=new THREE.Mesh(new THREE.BoxGeometry(legW*1.1,legH*0.13,legD*1.6),shoeMat);
+  shoeL.position.set(-legW*0.6,legH*0.065,legD*0.3);
+  const shoeR=shoeL.clone(); shoeR.position.x=legW*0.6;
+  g.add(shoeL,shoeR);
+
+  // Shorts — wide panel overlapping both leg top and body bottom to seal seam
+  const shortsMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.shorts});
+  const shorts=new THREE.Mesh(new THREE.BoxGeometry(bodyW*0.94,shortH,bodyD),shortsMat);
+  shorts.position.set(0,legTopY,0); // centred exactly at join
+  g.add(shorts);
+
+  // Body / top — flush: bottom of body = legTopY
+  const bodyMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.top});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(bodyW,bodyH,bodyD),bodyMat);
+  body.position.y=bodyMidY;
+  g.add(body);
+
+  // Short sleeves
+  const sleeveMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.top});
+  const sleeveL=new THREE.Mesh(new THREE.BoxGeometry(armW*1.4,armH*0.28,bodyD*0.9),sleeveMat);
+  sleeveL.position.set(-(bodyW/2+armW*0.55),legTopY+bodyH*0.82,0);
+  const sleeveR=sleeveL.clone(); sleeveR.position.x*=-1;
+  g.add(sleeveL,sleeveR);
+
+  // Arms — skin
+  const armSkinMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.skin});
+  const armL=new THREE.Mesh(new THREE.BoxGeometry(armW,armH,armW),armSkinMat);
+  armL.position.set(-(bodyW/2+armW*0.55),legTopY+bodyH*0.52,0);
+  const armR=new THREE.Mesh(new THREE.BoxGeometry(armW,armH,armW),armSkinMat);
+  armR.position.set(bodyW/2+armW*0.55,legTopY+bodyH*0.52,0);
+  g.add(armL,armR);
+
+  // Neck
+  const neckMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.skin});
+  const neck=new THREE.Mesh(new THREE.BoxGeometry(headS*0.36,headS*0.25,headS*0.36),neckMat);
+  neck.position.y=legTopY+bodyH+headS*0.125;
+  g.add(neck);
+
+  // Head
+  const headMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.skin});
+  const head=new THREE.Mesh(new THREE.BoxGeometry(headS,headS,headS*0.9),headMat);
+  head.position.y=legTopY+bodyH+headS*0.55;
+  g.add(head);
+
+  // Hair cap + sides + back
+  const hairMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.hair});
+  const hairTop=new THREE.Mesh(new THREE.BoxGeometry(headS*1.02,headS*0.38,headS*0.97),hairMat);
+  hairTop.position.y=legTopY+bodyH+headS*0.86; g.add(hairTop);
+  const hairSideL=new THREE.Mesh(new THREE.BoxGeometry(headS*0.07,headS*0.38,headS*0.97),hairMat);
+  hairSideL.position.set(-headS*0.5,legTopY+bodyH+headS*0.72,0); g.add(hairSideL);
+  const hairSideR=hairSideL.clone(); hairSideR.position.x*=-1; g.add(hairSideR);
+  const hairBack=new THREE.Mesh(new THREE.BoxGeometry(headS,headS*0.5,headS*0.09),hairMat);
+  hairBack.position.set(0,legTopY+bodyH+headS*0.72,-headS*0.47); g.add(hairBack);
+
+  // Eyes
+  const eyeMat=new THREE.MeshLambertMaterial({color:0x111111});
+  const eyeGeo=new THREE.BoxGeometry(headS*0.15,headS*0.15,0.02);
+  const eyeL=new THREE.Mesh(eyeGeo,eyeMat);
+  eyeL.position.set(-headS*0.22,legTopY+bodyH+headS*0.54,headS*0.46); g.add(eyeL);
+  const eyeR=eyeL.clone(); eyeR.position.x*=-1; g.add(eyeR);
+
+  // Smile
+  const mouthMat=new THREE.MeshLambertMaterial({color:0xcc5555});
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(headS*0.22,headS*0.06,0.02),mouthMat);
+  mouth.position.set(0,legTopY+bodyH+headS*0.38,headS*0.46); g.add(mouth);
+
+  g.userData.legL=legL; g.userData.legR=legR;
+  g.userData.armL=armL; g.userData.armR=armR;
+  g.userData.sleeveL=sleeveL; g.userData.sleeveR=sleeveR;
+  g.userData.body=body; g.userData.head=head;
+  g.userData.isCharacter=true;
+  g.userData.radius=0.22;
+  g.traverse(c=>{if(c.isMesh)c.castShadow=true;});
+  return g;
+}
+
+// ── Simple direct walk (no collision) ───────────────────────
+function walkCharacterTo(target, onArrived) {
+  if(!character) return;
+  charState = 'walking';
+  const speed = 1.6;
+  const tgt = target.clone(); tgt.y = 0;
+  const startPos = character.position.clone();
+  const dir = new THREE.Vector3().subVectors(tgt, startPos); dir.y = 0;
+  if(dir.length() > 0.01) character.rotation.y = Math.atan2(dir.x, dir.z);
+  const dist = dir.length();
+  const duration = dist / speed;
+  let t = 0;
+
+  character.userData.stepFn = (dt) => {
+    if(charState !== 'walking') return;
+    t += dt;
+    const progress = Math.min(t / duration, 1);
+    character.position.lerpVectors(startPos, tgt, progress);
+    character.position.y = 0;
+    const bob = Math.sin(t * 9) * 0.14;
+    character.userData.legL.rotation.x =  bob;
+    character.userData.legR.rotation.x = -bob;
+    character.userData.armL.rotation.x = -bob * 0.5;
+    character.userData.armR.rotation.x =  bob * 0.5;
+    if(progress >= 1) {
+      character.userData.legL.rotation.x = 0; character.userData.legR.rotation.x = 0;
+      character.userData.armL.rotation.x = 0; character.userData.armR.rotation.x = 0;
+      charState = 'posing';
+      character.userData.stepFn = null;
+      if(onArrived) onArrived();
+    }
+  };
+}
+
+// ── Character drag-to-place ──────────────────────────────────
+let draggingCharacter = false;
+
+function getClickedObjOrChar(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  // Check character first
+  if(character) {
+    const charMeshes = [];
+    character.traverse(c => { if(c.isMesh) charMeshes.push(c); });
+    const charHits = raycaster.intersectObjects(charMeshes);
+    if(charHits.length > 0) return { obj: character, isChar: true };
+  }
+  // Then furniture
+  const meshes = [];
+  placedObjects.forEach(grp => grp.traverse(c => { if(c.isMesh) meshes.push(c); }));
+  const hits = raycaster.intersectObjects(meshes);
+  if(hits.length > 0) {
+    let obj = hits[0].object;
+    while(obj.parent && !placedObjects.includes(obj)) obj = obj.parent;
+    if(placedObjects.includes(obj)) return { obj, isChar: false };
+  }
+  return null;
+}
+
+let lastTime = performance.now();
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt = (now - lastTime) / 1000;
+  lastTime = now;
+
+  // Drive character walking
+  if(character && character.userData.stepFn && charState === 'walking') {
+    character.userData.stepFn(dt);
+  }
+
+  renderer.render(scene, camera);
+}
+
+function pickNextInteraction() {
+  if(!character) return;
+
+  const interactable = placedObjects.filter(o => {
+    const id = o.userData.def?.id;
+    return ['bed','chair','desk','bookshelf','wardrobe','drawers','plant','rug','teddybear','poster'].includes(id);
+  });
+
+  if(interactable.length === 0) {
+    poseWave();
+    charPoseTimer = setTimeout(pickNextInteraction, 3000);
+    return;
+  }
+
+  const target = interactable[Math.floor(Math.random() * interactable.length)];
+  const def = target.userData.def;
+  const pos = target.position.clone();
+  const furnitureRotY = target.rotation.y; // respect furniture rotation
+
+  let walkTo, faceAngle;
+
+  switch(def.id) {
+    case 'bed': {
+      // Walk to the foot of the bed, facing toward the head (back wall)
+      // Bed depth is ~2.2 — foot end is at pos.z + d/2, head at pos.z - d/2
+      const footZ = pos.z + (def.d / 2) + 0.1;
+      walkTo = new THREE.Vector3(pos.x, 0, Math.min(2.3, footZ));
+      faceAngle = Math.PI; // face toward back wall (toward headboard)
+      break;
+    }
+    case 'chair': {
+      // Stand in front of the chair (the seat faces +z, back of chair is -z side)
+      // Walk to front of chair, face away from back (toward +z)
+      walkTo = new THREE.Vector3(
+        Math.max(-2.8, Math.min(2.8, pos.x)),
+        0,
+        Math.min(2.3, pos.z + 0.45)
+      );
+      faceAngle = Math.PI; // face same direction as sitting (toward back wall)
+      break;
+    }
+    case 'desk': {
+      // Stand in front of desk, face the desk (toward back wall)
+      walkTo = new THREE.Vector3(
+        Math.max(-2.8, Math.min(2.8, pos.x)),
+        0,
+        Math.min(2.3, pos.z + 0.55)
+      );
+      faceAngle = Math.PI;
+      break;
+    }
+    default: {
+      walkTo = new THREE.Vector3(
+        Math.max(-2.8, Math.min(2.8, pos.x + (Math.random()-0.5)*0.4)),
+        0,
+        Math.max(-2.3, Math.min(2.3, pos.z + 0.5))
+      );
+      faceAngle = null; // will face toward furniture after arriving
+    }
+  }
+
+  walkCharacterTo(walkTo, () => {
+    if(faceAngle !== null) {
+      character.rotation.y = faceAngle;
+    } else {
+      const faceDir = new THREE.Vector3().subVectors(pos, character.position);
+      if(faceDir.length() > 0.01) character.rotation.y = Math.atan2(faceDir.x, faceDir.z);
+    }
+    applyPose(def.id, target);
+    charPoseTimer = setTimeout(() => {
+      resetPose();
+      charPoseTimer = setTimeout(pickNextInteraction, 800);
+    }, 3500);
+  });
+}
+
+function applyPose(itemId, targetObj) {
+  if(!character) return;
+  const { legL, legR, armL, armR, body, head } = character.userData;
+  resetPose();
+
+  switch(itemId) {
+    case 'bed': {
+      // Lay the character flat along the bed (rotate 90° around Z so body is horizontal)
+      // Move character onto the mattress surface and slide toward the headboard
+      const bedPos = targetObj.position;
+      // Place character on mattress, offset toward headboard end
+      character.position.x = bedPos.x;
+      character.position.z = bedPos.z - (targetObj.userData.def.d / 2) + 0.55; // near pillow end
+      character.position.y = 0.38; // mattress height
+      character.rotation.y = 0;    // along bed length (head toward back wall)
+      character.rotation.z = Math.PI / 2; // tip body horizontal
+      // Arms relaxed at sides
+      armL.rotation.z =  0.2;
+      armR.rotation.z = -0.2;
+      break;
+    }
+    case 'chair': {
+      // Sitting — legs bent, character lowered onto seat
+      // Face away from chair back (chair back is at -z side of chair)
+      legL.rotation.x = -Math.PI / 2.2; legR.rotation.x = -Math.PI / 2.2;
+      legL.position.z =  0.10; legR.position.z =  0.10;
+      legL.position.y = -0.05; legR.position.y = -0.05;
+      body.rotation.x = 0.08;
+      armL.rotation.x = 0.35; armR.rotation.x = 0.35;
+      character.position.y = -0.22;
+      break;
+    }
+    case 'desk': {
+      // Sitting at desk — similar to chair but lean forward slightly
+      legL.rotation.x = -Math.PI / 2.2; legR.rotation.x = -Math.PI / 2.2;
+      legL.position.z =  0.10; legR.position.z =  0.10;
+      legL.position.y = -0.05; legR.position.y = -0.05;
+      body.rotation.x = 0.22; // lean forward toward desk
+      armL.rotation.x = -0.5; armR.rotation.x = -0.5; // arms forward on desk
+      character.position.y = -0.22;
+      break;
+    }
+    case 'bookshelf':
+    case 'poster':
+      armL.rotation.x = -1.2; armL.rotation.z = 0.3;
+      head.rotation.x = 0.15;
+      break;
+    case 'wardrobe':
+    case 'drawers':
+      armL.rotation.x = -0.9; armR.rotation.x = -0.9;
+      break;
+    case 'plant':
+    case 'teddybear':
+      body.rotation.x = 0.45;
+      armL.rotation.x = -0.6; armR.rotation.x = -0.6;
+      character.position.y = -0.12;
+      break;
+    default:
+      poseWave();
+  }
+}
+
+function poseWave() {
+  if(!character) return;
+  character.userData.armR.rotation.z = -1.2;
+  character.userData.armR.rotation.x = -0.3;
+}
+
+function resetPose() {
+  if(!character) return;
+  const { legL, legR, armL, armR, body, head } = character.userData;
+  legL.rotation.set(0,0,0); legR.rotation.set(0,0,0);
+  legL.position.set(-0.069,legL.geometry.parameters.height/2,0);
+  legR.position.set( 0.069,legR.geometry.parameters.height/2,0);
+  armL.rotation.set(0,0,0); armR.rotation.set(0,0,0);
+  body.rotation.set(0,0,0); head.rotation.set(0,0,0);
+  character.rotation.z = 0;
+  character.position.y = 0;
+}
+
+// ── Mini 3D preview renderer ────────────────────────────────
+function startQuizPreview(def) {
+  stopQuizPreview();
+  const canvas = document.getElementById('quiz-canvas');
+  const W = 180, H = 180;
+
+  quizScene = new THREE.Scene();
+  quizScene.background = new THREE.Color(0xeeeeff);
+
+  quizCamera = new THREE.PerspectiveCamera(34, 1, 0.01, 50);
+
+  quizRenderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  quizRenderer.setSize(W, H);
+  quizRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Three-point lighting for clear colour and shape
+  quizScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+  const key = new THREE.DirectionalLight(0xffffff, 0.5);
+  key.position.set(3, 5, 4); quizScene.add(key);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.25);
+  fill.position.set(-3, 2, -2); quizScene.add(fill);
+
+  const obj = buildFurniture(def);
+
+  // Fix a pleasant 45° isometric-style rotation before measuring
+  obj.rotation.y = Math.PI / 4;
+  quizScene.add(obj);
+
+  // Measure after rotation
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3());
+  const centre = box.getCenter(new THREE.Vector3());
+
+  // Ground and centre the object
+  obj.position.x -= centre.x;
+  obj.position.z -= centre.z;
+  obj.position.y -= box.min.y;
+
+  // Recompute after repositioning
+  const box2 = new THREE.Box3().setFromObject(obj);
+  const size2 = box2.getSize(new THREE.Vector3());
+  const centre2 = box2.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size2.x, size2.y, size2.z);
+
+  // Isometric-style: elevated camera looking down at ~30°
+  const fovRad = (34 * Math.PI) / 180;
+  const dist = (maxDim / 2) / Math.tan(fovRad / 2) * 1.7;
+
+  // Camera at 45° horizontal, 30° vertical (classic isometric feel)
+  quizCamera.position.set(dist * 0.7, centre2.y + dist * 0.55, dist * 0.7);
+  quizCamera.lookAt(centre2.x, centre2.y * 0.5, centre2.z);
+
+  quizRenderer.render(quizScene, quizCamera);
+}
+
+function stopQuizPreview() {
+  if(quizRenderer) { quizRenderer.dispose(); quizRenderer = null; }
+  quizScene = null; quizCamera = null;
+}
+
+// Close quiz if clicking outside box
+document.getElementById('quiz-overlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('quiz-overlay') && quizAnswered) closeQuiz();
+});
+
+function showHint(msg, duration) {
+  const hint=document.getElementById('hint');
+  hint.textContent=msg; hint.style.opacity='1';
+  clearTimeout(hintTimeout);
+  if(duration>0) hintTimeout=setTimeout(()=>{hint.style.opacity='0';},duration);
+}
+
+// animate is defined above with character support
+
+window.addEventListener('resize',()=>{
+  const W=window.innerWidth, H=window.innerHeight;
+  camera.aspect=W/H; camera.updateProjectionMatrix(); renderer.setSize(W,H);
+});
+
+init();
+</script>
+</body>
+</html>
