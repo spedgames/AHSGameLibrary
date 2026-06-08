@@ -3,556 +3,456 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Restroom Rush</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+    <title>Refrigerator Sorter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #2563eb;
-            --secondary: #7c3aed;
-            --danger: #ef4444;
-            --top-bar: #2d3436;
-            --safari-bg: #74B9FF;
+            --primary-bg: #e0f7fa;
+            --fridge-body: #ffffff;
+            --fridge-trim: #cfd8dc;
+            --accent-color: #ff8a65;
+            --success-color: #4caf50;
+            --error-color: #f44336;
         }
 
-        * { 
-            box-sizing: border-box; 
-            user-select: none; 
-            -webkit-tap-highlight-color: transparent; 
-            touch-action: none; 
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: #000;
+        body {
+            margin: 0;
+            padding: 0;
             font-family: 'Poppins', sans-serif;
+            background-color: var(--primary-bg);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; }
-
-        /* UI Elements with smooth fade transitions */
-        #top-bar, #controls, .screen {
-            transition: opacity 0.5s ease, visibility 0.5s ease;
+        /* --- UI Header --- */
+        #ui-layer {
+            width: 100%;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 10;
         }
 
-        .hidden { 
-            opacity: 0 !important; 
-            visibility: hidden !important; 
-            pointer-events: none !important;
-        }
-
-        #top-bar {
-            position: absolute; top: 0; width: 100%; height: 60px;
-            background: var(--top-bar); display: flex; align-items: center;
-            justify-content: space-between; padding: 0 20px; z-index: 80; color: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-bottom: 3px solid var(--primary);
-        }
-
-        .hud-display { font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; }
-        .timer-display { font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; }
-        .timer-warning { color: var(--danger); animation: blink 0.5s infinite; }
-
-        @keyframes blink { 50% { opacity: 0.5; } }
-
-        .screen {
-            position: absolute; inset: 0;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(255, 255, 255, 0.98); z-index: 100; padding: 20px; text-align: center;
-        }
-
-        #start-screen {
-            background-color: var(--safari-bg);
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.1) 2px, transparent 2px),
-                linear-gradient(90deg, rgba(255,255,255,0.1) 2px, transparent 2px);
-            background-size: 40px 40px;
-        }
-
-        h1 { font-size: 3.5rem; margin: 0; color: var(--primary); letter-spacing: -2px; }
-        #start-screen h1 { color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        
-        .instructions {
-            max-width: 400px;
-            margin: 20px 0;
-            font-size: 1.1rem;
-            color: white;
-            line-height: 1.5;
-            font-weight: 600;
-        }
-
-        .controls-hint {
-            font-size: 0.9rem;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .btn {
-            background: var(--primary); color: white; border: none;
-            padding: 20px 60px; font-size: 1.5rem; font-weight: 800;
-            border-radius: 16px; cursor: pointer; box-shadow: 0 6px 0 #1d4ed8;
-            transition: all 0.1s; margin-top: 10px;
-        }
-        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1d4ed8; }
-
-        canvas { display: block; width: 100%; height: 100%; }
-
-        #controls {
-            position: absolute; bottom: 30px; width: 100%;
-            display: flex; justify-content: space-around; align-items: center;
-            padding: 0 20px; z-index: 90;
-        }
-
-        .d-pad { display: grid; grid-template-columns: repeat(3, 75px); gap: 10px; pointer-events: auto; }
-        .ctrl {
-            background: white; width: 75px; height: 75px;
-            border-radius: 20px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.6rem; box-shadow: 0 6px 0 #cbd5e1; cursor: pointer;
-        }
-        .ctrl:active { transform: translateY(4px); box-shadow: 0 2px 0 #cbd5e1; }
-
-        .enter-btn {
-            width: 130px; height: 130px; border-radius: 50%;
-            background: var(--secondary); color: white; font-weight: 900;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 8px 0 #5b21b6; pointer-events: auto; cursor: pointer;
+        .timer {
             font-size: 1.5rem;
+            font-weight: 600;
+            color: #37474f;
+            min-width: 120px;
         }
 
-        @media (min-width: 1025px) { #controls { display: none !important; } }
+        /* --- Sound Toggle Button --- */
+        .btn-sound {
+            background: #ffffff;
+            border: 2px solid #cfd8dc;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #37474f;
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .btn-sound:active {
+            transform: scale(0.95);
+        }
+
+        .btn-sound.muted {
+            background: #eceff1;
+            color: #90a4ae;
+            border-color: #b0bec5;
+        }
+
+        /* --- Game Layout --- */
+        #game-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            align-items: center;
+        }
+
+        /* --- Items Table --- */
+        #table-area {
+            height: 80%;
+            background: #d7ccc8;
+            border-radius: 20px;
+            border-bottom: 10px solid #a1887f;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 15px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .food-item {
+            width: 70px;
+            height: 70px;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, box-shadow 0.1s;
+            z-index: 5;
+            touch-action: none;
+        }
+
+        .food-item:active { cursor: grabbing; }
+        .dragging {
+            transform: scale(1.1);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            opacity: 0.9;
+        }
+
+        /* --- The Fridge CSS --- */
+        #fridge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .fridge {
+            width: 280px;
+            height: 500px;
+            background: var(--fridge-body);
+            border: 4px solid var(--fridge-trim);
+            border-radius: 20px 20px 10px 10px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 5px;
+        }
+
+        .door {
+            background: #f8f9fa;
+            border: 2px solid #eceff1;
+            border-radius: 10px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #90a4ae;
+            position: relative;
+            transition: transform 0.3s ease, background 0.3s;
+            transform-origin: left;
+        }
+
+        .door::after {
+            content: '';
+            position: absolute;
+            right: 15px;
+            width: 10px;
+            height: 40px;
+            background: #cfd8dc;
+            border-radius: 5px;
+        }
+
+        .freezer-door { height: 30%; font-size: 1.2rem; }
+        .fridge-door { height: 68%; font-size: 1.5rem; }
+
+        .door.open {
+            transform: rotateY(-30deg);
+            background: #e3f2fd;
+            color: var(--accent-color);
+        }
+
+        /* --- Screens --- */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.2rem;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .btn-primary:active { transform: scale(0.95); }
+
+        /* --- Utilities --- */
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @media (max-width: 768px) {
+            #game-container { grid-template-columns: 1fr; }
+            .fridge { width: 220px; height: 400px; }
+            #table-area { height: 200px; order: 2; }
+        }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="top-bar" class="hidden">
-        <div class="hud-display">ROUND: <span id="round-indicator">1/5</span></div>
-        <div class="timer-display">TIME: <span id="timer">15</span>s</div>
-        <div class="hud-display">SCORE: <span id="score-indicator">0</span></div>
+    <div id="start-screen" class="overlay">
+        <h1 style="font-size: 3.5rem; margin-bottom: 10px;">Refrigerator Sorter 🧊</h1>
+        <p style="font-size: 1.2rem; max-width: 400px;">Drag items to the correct section in the refrigerator.</p>
+        <button class="btn-primary" onclick="startGame()">Play Game</button>
     </div>
 
-    <div id="start-screen" class="screen">
-        <h1>Restroom Rush 🚻</h1>
-        <div class="instructions">
-            Find the correct restroom before time runs out!<br>Can you survive all 5 rounds?
+    <div id="ui-layer">
+        <div class="timer">Time: <span id="time-val">60</span>s</div>
+        <h2 style="margin:0; color: #37474f;">Drag items to the fridge or freezer.</h2>
+        <button id="sound-toggle" class="btn-sound" onclick="toggleSound()">
+            <span>🔊</span> Sound On
+        </button>
+    </div>
+
+    <div id="game-container">
+        <div id="table-area"></div>
+
+        <div id="fridge-container">
+            <div class="fridge">
+                <div id="freezer-target" class="door freezer-door">FREEZER</div>
+                <div id="fridge-target" class="door fridge-door">FRIDGE</div>
+            </div>
         </div>
-        <div class="controls-hint">
-            Use <b>Arrow Keys</b> to move & <b>Enter/Space</b> to go inside.
-        </div>
-        <p id="asset-msg" style="color: white; opacity: 0.8;">Assigning random assets...</p>
-        <button class="btn hidden" id="start-btn">START GAME</button>
     </div>
 
-    <div id="end-screen" class="screen hidden">
-        <h1 id="end-title">Success!</h1>
-        <p id="end-msg"></p>
-        <button class="btn" id="retry-btn">PLAY AGAIN</button>
+    <div id="end-screen" class="overlay" style="display: none;">
+        <h1 style="font-size: 3rem; margin-bottom: 0;">Well Done! 🍎</h1>
+        <p id="final-stats"></p>
+        <button class="btn-primary" onclick="resetGame()">Play Again</button>
     </div>
 
-    <canvas id="gameCanvas"></canvas>
+    <script>
+        const freezerItems = [
+            { icon: '🧊', type: 'freezer', name: 'Ice' },
+            { icon: '🍦', type: 'freezer', name: 'Ice Cream' },
+            { icon: '🥩', type: 'freezer', name: 'Raw Meat' },
+            { icon: '🐟', type: 'freezer', name: 'Fish' }
+        ];
 
-    <div id="controls" class="hidden">
-        <div class="d-pad">
-            <div style="grid-column: 2" class="ctrl" id="btn-up">▲</div>
-            <div style="grid-row: 2" class="ctrl" id="btn-left">◀</div>
-            <div style="grid-row: 2" class="ctrl" id="btn-down">▼</div>
-            <div style="grid-row: 2" class="ctrl" id="btn-right">▶</div>
-        </div>
-        <div class="enter-btn" id="btn-enter">ENTER</div>
-    </div>
-</div>
+        const fridgePool = [
+            { icon: '🍎', type: 'fridge' }, { icon: '🍓', type: 'fridge' }, { icon: '🍇', type: 'fridge' }, 
+            { icon: '🥦', type: 'fridge' }, { icon: '🥕', type: 'fridge' }, { icon: '🌽', type: 'fridge' }, 
+            { icon: '🍔', type: 'fridge' }, { icon: '🥪', type: 'fridge' }, { icon: '🌭', type: 'fridge' }, 
+            { icon: '🥗', type: 'fridge' }, { icon: '🍕', type: 'fridge' }, { icon: '🌮', type: 'fridge' }, 
+            { icon: '🧃', type: 'fridge' }, { icon: '🍊', type: 'fridge' }, { icon: '🍑', type: 'fridge' }
+        ];
 
-<script>
-const assetPairs = [
-    { female: "https://www.thesignshed.co.uk/cdn/shop/files/ladies-toilet-sign-589613.jpg?v=1735452746&width=1200", male: "https://cdn.shopify.com/s/files/1/0044/4701/0919/files/male-toilet-sign-735921_large.jpg?v=1735452881" },
-    { female: "https://www.thesignshed.co.uk/cdn/shop/files/ladies-toilet-comic-sign-brushed-silver-942883.jpg?v=1738245576&width=1200", male: "https://www.thesignshed.co.uk/cdn/shop/files/male-toilets-comic-sign-in-brushed-silver-724115.jpg?v=1738245632&width=1200" }
-];
+        let gameItems = [];
+        let score = 0;
+        let timeLeft = 60;
+        let timerId;
+        let activeItem = null;
+        let offset = { x: 0, y: 0 };
+        let isSoundOn = true;
 
-const characterPairs = [
-    { male: '🧍‍♂️', female: '🧍‍♀️' },
-    { male: '🧍🏻‍♂️', female: '🧍🏻‍♀️' },
-    { male: '🧍🏼‍♂️', female: '🧍🏼‍♀️' },
-    { male: '🧍🏽‍♂️', female: '🧍🏽‍♀️' },
-    { male: '🧍🏾‍♂️', female: '🧍🏾‍♀️' },
-    { male: '🧍🏿‍♂️', female: '🧍🏿‍♀️' }
-];
+        const tableArea = document.getElementById('table-area');
+        const freezerDoor = document.getElementById('freezer-target');
+        const fridgeDoor = document.getElementById('fridge-target');
+        const timeDisplay = document.getElementById('time-val');
+        const soundToggle = document.getElementById('sound-toggle');
 
-const themes = [
-    { wall: '#fdf6e3', base: '#eee8d5', floor: '#95a5a6', line: '#7f8c8d' }, 
-    { wall: '#2c3e50', base: '#1a252f', floor: '#4a5568', line: '#2d3748' }, // Neutral Slate instead of purple
-    { wall: '#fdf5e6', base: '#ffe4c4', floor: '#cd853f', line: '#8b4513' }, 
-    { wall: '#e0f7fa', base: '#b2ebf2', floor: '#009688', line: '#00796b' }, 
-    { wall: '#eceff1', base: '#cfd8dc', floor: '#607d8b', line: '#455a64' }  
-];
-
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const keys = {};
-
-let currentRound = 1;
-const maxRounds = 5;
-let baseSpeed = 8;
-let totalScore = 0;
-let currentTheme = themes[0];
-
-let player = { x: 0, y: 0, w: 70, h: 120, speed: 8, emoji: '', gender: '' };
-let doors = [];
-let gameState = 'START'; 
-let countdown = 15;
-let timerInterval;
-let activePair = null;
-let loadedImages = {};
-let wrongFeedback = { active: false, x: 0, y: 0, timer: 0 };
-
-// Transition overlay variables
-let transitionAlpha = 0;
-let transitionTitle = "";
-let transitionSub = "";
-let sceneFadeAlpha = 0; // Handes the new level fade in
-
-function preloadAssets(callback) {
-    let loadedCount = 0;
-    const total = assetPairs.length * 2;
-    assetPairs.forEach((pair, idx) => {
-        ['male', 'female'].forEach(gen => {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = () => { loadedCount++; if (loadedCount === total) callback(); };
-            img.src = pair[gen];
-            loadedImages[`p${idx}_${gen}`] = img;
-        });
-    });
-}
-
-function init() {
-    preloadAssets(() => {
-        document.getElementById('asset-msg').classList.add('hidden');
-        document.getElementById('start-btn').classList.remove('hidden');
-    });
-
-    document.getElementById('start-btn').onclick = startFullGame;
-    document.getElementById('retry-btn').onclick = resetGame;
-
-    const bindBtn = (id, key) => {
-        const el = document.getElementById(id);
-        const start = (e) => { e.preventDefault(); keys[key] = true; if (id === 'btn-enter') handleAction(); };
-        const end = (e) => { e.preventDefault(); keys[key] = false; };
-        el.addEventListener('touchstart', start, { passive: false });
-        el.addEventListener('touchend', end, { passive: false });
-        el.addEventListener('mousedown', start);
-        el.addEventListener('mouseup', end);
-    };
-
-    ['up', 'down', 'left', 'right'].forEach(dir => bindBtn(`btn-${dir}`, `Arrow${dir.charAt(0).toUpperCase() + dir.slice(1)}`));
-    bindBtn('btn-enter', 'Enter');
-
-    window.addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Space' || e.code === 'Enter') handleAction(); });
-    window.addEventListener('keyup', e => keys[e.code] = false);
-
-    resize();
-    window.addEventListener('resize', resize);
-    requestAnimationFrame(gameLoop);
-}
-
-function startFullGame() {
-    currentRound = 1;
-    totalScore = 0;
-    document.getElementById('score-indicator').innerText = totalScore;
-    document.getElementById('start-screen').classList.add('hidden');
-    
-    // Wipe previous entities to prevent the scene from flashing during fade
-    doors = [];
-    player.emoji = '';
-    
-    // Slight delay so the screen can fade out before the game begins
-    setTimeout(startRound, 500);
-}
-
-function startRound() {
-    sceneFadeAlpha = 0.8; // Trigger canvas fade-in effect
-
-    document.getElementById('round-indicator').innerText = `${currentRound}/${maxRounds}`;
-    currentTheme = themes[(currentRound - 1) % themes.length];
-
-    const charPair = characterPairs[Math.floor(Math.random() * characterPairs.length)];
-    const isBoy = Math.random() < 0.5;
-    player.gender = isBoy ? 'male' : 'female';
-    player.emoji = isBoy ? charPair.male : charPair.female;
-    player.speed = baseSpeed + (currentRound - 1) * 1.5;
-
-    const pIdx = Math.floor(Math.random() * assetPairs.length);
-    activePair = { male: loadedImages[`p${pIdx}_male`], female: loadedImages[`p${pIdx}_female`] };
-
-    gameState = 'PLAY';
-    countdown = 15;
-    
-    const timerEl = document.getElementById('timer');
-    timerEl.innerText = countdown;
-    timerEl.parentElement.classList.remove('timer-warning');
-
-    document.getElementById('top-bar').classList.remove('hidden');
-    document.getElementById('controls').classList.remove('hidden');
-    
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        countdown--;
-        timerEl.innerText = countdown;
-        if (countdown <= 5) timerEl.parentElement.classList.add('timer-warning');
-        else timerEl.parentElement.classList.remove('timer-warning');
-        
-        if (countdown <= 0) {
-            clearInterval(timerInterval);
-            triggerTransition("Time's Up! ⏰", "", () => {
-                endGameSequence(false, `Time ran out on Round ${currentRound}! You were the ${player.gender}.`);
-            });
-        }
-    }, 1000);
-
-    setupLevel();
-}
-
-function setupLevel() {
-    player.x = canvas.width / 2 - 35;
-    player.y = canvas.height - 200;
-    
-    doors = [{ type: 'male', img: activePair.male }, { type: 'female', img: activePair.female }].sort(() => Math.random() - 0.5);
-    
-    const doorW = 140;
-    const gap = 30;
-    const margin = 20;
-    let x1, x2;
-
-    if (canvas.width < (doorW * 2 + gap + margin * 2)) {
-        const totalW = doorW * 2 + gap;
-        x1 = (canvas.width - totalW) / 2;
-        x2 = x1 + doorW + gap;
-    } else {
-        x1 = Math.random() * (canvas.width - doorW - margin * 2) + margin;
-        let attempts = 0;
-        do {
-            x2 = Math.random() * (canvas.width - doorW - margin * 2) + margin;
-            attempts++;
-            if (attempts > 100) {
-                x2 = (x1 > canvas.width / 2) ? x1 - doorW - gap : x1 + doorW + gap;
-                break;
-            }
-        } while (Math.abs(x1 - x2) < doorW + gap);
-    }
-
-    doors[0].x = x1;
-    doors[1].x = x2;
-    doors.forEach((d) => { d.w = doorW; d.h = 240; d.y = 80; d.openRatio = 0; });
-}
-
-function handleAction() {
-    if (gameState !== 'PLAY') return;
-    const midX = player.x + player.w / 2;
-    const d = doors.find(d => midX > d.x && midX < d.x + d.w && player.y < d.y + d.h + 60);
-    
-    if (d) {
-        if (d.type === player.gender) {
-            clearInterval(timerInterval);
-            let roundPoints = countdown * 10;
-            totalScore += roundPoints;
-            document.getElementById('score-indicator').innerText = totalScore;
-
-            if (currentRound < maxRounds) {
-                triggerTransition(`Round ${currentRound} Cleared!`, `+${roundPoints} Points`, () => {
-                    currentRound++;
-                    startRound();
-                });
+        function toggleSound() {
+            isSoundOn = !isSoundOn;
+            if (isSoundOn) {
+                soundToggle.innerHTML = '<span>🔊</span> Sound On';
+                soundToggle.classList.remove('muted');
             } else {
-                triggerTransition("All Rounds Cleared! 🎉", `+${roundPoints} Points`, () => {
-                    endGameSequence(true, `Splendid job! You successfully survived all ${maxRounds} rounds!`);
-                });
-            }
-        } else {
-            wrongFeedback = { active: true, x: d.x + d.w/2, y: d.y + d.h/2, timer: 30 };
-            player.y += 100;
-            player.y = Math.min(canvas.height - player.h, player.y);
-        }
-    }
-}
-
-function triggerTransition(title, sub, callback) {
-    gameState = 'TRANSITION';
-    transitionAlpha = 0;
-    transitionTitle = title;
-    transitionSub = sub;
-    
-    // Pause for 1.8 seconds before executing the callback
-    setTimeout(callback, 1800);
-}
-
-function endGameSequence(win, msg) {
-    gameState = 'END';
-    document.getElementById('end-screen').classList.remove('hidden');
-    document.getElementById('end-title').innerText = win ? "Ultimate Success! 🎉" : "Game Over! ❌";
-    document.getElementById('end-msg').innerHTML = `${msg}<br><br><b>Final Score: ${totalScore}</b>`;
-}
-
-function resetGame() {
-    document.getElementById('end-screen').classList.add('hidden');
-    document.getElementById('top-bar').classList.add('hidden');
-    document.getElementById('controls').classList.add('hidden');
-    
-    // Wipe previous entities to prevent the scene from flashing during fade
-    doors = [];
-    player.emoji = '';
-    
-    setTimeout(() => {
-        document.getElementById('start-screen').classList.remove('hidden');
-        document.getElementById('timer').innerText = "15";
-        gameState = 'START';
-    }, 500); 
-}
-
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    if (gameState === 'PLAY') setupLevel();
-}
-
-function update() {
-    if (gameState !== 'PLAY') return;
-    
-    const s = player.speed;
-    if (keys['ArrowUp']) player.y -= s;
-    if (keys['ArrowDown']) player.y += s;
-    if (keys['ArrowLeft']) player.x -= s;
-    if (keys['ArrowRight']) player.x += s;
-
-    // Constrain X bounds
-    player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
-    
-    // Constrain Y bounds (Prevent character from flying over the wall baseboard)
-    // Floor begins at Y 320, Baseboard at 310. Using 220 ensures feet stay on the tiles.
-    player.y = Math.max(220, Math.min(canvas.height - player.h, player.y));
-
-    doors.forEach(d => {
-        const dist = Math.abs((player.x + player.w/2) - (d.x + d.w/2));
-        const near = dist < 120 && player.y < d.y + d.h + 100;
-        
-        // Open max 15% (0.15) for a slight visual peek
-        d.openRatio = near ? Math.min(d.openRatio + 0.12, 0.15) : Math.max(d.openRatio - 0.12, 0);
-    });
-
-    if (wrongFeedback.active) {
-        wrongFeedback.timer--;
-        if (wrongFeedback.timer <= 0) wrongFeedback.active = false;
-    }
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!currentTheme) return;
-
-    // Floor
-    ctx.fillStyle = currentTheme.floor;
-    ctx.fillRect(0, 320, canvas.width, canvas.height);
-    ctx.strokeStyle = currentTheme.line;
-    ctx.lineWidth = 1;
-    for(let i=0; i<canvas.width; i+=60) { ctx.beginPath(); ctx.moveTo(i, 320); ctx.lineTo(i, canvas.height); ctx.stroke(); }
-    for(let j=320; j<canvas.height; j+=60) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke(); }
-
-    // Wall
-    ctx.fillStyle = currentTheme.wall;
-    ctx.fillRect(0, 0, canvas.width, 320);
-    ctx.fillStyle = currentTheme.base;
-    ctx.fillRect(0, 310, canvas.width, 10);
-
-    // Doors
-    doors.forEach(d => {
-        ctx.fillStyle = '#3e2723';
-        ctx.fillRect(d.x - 8, d.y - 8, d.w + 16, d.h + 8);
-        ctx.fillStyle = '#111';
-        ctx.fillRect(d.x, d.y, d.w, d.h);
-
-        ctx.save();
-        const swingWidth = d.w * d.openRatio;
-        const grad = ctx.createLinearGradient(d.x, d.y, d.x + d.w, d.y);
-        grad.addColorStop(0, '#5d4037');
-        grad.addColorStop(1, '#8d6e63');
-        ctx.fillStyle = grad;
-        ctx.strokeStyle = '#3e2723';
-        
-        ctx.beginPath();
-        ctx.moveTo(d.x, d.y);
-        ctx.lineTo(d.x + d.w - swingWidth, d.y - (swingWidth * 0.2));
-        ctx.lineTo(d.x + d.w - swingWidth, d.y + d.h + (swingWidth * 0.2));
-        ctx.lineTo(d.x, d.y + d.h);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        if (d.img) {
-            const displayWidth = (d.w - 40) * (1 - d.openRatio);
-            if (displayWidth > 10) {
-                ctx.globalAlpha = 1 - d.openRatio;
-                ctx.drawImage(d.img, d.x + 20, d.y + 30, displayWidth, displayWidth);
-                ctx.globalAlpha = 1.0;
+                soundToggle.innerHTML = '<span>🔇</span> Muted';
+                soundToggle.classList.add('muted');
             }
         }
-        
-        ctx.fillStyle = '#ffd700';
-        ctx.beginPath();
-        ctx.arc(d.x + d.w - 20 - swingWidth, d.y + d.h/2 + 20, 6, 0, Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-    });
 
-    // Feedback (X mark)
-    if (wrongFeedback.active) {
-        ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 120px Poppins';
-        ctx.textAlign = 'center';
-        ctx.fillText('X', wrongFeedback.x, wrongFeedback.y + 40);
-    }
+        // Clean, crisp digital studio-grade UI tick
+        function playNeutralClick() {
+            if (!isSoundOn) return;
 
-    // Player
-    if (player.emoji) {
-        ctx.font = "110px serif";
-        ctx.textAlign = "center";
-        ctx.fillText(player.emoji, player.x + player.w/2, player.y + 80);
-    }
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = ctx.currentTime;
 
-    // Round clear text overlay
-    if (gameState === 'TRANSITION') {
-        transitionAlpha = Math.min(transitionAlpha + 0.05, 1); 
-        
-        ctx.fillStyle = `rgba(0, 0, 0, ${transitionAlpha * 0.7})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = `rgba(255, 255, 255, ${transitionAlpha})`;
-        ctx.font = 'bold 50px Poppins';
-        ctx.textAlign = 'center';
-        ctx.fillText(transitionTitle, canvas.width / 2, canvas.height / 2 - 10);
-        
-        if (transitionSub) {
-            ctx.fillStyle = `rgba(252, 211, 77, ${transitionAlpha})`;
-            ctx.font = 'bold 35px Poppins';
-            ctx.fillText(transitionSub, canvas.width / 2, canvas.height / 2 + 50);
+            const masterGain = ctx.createGain();
+            masterGain.gain.setValueAtTime(0.12, now);
+            masterGain.connect(ctx.destination);
+
+            const osc = ctx.createOscillator();
+            const oscGain = ctx.createGain();
+            
+            osc.type = 'sine';
+            // Micro-pitch envelope to mimic physical impact transient
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(150, now + 0.015);
+
+            // Studio-clean volume profile with anti-clipping ramps
+            oscGain.gain.setValueAtTime(0.001, now);
+            oscGain.gain.linearRampToValueAtTime(1.0, now + 0.002); // Instant click response
+            oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025); // Clean fade without snapping
+
+            osc.connect(oscGain);
+            oscGain.connect(masterGain);
+
+            osc.start(now);
+            osc.stop(now + 0.03);
         }
-    }
 
-    // New scene gradual fade-in
-    if (gameState === 'PLAY' && sceneFadeAlpha > 0) {
-        ctx.fillStyle = `rgba(0, 0, 0, ${sceneFadeAlpha})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        sceneFadeAlpha = Math.max(0, sceneFadeAlpha - 0.05);
-    }
-}
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            initGame();
+        }
 
-function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
+        function initGame() {
+            score = 0;
+            timeLeft = 60;
+            tableArea.innerHTML = '';
+            document.getElementById('end-screen').style.display = 'none';
 
-init();
-</script>
+            const currentFreezer = [...freezerItems];
+            
+            const currentFridge = fridgePool
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 4);
+
+            gameItems = [...currentFreezer, ...currentFridge].sort(() => 0.5 - Math.random());
+
+            gameItems.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'food-item';
+                el.innerHTML = item.icon;
+                el.dataset.type = item.type;
+                el.id = `item-${index}`;
+                el.addEventListener('pointerdown', startDrag);
+                tableArea.appendChild(el);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerId);
+            timerId = setInterval(() => {
+                timeLeft--;
+                timeDisplay.innerText = timeLeft;
+                if (timeLeft <= 0) endGame(false);
+            }, 1000);
+        }
+
+        function startDrag(e) {
+            activeItem = e.target;
+            activeItem.classList.add('dragging');
+            const rect = activeItem.getBoundingClientRect();
+            offset.x = e.clientX - rect.left;
+            offset.y = e.clientY - rect.top;
+            document.addEventListener('pointermove', onDrag);
+            document.addEventListener('pointerup', endDrag);
+        }
+
+        function onDrag(e) {
+            if (!activeItem) return;
+            const x = e.clientX - offset.x;
+            const y = e.clientY - offset.y;
+            activeItem.style.position = 'fixed';
+            activeItem.style.left = `${x}px`;
+            activeItem.style.top = `${y}px`;
+            checkProximity(freezerDoor, e);
+            checkProximity(fridgeDoor, e);
+        }
+
+        function checkProximity(door, e) {
+            const rect = door.getBoundingClientRect();
+            if (e.clientX > rect.left && e.clientX < rect.right && 
+                e.clientY > rect.top && e.clientY < rect.bottom) {
+                door.classList.add('open');
+            } else {
+                door.classList.remove('open');
+            }
+        }
+
+        function endDrag(e) {
+            if (!activeItem) return;
+            const freezerRect = freezerDoor.getBoundingClientRect();
+            const fridgeRect = fridgeDoor.getBoundingClientRect();
+            const itemType = activeItem.dataset.type;
+            let success = false;
+
+            if (isInside(e, freezerRect) && itemType === 'freezer') success = true;
+            else if (isInside(e, fridgeRect) && itemType === 'fridge') success = true;
+
+            if (success) {
+                playNeutralClick();
+                activeItem.remove();
+                score++;
+                if (score === 8) endGame(true);
+            } else {
+                activeItem.style.position = 'static';
+                activeItem.classList.remove('dragging');
+                activeItem.classList.add('shake');
+                setTimeout(() => activeItem.classList.remove('shake'), 400);
+            }
+
+            freezerDoor.classList.remove('open');
+            fridgeDoor.classList.remove('open');
+            document.removeEventListener('pointermove', onDrag);
+            document.removeEventListener('pointerup', endDrag);
+            activeItem = null;
+        }
+
+        function isInside(e, rect) {
+            return e.clientX > rect.left && e.clientX < rect.right && 
+                   e.clientY > rect.top && e.clientY < rect.bottom;
+        }
+
+        function endGame(win) {
+            clearInterval(timerId);
+            const screen = document.getElementById('end-screen');
+            const stats = document.getElementById('final-stats');
+            screen.style.display = 'flex';
+            stats.innerText = win ? `You sorted all 8 items in ${60 - timeLeft} seconds!` : "Time ran out! Try again.";
+        }
+
+        function resetGame() {
+            initGame();
+        }
+    </script>
 </body>
 </html>
