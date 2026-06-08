@@ -195,15 +195,15 @@
 
         .label { font-weight: 900; color: var(--text); letter-spacing: 1px; }
 
-/* Smooth, low-stimulation error feedback */
-@keyframes errorPulse {
-    0% { box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #dcdcdc; }
-    50% { box-shadow: 0 0 20px rgba(255, 71, 87, 0.6); border-color: #ff4757; }
-    100% { box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #dcdcdc; }
-}
-.error-notice {
-    animation: errorPulse 0.4s ease-in-out;
-}
+        /* CHANGED: Replaced full container shake with a low-stimulation clothing card cue */
+        @keyframes errorPulse {
+            0% { box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #dcdcdc; }
+            50% { box-shadow: 0 0 20px rgba(255, 71, 87, 0.6); border-color: #ff4757; }
+            100% { box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #dcdcdc; }
+        }
+        .error-notice {
+            animation: errorPulse 0.4s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -218,7 +218,7 @@
 <div id="game-container">
     <div id="start-screen" class="screen">
         <h1 style="font-size: 3.5rem; margin-bottom: 0;">Laundry Day</h1>
-        <p style="font-size: 1.5rem; margin-top: 0;">Sort 8 Whites and 8 Colours!</p>
+        <p style="font-size: 1.5rem; margin-top: 0;">Sort white and coloured clothes to different baskets.</p>
         <div style="margin: 20px; font-size: 4rem;">🧺🧼</div>
         <div style="margin-bottom: 20px;">
             <input type="checkbox" id="timer-toggle" checked style="transform: scale(1.5);">
@@ -261,12 +261,12 @@
 <script>
     const laundryItems = [
         { icon: '👕', type: 'white' }, { icon: '🧦', type: 'white' },
-        { icon: '👔', type: 'white' }, { icon: '👚', type: 'white' },
+        { icon: '🥻', type: 'white' }, { icon: '👚', type: 'white' },
         { icon: '🎽', type: 'white' }, { icon: '🧤', type: 'white' },
         { icon: '🧥', type: 'white' }, { icon: '👖', type: 'white' },
         { icon: '👗', type: 'color' }, { icon: '🧣', type: 'color' },
         { icon: '🧢', type: 'color' }, { icon: '🩳', type: 'color' },
-        { icon: '👘', type: 'color' }, { icon: '🩰', type: 'color' },
+        { icon: '👘', type: 'color' }, { icon: '🥻', type: 'color' },
         { icon: '👔', type: 'color' }, { icon: '👕', type: 'color' }
     ];
 
@@ -286,7 +286,7 @@
         osc.type = type;
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
@@ -358,7 +358,7 @@
         el.style.transform = 'translate(-50%, -50%)';
 
         let isDragging = false;
-        const startDrag = (e) => { isDragging = true; playSound(300, 'sine', 0.1); el.style.zIndex = 1000; };
+        const startDrag = (e) => { isDragging = true; el.style.zIndex = 1000; };
         const moveAt = (e) => {
             if(!isDragging) return;
             const x = (e.touches ? e.touches[0].clientX : e.clientX);
@@ -397,34 +397,29 @@
     function validateDrop(x, y, correctType) {
         const targetBin = document.getElementById(`bin-${correctType}`);
         const rect = targetBin.getBoundingClientRect();
+        
         if(x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            // CHANGED: Correct sound now matches Counting Fun's first sound tone parameters (430Hz, sine, 0.1s)
             playSound(430, 'sine', 0.1);
             score++;
             document.getElementById('score').innerText = score;
             spawnItem();
-        }} else {
-        const otherType = correctType === 'white' ? 'color' : 'white';
-        const otherRect = document.getElementById(`bin-${otherType}`).getBoundingClientRect();
-        
-        // Find the current clothing item card
-        const el = document.querySelector('.clothing-item');
-        
-        if(x >= otherRect.left && x <= otherRect.right && y >= otherRect.top && y <= otherRect.bottom) {
-            // REMOVED: Full-screen container shake
-            // CHANGED: Apply a gentle visual cue directly to the item card instead
+        } else {
+            const otherType = correctType === 'white' ? 'color' : 'white';
+            const otherRect = document.getElementById(`bin-${otherType}`).getBoundingClientRect();
+            const el = document.querySelector('.clothing-item');
+            
+            if(x >= otherRect.left && x <= otherRect.right && y >= otherRect.top && y <= otherRect.bottom) {
+                // CHANGED: Replaced #game-container layout shake effect with a localized pulse on the current element
+                if (el) {
+                    el.classList.add('error-notice');
+                    setTimeout(() => el.classList.remove('error-notice'), 400);
+                }
+            }
             if (el) {
-                el.classList.add('error-notice');
-                setTimeout(() => el.classList.remove('error-notice'), 400);
+                el.style.left = '50%'; el.style.top = '50%'; el.style.transform = 'translate(-50%, -50%)';
             }
         }
-        
-        // Snap the card smoothly back to the center starting position
-        if (el) {
-            el.style.left = '50%'; 
-            el.style.top = '50%'; 
-            el.style.transform = 'translate(-50%, -50%)';
-        }
-    }
         document.querySelectorAll('.basket').forEach(b => b.classList.remove('hover-basket'));
     }
 
