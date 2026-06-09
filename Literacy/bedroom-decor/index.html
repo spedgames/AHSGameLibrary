@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>My Bedroom Decorator 🏠</title>
+<title>Bedroom Simulator 🏠</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
@@ -111,13 +111,6 @@
     background: rgba(108,92,231,0.91); color: white; border-radius: 14px;
     padding: 7px 16px; font-size: 12px; font-weight: 700;
     pointer-events: none; transition: opacity 0.5s; white-space: nowrap;
-  }
-  #selected-info {
-    position: absolute; top: 64px; right: 14px;
-    background: rgba(255,255,255,0.93); border-radius: 12px;
-    padding: 8px 13px; font-size: 11px; color: #555;
-    font-weight: 700; pointer-events: none; display: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
 
   #placing-indicator {
@@ -241,6 +234,25 @@
   .congrats-btn.secondary { background: #f0eeff; color: #6c5ce7; }
   .congrats-btn.secondary:active { background: #e0d8ff; transform: scale(0.98); }
 
+
+  /* ── Thought bubble ── */
+  #thought-bubble {
+    position: fixed; pointer-events: none;
+    background: white; border-radius: 18px;
+    padding: 7px 12px; font-size: 13px; font-weight: 700;
+    color: #3a3a5c; box-shadow: 0 3px 14px rgba(0,0,0,0.18);
+    max-width: 180px; text-align: center; line-height: 1.35;
+    opacity: 0; transition: opacity 0.4s;
+    transform: translateX(-50%);
+    display: none; z-index: 150;
+  }
+  #thought-bubble::after {
+    content: ''; position: absolute; bottom: -18px; left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent; border-top-color: white;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+  }
+  #thought-bubble.visible { opacity: 1; }
 </style>
 </head>
 <body>
@@ -253,9 +265,9 @@
       <button class="cam-btn" id="cam-right">&#9654;</button>
     </div>
 
+    <div id="thought-bubble"></div>
     <div id="hint">Pick a piece of furniture below to get started!</div>
     <div id="placing-indicator">Click in the room to place it!</div>
-    <div id="selected-info">Selected — rotate ↻ or delete ✕</div>
 
     <div id="color-panel">
       <div id="color-panel-body">
@@ -296,7 +308,7 @@
 <div id="mode-screen">
   <div style="text-align:center">
     <div style="font-size:40px;margin-bottom:6px">🏠</div>
-    <h1>Bedroom Decorator</h1>
+    <h1>Bedroom Simulator</h1>
     <p>Choose how you want to play!</p>
   </div>
   <div id="mode-cards">
@@ -307,8 +319,8 @@
     </div>
     <div class="mode-card quiz-card" id="btn-namemode">
       <div class="mode-icon">🧠</div>
-      <h2>Name the Furniture</h2>
-      <p>Learn the names! Identify each piece before you can use it.</p>
+      <h2>Name the Objects</h2>
+      <p>Identify things you can find in a bedroom to unlock them.</p>
     </div>
   </div>
 </div>
@@ -1070,7 +1082,6 @@ function selectObject(obj) {
       c.material.emissiveIntensity = 0.3;
     }
   });
-  document.getElementById('selected-info').style.display='block';
   const canFloat = obj.userData.def?.canFloat;
   document.getElementById('btn-up').style.display = canFloat ? 'flex' : 'none';
   document.getElementById('btn-down').style.display = canFloat ? 'flex' : 'none';
@@ -1084,7 +1095,6 @@ function deselectAll() {
     });
     selectedObj=null;
   }
-  document.getElementById('selected-info').style.display='none';
   document.getElementById('btn-up').style.display='none';
   document.getElementById('btn-down').style.display='none';
 }
@@ -1163,14 +1173,14 @@ function updateScoreBadge() { /* score badge removed */ }
 document.getElementById('btn-freeplay').addEventListener('click', () => {
   gameMode = 'freeplay';
   document.getElementById('mode-screen').style.display = 'none';
-  document.getElementById('top-title').textContent = '🏠 My Bedroom';
+  document.getElementById('top-title').textContent = 'Tap arrows to change the view';
   showHint('Pick furniture below to get started!', 3000);
 });
 
 document.getElementById('btn-namemode').addEventListener('click', () => {
   gameMode = 'name';
   document.getElementById('mode-screen').style.display = 'none';
-  document.getElementById('top-title').textContent = '🧠 Name the Furniture';
+  document.getElementById('top-title').textContent = 'Tap arrows to change the view';
   updateScoreBadge();
   renderItems('all');
   showHint('Tap ??? to identify furniture and unlock it!', 4000);
@@ -1436,14 +1446,6 @@ function buildCharacter() {
   g.add(head);
 
   // Hair cap + sides + back
-  const hairMat=new THREE.MeshLambertMaterial({color:CHAR_COLORS.hair});
-  const hairTop=new THREE.Mesh(new THREE.BoxGeometry(headS*1.02,headS*0.38,headS*0.97),hairMat);
-  hairTop.position.y=legTopY+bodyH+headS*0.86; g.add(hairTop);
-  const hairSideL=new THREE.Mesh(new THREE.BoxGeometry(headS*0.07,headS*0.38,headS*0.97),hairMat);
-  hairSideL.position.set(-headS*0.5,legTopY+bodyH+headS*0.72,0); g.add(hairSideL);
-  const hairSideR=hairSideL.clone(); hairSideR.position.x*=-1; g.add(hairSideR);
-  const hairBack=new THREE.Mesh(new THREE.BoxGeometry(headS,headS*0.5,headS*0.09),hairMat);
-  hairBack.position.set(0,legTopY+bodyH+headS*0.72,-headS*0.47); g.add(hairBack);
 
   // Eyes
   const eyeMat=new THREE.MeshLambertMaterial({color:0x111111});
@@ -1457,9 +1459,10 @@ function buildCharacter() {
   const mouth=new THREE.Mesh(new THREE.BoxGeometry(headS*0.22,headS*0.06,0.02),mouthMat);
   mouth.position.set(0,legTopY+bodyH+headS*0.38,headS*0.46); g.add(mouth);
 
+
   g.userData.legL=legL; g.userData.legR=legR;
   g.userData.armL=armL; g.userData.armR=armR;
-  g.userData.sleeveL=sleeveL; g.userData.sleeveR=sleeveR;
+
   g.userData.body=body; g.userData.head=head;
   g.userData.isCharacter=true;
   g.userData.radius=0.22;
@@ -1540,6 +1543,10 @@ function animate() {
   if(character && character.userData.stepFn && charState === 'walking') {
     character.userData.stepFn(dt);
   }
+  // Keep thought bubble anchored above character head
+  if(character && document.getElementById('thought-bubble')?.classList.contains('visible')) {
+    positionThoughtBubble();
+  }
 
   renderer.render(scene, camera);
 }
@@ -1558,7 +1565,12 @@ function pickNextInteraction() {
     return;
   }
 
-  const target = interactable[Math.floor(Math.random() * interactable.length)];
+  // Avoid picking the same object twice in a row
+  const candidates = interactable.length > 1
+    ? interactable.filter(o => o !== character.userData.lastInteracted)
+    : interactable;
+  const target = candidates[Math.floor(Math.random() * candidates.length)];
+  character.userData.lastInteracted = target;
   const def = target.userData.def;
   const pos = target.position.clone();
   const furnitureRotY = target.rotation.y; // respect furniture rotation
@@ -1575,24 +1587,23 @@ function pickNextInteraction() {
       break;
     }
     case 'chair': {
-      // Stand in front of the chair (the seat faces +z, back of chair is -z side)
-      // Walk to front of chair, face away from back (toward +z)
+      // Walk directly to chair position — character will be placed on seat in applyPose
       walkTo = new THREE.Vector3(
         Math.max(-2.8, Math.min(2.8, pos.x)),
         0,
-        Math.min(2.3, pos.z + 0.45)
+        Math.max(-2.3, Math.min(2.3, pos.z + 0.1))
       );
-      faceAngle = Math.PI; // face same direction as sitting (toward back wall)
+      faceAngle = Math.PI; // face toward back wall (forward-facing seat direction)
       break;
     }
     case 'desk': {
-      // Stand in front of desk, face the desk (toward back wall)
+      // Walk in front of desk
       walkTo = new THREE.Vector3(
         Math.max(-2.8, Math.min(2.8, pos.x)),
         0,
-        Math.min(2.3, pos.z + 0.55)
+        Math.max(-2.3, Math.min(2.3, pos.z + 0.45))
       );
-      faceAngle = Math.PI;
+      faceAngle = Math.PI; // face desk (toward back wall)
       break;
     }
     default: {
@@ -1605,6 +1616,7 @@ function pickNextInteraction() {
     }
   }
 
+  hideThought();
   walkCharacterTo(walkTo, () => {
     if(faceAngle !== null) {
       character.rotation.y = faceAngle;
@@ -1616,7 +1628,7 @@ function pickNextInteraction() {
     charPoseTimer = setTimeout(() => {
       resetPose();
       charPoseTimer = setTimeout(pickNextInteraction, 800);
-    }, 3500);
+    }, 6500);
   });
 }
 
@@ -1624,42 +1636,35 @@ function applyPose(itemId, targetObj) {
   if(!character) return;
   const { legL, legR, armL, armR, body, head } = character.userData;
   resetPose();
+  showThought(itemId);
 
   switch(itemId) {
     case 'bed': {
-      // Lay the character flat along the bed (rotate 90° around Z so body is horizontal)
-      // Move character onto the mattress surface and slide toward the headboard
+      // Lie along the bed's Z axis (head near headboard at -z, feet at +z)
       const bedPos = targetObj.position;
-      // Place character on mattress, offset toward headboard end
-      character.position.x = bedPos.x;
-      character.position.z = bedPos.z - (targetObj.userData.def.d / 2) + 0.55; // near pillow end
-      character.position.y = 0.38; // mattress height
-      character.rotation.y = 0;    // along bed length (head toward back wall)
-      character.rotation.z = Math.PI / 2; // tip body horizontal
-      // Arms relaxed at sides
-      armL.rotation.z =  0.2;
-      armR.rotation.z = -0.2;
+      const bDef = targetObj.userData.def;
+      // Place character on mattress surface, lying along bed length
+      // rotation.y = 0 means character faces +z (feet direction), head toward -z (headboard)
+      character.position.x = bedPos.x + 0.1; // slight offset so not dead centre
+      character.position.z = bedPos.z - bDef.d * 0.15; // shifted toward headboard
+      character.position.y = 0.30; // on top of mattress
+      character.rotation.y = 0;    // facing feet-end (+z)
+      character.rotation.z = Math.PI / 2; // tip entire character horizontal (lying down)
+      armL.rotation.z =  0.25;
+      armR.rotation.z = -0.25;
       break;
     }
     case 'chair': {
-      // Sitting — legs bent, character lowered onto seat
-      // Face away from chair back (chair back is at -z side of chair)
-      legL.rotation.x = -Math.PI / 2.2; legR.rotation.x = -Math.PI / 2.2;
-      legL.position.z =  0.10; legR.position.z =  0.10;
-      legL.position.y = -0.05; legR.position.y = -0.05;
-      body.rotation.x = 0.08;
-      armL.rotation.x = 0.35; armR.rotation.x = 0.35;
-      character.position.y = -0.22;
+      // Stand beside chair and look at it — admiring pose
+      armL.rotation.z = 0.3;
+      head.rotation.y = 0.3; // turn head toward chair
       break;
     }
     case 'desk': {
-      // Sitting at desk — similar to chair but lean forward slightly
-      legL.rotation.x = -Math.PI / 2.2; legR.rotation.x = -Math.PI / 2.2;
-      legL.position.z =  0.10; legR.position.z =  0.10;
-      legL.position.y = -0.05; legR.position.y = -0.05;
-      body.rotation.x = 0.22; // lean forward toward desk
-      armL.rotation.x = -0.5; armR.rotation.x = -0.5; // arms forward on desk
-      character.position.y = -0.22;
+      // Stand in front of desk, leaning/working
+      body.rotation.x = 0.28;
+      armL.rotation.x = -0.7; armR.rotation.x = -0.7;
+      character.position.y = 0.0;
       break;
     }
     case 'bookshelf':
@@ -1680,6 +1685,81 @@ function applyPose(itemId, targetObj) {
     default:
       poseWave();
   }
+}
+
+
+// ── Thought bubbles ──────────────────────────────────────────
+const THOUGHTS = {
+  bed:       ["Zzzz...", "I'm so sleepy! 😴", "Just 5 more minutes...", "Nap time! 💤"],
+  chair:     ["Time to sit down!", "My feet are tired.", "Let me take a break. 🪑", "Ahh, so comfy!"],
+  desk:      ["I should do my homework.", "Let's watch some YouTube! 📺", "Time to study! 📚", "One more game, then work..."],
+  bookshelf: ["So many books! 📖", "I want to read them all!", "Which one first?", "Knowledge is power! 💡"],
+  wardrobe:  ["What should I wear?", "Hmm, decisions, decisions...", "This outfit is perfect! 👕", "So many choices!"],
+  drawers:   ["Where did I put it?", "Tidying up time!", "I need to organise this.", "Found it! 🎉"],
+  plant:     ["I need to water you! 🌱", "Growing so nicely!", "Hello little plant!", "Nature is beautiful 🌿"],
+  rug:       ["So soft under my feet!", "I love this rug!", "Cosy! 🔶", "Standing here feels nice."],
+  teddybear: ["My favourite bear! 🧸", "Come here, teddy!", "Hugs! 🤗", "You're so soft!"],
+  poster:    ["Cool poster! 🖼️", "I love this one!", "Art is amazing!", "I want one of these."],
+  default:   ["Hello! 👋", "What a nice room!", "I love it here!", "So homey! 🏠"]
+};
+
+let thoughtTimeout = null;
+let thoughtHideTimer = null;
+
+function showThought(itemId) {
+  const bubble = document.getElementById('thought-bubble');
+  if(!bubble || !character) return;
+
+  // Cancel any pending hide timer so it can't kill the new bubble
+  if(thoughtTimeout) { clearTimeout(thoughtTimeout); thoughtTimeout = null; }
+  if(thoughtHideTimer) { clearTimeout(thoughtHideTimer); thoughtHideTimer = null; }
+
+  const pool = THOUGHTS[itemId] || THOUGHTS.default;
+  const text = pool[Math.floor(Math.random() * pool.length)];
+  bubble.textContent = text;
+  bubble.style.display = 'block';
+  bubble.classList.remove('visible');
+
+  // Position bubble above character's head in screen space
+  positionThoughtBubble();
+  requestAnimationFrame(() => bubble.classList.add('visible'));
+
+  if(thoughtTimeout) clearTimeout(thoughtTimeout);
+  thoughtTimeout = setTimeout(() => hideThought(), 4000);
+}
+
+function hideThought() {
+  if(thoughtTimeout) { clearTimeout(thoughtTimeout); thoughtTimeout = null; }
+  const bubble = document.getElementById('thought-bubble');
+  if(!bubble) return;
+  bubble.classList.remove('visible');
+  if(thoughtHideTimer) clearTimeout(thoughtHideTimer);
+  thoughtHideTimer = setTimeout(() => { bubble.style.display = 'none'; thoughtHideTimer = null; }, 400);
+}
+
+function positionThoughtBubble() {
+  if(!character || !renderer) return;
+  const bubble = document.getElementById('thought-bubble');
+  if(!bubble) return;
+
+  // Project character head position to screen
+  const S = 1.25;
+  const legH = 0.34*S, bodyH = 0.36*S, headS = 0.26*S;
+  const headWorldY = legH + bodyH + headS * 1.05 + 0.15; // above hair top
+
+  const headPos = new THREE.Vector3(
+    character.position.x,
+    character.position.y + headWorldY,
+    character.position.z
+  );
+  headPos.project(camera);
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  const screenX = (headPos.x * 0.5 + 0.5) * rect.width + rect.left;
+  const screenY = (-headPos.y * 0.5 + 0.5) * rect.height + rect.top;
+
+  bubble.style.left = screenX + 'px';
+  bubble.style.top  = (screenY - 60) + 'px'; // offset above head
 }
 
 function poseWave() {
