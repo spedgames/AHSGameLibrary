@@ -1,5 +1,15 @@
 [
    {
+    "id": "bedroom-decor",
+    "title": "Bedroom Simulator",
+    "description": "Name objects and decorate your room.",
+    "creatorName": "Teacher Carmina",
+    "category": "Literacy",
+    "compatibility": ["desktop", "tablet", "mobile"],
+    "tags": ["furniture", "bedroom", "vocabulary"],
+    "uploadDate": "2026-06-10"
+  },
+   {
     "id": "pizza-chef",
     "title": "Pizza Chef",
     "description": "Count ingredients and follow recipes to make pizzas!",
