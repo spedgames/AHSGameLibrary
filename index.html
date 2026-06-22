@@ -899,7 +899,7 @@
         <div class="home-wrap">
             <div class="hero">
                 <h1>Games that make learning joyful 🎉</h1>
-                <p>Educational games and applications across Literacy, Numeracy, SEL, and Daily Living domains — designed for students at Rainbow Centre Admiral Hill School.</p>
+                <p>Educational games and applications across Literacy, Numeracy, SEL, and Daily Living domains — designed for every student at Rainbow Centre Admiral Hill School.</p>
             </div>
             <div class="home-section">
                 <div class="section-row-header">
@@ -1173,7 +1173,7 @@ const TOPICS = {
     Literacy:       { Letters:['letters','alphabet','case','uppercase','lowercase'], Reading:['reading','sight words','phonics','letter sounds'], Vocabulary:['vocabulary','body parts','attributes'], Comprehension:['comprehension','questions','WH questions','story','sequencing'], Writing:['writing','typing','sentence building'] },
     'Daily Living': { 'Self Care':['self care','self-care','toileting','toilet','handwashing','showering','grooming'], 'Home Living':['home living','food safety','laundry','food preparation'], 'Health and Safety':['safety','road crossing','health'], Leisure:['leisure','play'], 'Community Living':['community living','mobility'] },
     SEL:            { 'Self Awareness':['self awareness','emotions','regulation'], 'Social Awareness':['social awareness','public and private places','public and private behaviours','social skills','friendship'], 'Decision Making':['decision making'] },
-    General:        { ICT:['ICT','digital literacy','mouse','keyboard','typing'], Creative:['creative','art'], Sensory:['sensory'], Tools:['tool'] }
+    General:        { Creative:['creative','art'], Sensory:['sensory'], Tools:['tool'], ICT:['typing','keyboarding','coding','scratch','mouse','clicking','digital'] }
 };
 
 const HOME_FEATURED_COUNT = 4;
@@ -1308,6 +1308,16 @@ function syncFromMobile() {
     const desktopRadio = document.querySelector(`input[name="cat"][value="${mcat}"]`);
     if (desktopRadio) desktopRadio.checked = true;
 
+    // Sync checked mobile topics to desktop
+    const checkedMobileTopics = [...document.querySelectorAll('#body-mtopic input:checked')].map(i => i.value);
+    populateTopicOptions(mcat || null);
+    
+    document.querySelectorAll('#body-topic input').forEach(i => i.checked = false);
+    checkedMobileTopics.forEach(t => {
+        const deskTopic = document.querySelector(`#body-topic input[value="${CSS.escape(t)}"]`);
+        if (deskTopic) deskTopic.checked = true;
+    });
+
     ['desktop','tablet','mobile'].forEach(d => {
         const mob = document.querySelector(`input[name="mdevice"][value="${d}"]`);
         const desk = document.querySelector(`#body-device input[value="${d}"]`);
@@ -1327,6 +1337,7 @@ function syncToMobile(category) {
     const mcat = document.querySelector(`input[name="mcat"][value="${category}"]`);
     if (mcat) mcat.checked = true;
     const container = document.getElementById('mtopic-options');
+    if (!container) return;
     let topics;
     if (category && TOPICS[category]) {
         topics = Object.keys(TOPICS[category]);
@@ -1391,7 +1402,7 @@ function populateTopicOptions(category) {
 /* ── BROWSE FILTERS ── */
 function applyFilters() {
     const category = document.querySelector('input[name="cat"]:checked')?.value || '';
-    const checkedTopics = [...document.querySelectorAll('#body-topic input:checked')].map(i => i.value);
+    const checkedTopics = [...document.querySelectorAll('#body-topic input:checked, #body-mtopic input:checked')].map(i => i.value);
     const checkedDevices = [...document.querySelectorAll('#body-device input:checked')].map(i => i.value);
     const dateFrom = document.getElementById('date-from').value;
     const dateTo   = document.getElementById('date-to').value;
@@ -1400,9 +1411,12 @@ function applyFilters() {
     // Rebuild topic options for selected category, preserving selections
     populateTopicOptions(category || null);
     syncToMobile(category);
+    
     checkedTopics.forEach(t => {
         const el = document.querySelector(`#body-topic input[value="${CSS.escape(t)}"]`);
         if (el) el.checked = true;
+        const mel = document.querySelector(`#body-mtopic input[value="${CSS.escape(t)}"]`);
+        if (mel) mel.checked = true;
     });
 
     let list = [...allGames];
