@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Studio Clock & Schedule Pad</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --accent-color: #6366f1; 
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --input-bg: #f1f5f9;
+            
+            /* Notepad specific colors */
+            --notepad-paper: #fffdf5;
+            --notepad-margin: #fca5a5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            transition: background 1s ease;
+        }
+
+        body.ringing-active {
+            background: linear-gradient(135deg, #e0e7ff 0%, #fae8ff 100%);
+            animation: calm-pulse 4s ease-in-out infinite alternate;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1100px; /* Expanded maximum viewport bounding box */
+            align-items: start;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard {
+                /* Asymmetrical balance shift: Clock takes 4 parts, Schedule takes 6 parts */
+                grid-template-columns: 4fr 6fr;
+            }
+        }
+
+        .clock-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 32px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.03);
+            position: relative;
+            min-height: 420px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .notepad-card {
+            background: var(--notepad-paper);
+            border: 1px solid #e4e6db;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.04), 0 5px 15px rgba(0,0,0,0.02);
+            padding: 2rem 1.5rem 2rem 0rem; /* Flushed padding to give actions maximum rightwards pull */
+            position: relative;
+            min-height: 420px;
+        }
+
+        .notepad-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 2.5rem;
+            width: 1px;
+            border-left: 2px double var(--notepad-margin);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .notepad-header {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 1.5rem;
+            line-height: normal;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 3.5rem; 
+            padding-right: 1rem;
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 2rem;
+            left: 2.5rem;
+            right: 2.5rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover { background: var(--border-color); }
+        .icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+        .digital-display-wrapper { display: block; margin-bottom: 0.5rem; margin-top: 2rem; }
+        .digital-clock { font-size: 3.2rem; font-weight: 700; text-align: center; color: var(--text-main); letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+        .date-display { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+
+        .analogue-container { display: none; justify-content: center; margin-bottom: 1rem; }
+        .analogue-container.show { display: flex; }
+        .clock-face { width: 200px; height: 200px; border: 2px solid var(--border-color); border-radius: 50%; position: relative; background: #ffffff; }
+        .clock-face::after { content: ''; position: absolute; width: 8px; height: 8px; background: var(--text-main); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; }
+
+        .number-label { position: absolute; width: 100%; height: 100%; text-align: center; font-weight: 600; font-size: 1.1rem; color: var(--text-main); padding: 12px; }
+        .minute-label { position: absolute; width: 100%; height: 100%; text-align: center; font-size: 0.65rem; color: var(--text-muted); padding: 4px; font-weight: 500; display: none; }
+
+        .r1 { transform: rotate(30deg); } .r1 .inner { transform: rotate(-30deg); }
+        .r2 { transform: rotate(60deg); } .r2 .inner { transform: rotate(-60deg); }
+        .r3 { transform: rotate(90deg); } .r3 .inner { transform: rotate(-90deg); }
+        .r4 { transform: rotate(120deg); } .r4 .inner { transform: rotate(-120deg); }
+        .r5 { transform: rotate(150deg); } .r5 .inner { transform: rotate(-150deg); }
+        .r6 { transform: rotate(180deg); } .r6 .inner { transform: rotate(-180deg); }
+        .r7 { transform: rotate(210deg); } .r7 .inner { transform: rotate(-210deg); }
+        .r8 { transform: rotate(240deg); } .r8 .inner { transform: rotate(-240deg); }
+        .r9 { transform: rotate(270deg); } .r9 .inner { transform: rotate(-270deg); }
+        .r10 { transform: rotate(300deg); } .r10 .inner { transform: rotate(-300deg); }
+        .r11 { transform: rotate(330deg); } .r11 .inner { transform: rotate(-330deg); }
+        .r12 { transform: rotate(0deg); } .r12 .inner { transform: rotate(0deg); }
+
+        .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; border-radius: 9999px; transition: transform 0.1s cubic-bezier(0.4, 2.08, 0.55, 1); }
+        .hour-hand { width: 5px; height: 50px; background-color: var(--text-main); margin-left: -2.5px; z-index: 4; }
+        .minute-hand { width: 3px; height: 68px; background-color: var(--text-muted); margin-left: -1.5px; z-index: 5; }
+        .second-hand { width: 1.5px; height: 76px; background-color: var(--accent-color); margin-left: -0.75px; z-index: 6; }
+
+        .alarm-list { list-style: none; margin-top: 0.5rem; }
+        .alarm-item { display: flex; align-items: center; padding: 0.75rem 0.5rem 0.75rem 0; border-bottom: 1px dashed rgba(71, 85, 105, 0.08); cursor: grab; background: transparent; transition: background 0.2s ease, opacity 0.2s ease; }
+        .alarm-item:active { cursor: grabbing; }
+        .alarm-item.dragging { opacity: 0.4; background: rgba(99, 102, 241, 0.05); }
+        
+        .alarm-checkbox-cell { width: 2.5rem; display: flex; justify-content: center; align-items: center; flex-shrink: 0; z-index: 3; }
+        .todo-checkbox { appearance: none; -webkit-appearance: none; width: 18px; height: 18px; border: 2px solid #94a3b8; border-radius: 4px; background: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .todo-checkbox:checked { background: #10b981; border-color: #10b981; }
+        .todo-checkbox:checked::after { content: '✓'; color: #ffffff; font-size: 11px; font-weight: bold; }
+        
+        .alarm-body-content { display: flex; justify-content: space-between; align-items: center; width: calc(100% - 2.5rem); padding-left: 1rem; }
+        
+        /* Expanded flex limits to prevent early text wrapping and truncation */
+        .alarm-meta { display: flex; align-items: center; gap: 0.85rem; flex-grow: 1; min-width: 0; overflow: hidden; white-space: nowrap; pointer-events: none; transition: all 0.2s; padding-right: 1rem; }
+        .alarm-actions { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+        
+        .alarm-item.completed { opacity: 0.5; }
+        .alarm-item.completed .alarm-meta { text-decoration: line-through; text-decoration-color: var(--text-muted); }
+
+        .alarm-picto { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background-color: #fff; border: 1px solid var(--border-color); flex-shrink: 0; }
+        .alarm-time-text { font-size: 1.15rem; font-weight: 700; color: #334155; flex-shrink: 0; }
+        
+        /* Flex dynamic grow allows note line to stretch into new layout channel smoothly */
+        .alarm-desc-text { font-size: 0.95rem; color: #64748b; font-style: italic; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; min-width: 0; }
+        
+        .alarm-alert-indicator { color: var(--accent-color); display: flex; align-items: center; flex-shrink: 0; }
+        .alarm-alert-indicator.silent { color: var(--text-muted); opacity: 0.4; }
+        .alarm-alert-indicator svg { width: 14px; height: 14px; fill: currentColor; }
+
+        .btn-action-icon { background: transparent; border: none; color: #94a3b8; cursor: pointer; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; }
+        .btn-action-icon:hover { background: #f1f5f9; color: var(--text-main); }
+        .btn-action-icon.delete:hover { background: #fee2e2; color: #ef4444; }
+        .btn-action-icon svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* MODALS ENGINE */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.15); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: flex-end; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal-sheet { width: 100%; max-width: 500px; background: var(--card-bg); border-radius: 32px 32px 0 0; padding: 2rem; transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.04); max-height: 90vh; overflow-y: auto; }
+        .modal-overlay.open .modal-sheet { transform: translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h3 { font-size: 1.2rem; font-weight: 700; }
+        .text-btn { background: transparent; border: none; color: var(--accent-color); font-weight: 600; font-size: 1rem; cursor: pointer; }
+
+        /* SCHEDULE SAVING & PRESETS COMPONENT */
+        .preset-row-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
+        .preset-row-item:last-child { border-bottom: none; }
+        .preset-name-clickable { font-weight: 600; color: var(--text-main); cursor: pointer; flex-grow: 1; text-align: left; background: none; border: none; font-size: 0.95rem; }
+        .preset-name-clickable:hover { color: var(--accent-color); }
+
+        /* iOS ROTARY SCROLL WHEEL */
+        .ios-wheel-picker {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: #f1f5f9;
+            border-radius: 20px;
+            height: 180px;
+            margin: 1rem 0;
+            overflow: hidden;
+            user-select: none;
+            background-image: linear-gradient(to bottom, rgba(241,245,249,0.95), rgba(241,245,249,0.3) 35%, rgba(241,245,249,0.3) 65%, rgba(241,245,249,0.95));
+        }
+
+        .ios-wheel-selection-highlight { position: absolute; left: 10px; right: 10px; top: 50%; transform: translateY(-50%); height: 44px; background: rgba(15, 23, 42, 0.06); border-radius: 10px; pointer-events: none; z-index: 2; }
+        .wheel-column { flex: 1; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; position: relative; z-index: 1; }
+        .wheel-column::-webkit-scrollbar { display: none; }
+        .wheel-scroll-track { padding: 68px 0; }
+        .wheel-item { height: 44px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 600; color: var(--text-muted); scroll-snap-align: center; transition: color 0.2s, transform 0.2s; }
+        .wheel-item.selected { color: var(--text-main); font-size: 1.5rem; font-weight: 700; }
+
+        /* ARASAAC UI INTEGRATION ELEMENTS */
+        .search-inline-wrapper { display: flex; gap: 0.5rem; width: 65%; justify-content: flex-end; }
+        .inline-search-input { border: 1px solid var(--border-color); background: #ffffff; padding: 0.4rem 0.6rem; border-radius: 8px; font-size: 0.9rem; width: 70%; outline: none; }
+        .inline-search-input:focus { border-color: var(--accent-color); }
+        .inline-search-btn { background: var(--accent-color); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+        
+        .picto-results-box { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.5rem 0; margin-top: 0.5rem; min-height: 72px; scrollbar-width: thin; }
+        .picto-option-wrapper { flex: 0 0 54px; height: 54px; border: 2px solid transparent; border-radius: 8px; cursor: pointer; overflow: hidden; background: #ffffff; transition: all 0.2s; }
+        .picto-option-wrapper:hover { border-color: #cbd5e1; }
+        .picto-option-wrapper.active { border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+        .picto-option-wrapper img { width: 100%; height: 100%; object-fit: contain; }
+
+        .preview-selected-badge { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--accent-color); font-weight: 600; }
+        .preview-selected-badge img { width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--border-color); }
+
+        .ios-group { background: var(--input-bg); border-radius: 16px; padding: 0.25rem 1.25rem; margin-bottom: 1.25rem; }
+        .ios-row { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-color); }
+        .ios-row:last-child { border-bottom: none; }
+        .ios-row label { font-weight: 500; font-size: 0.95rem; color: var(--text-main); }
+        .ios-sub-group { padding-left: 1rem; border-left: 2px solid var(--border-color); margin-bottom: 1rem; display: block; }
+        .ios-sub-group.hidden { display: none; }
+        input[type="text"].ios-input { border: none; background: transparent; text-align: right; font-size: 0.95rem; width: 60%; outline: none; color: var(--text-main); }
+
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .25s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .25s; border-radius: 50%; }
+        input:checked + .slider { background-color: #10b981; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .ringing-banner { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: #ffffff; color: var(--text-main); padding: 1rem 1.75rem; border-radius: 999px; box-shadow: 0 20px 40px rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.2); display: none; align-items: center; gap: 1.5rem; z-index: 200; font-weight: 600; animation: gentle-float 2s ease-in-out infinite alternate; }
+        .btn-dismiss { background: var(--accent-color); color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 999px; font-weight: 600; cursor: pointer; }
+
+        @keyframes calm-pulse { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(30deg); } }
+        @keyframes gentle-float { from { transform: translate(-50%, 0); } to { transform: translate(-50%, -6px); } }
+    </style>
+</head>
+<body>
+
+    <div id="ringingBanner" class="ringing-banner">
+        <div>✨ <span id="ringingLabel">Schedule Entry</span></div>
+        <button id="bannerDismissBtn" class="btn-dismiss" onclick="stopActiveAlarm()">Dismiss</button>
+    </div>
+
+    <div class="dashboard">
+        <div class="clock-card">
+            <div class="top-bar">
+                <button class="icon-btn" id="openSettings" title="Options">
+                    <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3-1.57-3-3.5s1.07-3.5 3-3.5 3 1.57 3 3.5-1.07 3.5-3 3.5z"/></svg>
+                </button>
+                <button class="icon-btn" id="openPresets" title="Save / Load Schedules">
+                    <svg viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                </button>
+            </div>
+            <div id="digitalClockWrapper" class="digital-display-wrapper">
+                <div id="digitalClock" class="digital-clock">00:00</div>
+            </div>
+            <div id="dateDisplay" class="date-display">Loading...</div>
+            <div id="analogueClock" class="analogue-container">
+                <div class="clock-face" id="clockFace">
+                    <div id="hourHand" class="hand hour-hand"></div>
+                    <div id="minuteHand" class="hand minute-hand"></div>
+                    <div id="secondHand" class="hand second-hand"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notepad-card">
+            <div class="notepad-header">
+                <span>Schedule</span>
+                <button class="icon-btn" id="openAddAlarm" title="Add Schedule Item">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                </button>
+            </div>
+            <ul id="alarmList" class="alarm-list"></ul>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3>Display Options</h3>
+                <button class="text-btn" onclick="closeModal('settingsModal')">Done</button>
+            </div>
+            <div class="ios-group">
+                <div class="ios-row">
+                    <label>Show Digital Clock</label>
+                    <label class="switch"><input type="checkbox" id="setDigitalMaster" checked><span class="slider"></span></label>
+                </div>
+                <div class="ios-sub-group" id="digitalSubGroup">
+                    <div class="ios-row">
+                        <label>Show Digital Seconds</label>
+                        <label class="switch"><input type="checkbox" id="setSec"><span class="slider"></span></label>
+                    </div>
+                    <div class="ios-row">
+                        <label>24-Hour Time Format</label>
+                        <label class="switch"><input type="checkbox" id="set24H"><span class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="ios-row">
+                    <label>Show Analogue Clock</label>
+                    <label class="switch"><input type="checkbox" id="setAnalogueMaster"><span class="slider"></span></label>
+                </div>
+                <div class="ios-sub-group hidden" id="analogueSubGroup">
+                    <div class="ios-row">
+                        <label>Show Second Hand</label>
+                        <label class="switch"><input type="checkbox" id="setAnaSec" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="ios-row">
+                        <label>Show Minute Labels</label>
+                        <label class="switch"><input type="checkbox" id="setAnaMin"><span class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="presetsModal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <h3>Saved Schedules</h3>
+                <button class="text-btn" onclick="closeModal('presetsModal')">Close</button>
+            </div>
+            <div class="ios-group">
+                <div class="ios-row" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 1rem 0;">
+                    <label style="margin-bottom: 0.25rem;">Save Current Layout</label>
+                    <div style="display: flex; gap: 0.5rem; width: 100%;">
+                        <input type="text" id="presetNameInput" class="inline-search-input" style="width: 70%; text-align: left;" placeholder="e.g. Weekday Routine">
+                        <button class="inline-search-btn" id="btnSavePreset" style="width: 30%;">Save</button>
+                    </div>
+                </div>
+            </div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; padding-left: 0.5rem;">Load Layout Template</h4>
+            <div class="ios-group" id="presetsContainer" style="max-height: 200px; overflow-y: auto; padding: 0.25rem 1.25rem;"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="addAlarmModal">
+        <div class="modal-sheet">
+            <div class="modal-header">
+                <button class="text-btn" style="color:#ef4444" onclick="closeModal('addAlarmModal')">Cancel</button>
+                <h3 id="modalTitle">Add New Event</h3>
+                <button class="text-btn" id="saveAlarmBtn">Save</button>
+            </div>
+            
+            <div class="ios-wheel-picker">
+                <div class="ios-wheel-selection-highlight"></div>
+                <div class="wheel-column" id="hoursWheelColumn"><div class="wheel-scroll-track" id="hoursTrack"></div></div>
+                <div class="wheel-column" id="minutesWheelColumn"><div class="wheel-scroll-track" id="minutesTrack"></div></div>
+                <div class="wheel-column" id="meridianWheelColumn">
+                    <div class="wheel-scroll-track" id="meridianTrack">
+                        <div class="wheel-item" data-val="AM">AM</div>
+                        <div class="wheel-item" data-val="PM">PM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ios-group">
+                <div class="ios-row">
+                    <label>Description Note</label>
+                    <input type="text" id="alarmLabelInput" class="ios-input" placeholder="e.g. Lunch Time" maxlength="32">
+                </div>
+                <div class="ios-row">
+                    <label>Trigger Alarm Chime</label>
+                    <label class="switch">
+                        <input type="checkbox" id="isAlarmToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="ios-row" style="align-items: flex-start; flex-direction: column; gap: 0.5rem; padding: 0.8rem 0;">
+                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                        <label>Add Picture</label>
+                        <div class="search-inline-wrapper">
+                            <input type="text" id="pictoSearchInput" class="inline-search-input" placeholder="e.g. eat">
+                            <button class="inline-search-btn" id="btnPictoSearch">Search</button>
+                        </div>
+                    </div>
+                    <div id="selectedPictoFeedback" style="display: none; margin-top: 0.25rem;">
+                        <div class="preview-selected-badge">
+                            <span>Selected:</span>
+                            <img id="imgSelectedPreview" src="" alt="Target">
+                        </div>
+                    </div>
+                    <div id="pictoResults" class="picto-results-box" style="display: none; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let configs = { showDigital: true, is24H: false, showSec: false, showAna: false, showAnaSec: true, showAnaMin: false };
+        let alarms = JSON.parse(localStorage.getItem('saved_schedule_v12')) || [];
+        let savedPresets = JSON.parse(localStorage.getItem('schedule_presets_v12')) || {};
+        let audioCtx = null, soundInterval = null, bannerTimeout = null, lastTriggeredMinute = "";
+        let editingIndex = null;
+
+        const clockFace = document.getElementById('clockFace');
+        const secondHand = document.getElementById('secondHand');
+        const minuteHand = document.getElementById('minuteHand');
+        const hourHand = document.getElementById('hourHand');
+        const alarmList = document.getElementById('alarmList');
+
+        let selectedHour = "07", selectedMinute = "00", selectedMeridian = "AM";
+        let selectedPictoUrl = "";
+
+        function buildAnalogueLayout() {
+            for (let i = 1; i <= 12; i++) {
+                let el = document.createElement('div'); el.className = `number-label r${i}`;
+                el.innerHTML = `<div class="inner">${i}</div>`; clockFace.appendChild(el);
+            }
+            for (let i = 5; i <= 60; i += 5) {
+                let el = document.createElement('div'); el.className = `minute-label minute-marker r${i/5}`;
+                el.innerHTML = `<div class="inner">${i === 60 ? '00' : i}</div>`; clockFace.appendChild(el);
+            }
+        }
+        buildAnalogueLayout();
+
+        function setupWheelTracks() {
+            const hoursTrack = document.getElementById('hoursTrack');
+            const minutesTrack = document.getElementById('minutesTrack');
+            hoursTrack.innerHTML = ''; minutesTrack.innerHTML = '';
+
+            const maxHour = configs.is24H ? 23 : 12;
+            const minHour = configs.is24H ? 0 : 1;
+
+            for(let i = minHour; i <= maxHour; i++) {
+                let val = String(i).padStart(2, '0');
+                hoursTrack.innerHTML += `<div class="wheel-item" data-val="${val}">${val}</div>`;
+            }
+            for(let i = 0; i < 60; i++) {
+                let val = String(i).padStart(2, '0');
+                minutesTrack.innerHTML += `<div class="wheel-item" data-val="${val}">${val}</div>`;
+            }
+
+            document.getElementById('meridianWheelColumn').style.display = configs.is24H ? 'none' : 'block';
+
+            setupWheelScrollerEngine(document.getElementById('hoursWheelColumn'), (val) => { selectedHour = val; });
+            setupWheelScrollerEngine(document.getElementById('minutesWheelColumn'), (val) => { selectedMinute = val; });
+            if(!configs.is24H) {
+                setupWheelScrollerEngine(document.getElementById('meridianWheelColumn'), (val) => { selectedMeridian = val; });
+            }
+        }
+
+        function setupWheelScrollerEngine(columnEl, callback) {
+            const items = columnEl.querySelectorAll('.wheel-item');
+            const observerOptions = { root: columnEl, rootMargin: '-68px 0px -68px 0px', threshold: 0.6 };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        items.forEach(i => i.classList.remove('selected'));
+                        entry.target.classList.add('selected');
+                        callback(entry.target.getAttribute('data-val'));
+                    }
+                });
+            }, observerOptions);
+            items.forEach(item => observer.observe(item));
+        }
+
+        function setWheelToTime(hourStr, minuteStr) {
+            setTimeout(() => {
+                const hCol = document.getElementById('hoursWheelColumn');
+                const mCol = document.getElementById('minutesWheelColumn');
+                const merCol = document.getElementById('meridianWheelColumn');
+
+                let targetHour = hourStr;
+                let hrInt = parseInt(hourStr);
+                if (!configs.is24H) {
+                    let meridian = hrInt >= 12 ? 'PM' : 'AM';
+                    let hNum = hrInt % 12 || 12;
+                    targetHour = String(hNum).padStart(2, '0');
+                    const merTarget = merCol.querySelector(`[data-val="${meridian}"]`);
+                    if(merTarget) merCol.scrollTop = merTarget.offsetTop - 68;
+                } else {
+                    targetHour = String(hrInt).padStart(2, '0');
+                }
+
+                const hTarget = hCol.querySelector(`[data-val="${targetHour}"]`);
+                if(hTarget) hCol.scrollTop = hTarget.offsetTop - 68;
+
+                const mTarget = mCol.querySelector(`[data-val="${minuteStr}"]`);
+                if(mTarget) mCol.scrollTop = mTarget.offsetTop - 68;
+            }, 50);
+        }
+
+        document.getElementById('btnPictoSearch').onclick = async () => {
+            const query = document.getElementById('pictoSearchInput').value.trim().toLowerCase();
+            const resultsBox = document.getElementById('pictoResults');
+            if(!query) return;
+
+            resultsBox.innerHTML = `<div style="font-size:0.85rem; color:var(--text-muted); padding:0.5rem;">Searching...</div>`;
+            resultsBox.style.display = 'flex';
+
+            try {
+                const res = await fetch(`https://api.arasaac.org/api/pictograms/en/search/${encodeURIComponent(query)}`);
+                if(!res.ok) throw new Error("No items found");
+                const data = await res.json();
+                resultsBox.innerHTML = '';
+
+                if(!Array.isArray(data) || data.length === 0) {
+                    resultsBox.innerHTML = `<div style="font-size:0.85rem; color:var(--text-muted); padding:0.5rem;">No results found.</div>`;
+                    return;
+                }
+
+                data.slice(0, 12).forEach(item => {
+                    const id = item._id;
+                    const imageUrl = `https://api.arasaac.org/api/pictograms/${id}`;
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'picto-option-wrapper';
+                    wrapper.innerHTML = `<img src="${imageUrl}" alt="picto" loading="lazy">`;
+                    wrapper.onclick = () => {
+                        document.querySelectorAll('.picto-option-wrapper').forEach(w => w.classList.remove('active'));
+                        wrapper.classList.add('active');
+                        selectedPictoUrl = imageUrl;
+                        document.getElementById('imgSelectedPreview').src = imageUrl;
+                        document.getElementById('selectedPictoFeedback').style.display = 'block';
+                    };
+                    resultsBox.appendChild(wrapper);
+                });
+            } catch (err) {
+                resultsBox.innerHTML = `<div style="font-size:0.85rem; color:#ef4444; padding:0.5rem;">Error finding icons.</div>`;
+            }
+        };
+
+        function tick() {
+            const now = new Date();
+            const currentMinStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            let h = now.getHours(); const m = String(now.getMinutes()).padStart(2, '0'); const s = String(now.getSeconds()).padStart(2, '0');
+            
+            if (configs.showDigital) {
+                let displayStr = "";
+                if (configs.is24H) { displayStr = `${String(h).padStart(2,'0')}:${m}` + (configs.showSec ? `:${s}` : ''); } 
+                else {
+                    const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+                    displayStr = `${String(h).padStart(2,'0')}:${m}` + (configs.showSec ? `:${s}` : '') + ` ${ampm}`;
+                }
+                document.getElementById('digitalClock').textContent = displayStr;
+            }
+            document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+            if (configs.showAna) {
+                secondHand.style.transform = `rotate(${(now.getSeconds() / 60) * 360}deg)`;
+                minuteHand.style.transform = `rotate(${((now.getMinutes() / 60) * 360) + ((now.getSeconds() / 60) * 6)}deg)`;
+                hourHand.style.transform = `rotate(${((now.getHours() % 12) / 12 * 360) + ((now.getMinutes() / 60) * 30)}deg)`;
+            }
+
+            if (now.getSeconds() === 0 && lastTriggeredMinute !== currentMinStr) {
+                alarms.forEach(alarm => {
+                    if (alarm.time === currentMinStr && !alarm.completed) {
+                        lastTriggeredMinute = currentMinStr;
+                        triggerScheduleItem(alarm);
+                    }
+                });
+            }
+        }
+
+        function triggerScheduleItem(alarm) {
+            const labelText = alarm.label || 'Schedule Reminder';
+            document.getElementById('ringingLabel').textContent = labelText;
+            stopActiveAlarm();
+
+            if (alarm.isAlarm) {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                document.body.classList.add('ringing-active');
+                document.getElementById('bannerDismissBtn').style.display = 'block';
+                document.getElementById('ringingBanner').style.display = 'flex';
+                
+                const playSoftChime = () => {
+                    const nowTime = audioCtx.currentTime;
+                    const freqs = [329.63, 415.30, 493.88, 659.25];
+                    freqs.forEach((f, idx) => {
+                        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain(); osc.type = 'sine';
+                        osc.frequency.setValueAtTime(f, nowTime + (idx * 0.08)); gain.gain.setValueAtTime(0, nowTime);
+                        gain.gain.linearRampToValueAtTime(0.12, nowTime + (idx * 0.08) + 0.1); gain.gain.exponentialRampToValueAtTime(0.0001, nowTime + 1.8);
+                        osc.connect(gain); gain.connect(audioCtx.destination); osc.start(nowTime + (idx * 0.08)); osc.stop(nowTime + 2.0);
+                    });
+                };
+                playSoftChime();
+                soundInterval = setInterval(playSoftChime, 2500);
+                bannerTimeout = setTimeout(stopActiveAlarm, 10000); 
+            } else {
+                document.getElementById('bannerDismissBtn').style.display = 'none';
+                document.getElementById('ringingBanner').style.display = 'flex';
+                bannerTimeout = setTimeout(stopActiveAlarm, 10000);
+            }
+        }
+
+        function stopActiveAlarm() {
+            if (soundInterval) clearInterval(soundInterval);
+            if (bannerTimeout) clearTimeout(bannerTimeout);
+            document.body.classList.remove('ringing-active');
+            document.getElementById('ringingBanner').style.display = 'none';
+        }
+
+        function toggleComplete(index) {
+            alarms[index].completed = !alarms[index].completed;
+            drawAlarms();
+        }
+
+        function drawAlarms() {
+            alarmList.innerHTML = '';
+            alarms.forEach((alarm, index) => {
+                let displayTime = alarm.time;
+                if (!configs.is24H) {
+                    let [th, tm] = alarm.time.split(':'); th = parseInt(th);
+                    const suffix = th >= 12 ? 'PM' : 'AM'; th = th % 12 || 12; displayTime = `${String(th).padStart(2,'0')}:${tm} ${suffix}`;
+                }
+                
+                const imgTag = alarm.picto ? `<img src="${alarm.picto}" class="alarm-picto" alt="Icon">` : '';
+                const alertIcon = alarm.isAlarm 
+                    ? `<span class="alarm-alert-indicator" title="Chime Active"><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></span>`
+                    : `<span class="alarm-alert-indicator silent" title="Silent Reminder"><svg viewBox="0 0 24 24"><path d="M20 18.66L7.34 6 20 18.66zm-1.12 2.22l-1.6-1.6c-1.51.52-3.12.72-4.78.72-1.1 0-2-.9-2-2h-4c0 1.1.89 2 2 2zm-1.38-5.38V11c0-.42-.05-.83-.15-1.23l-6.3 6.31h6.45v-.1zM12 2c.83 0 1.5.67 1.5 1.5v.68c2.86.68 4.5 3.25 4.5 6.32v1.58l-2-2V11c0-2.48-1.51-4.5-4-4.5s-4 2.02-4 4.5v.08l-2-2v-.16c0-3.07 1.63-5.64 4.5-6.32V3.5C10.5 2.67 11.17 2 12 2zM2.27 4L1 5.27l4.99 4.99C5.38 10.55 5.2 11.1 5.2 11.69v5l-2 2v1h14.73l4 4L23 22.73 2.27 4z"/></svg></span>`;
+
+                let li = document.createElement('li'); 
+                li.className = `alarm-item ${alarm.completed ? 'completed' : ''}`;
+                li.draggable = true;
+                li.setAttribute('data-index', index);
+                
+                li.innerHTML = `
+                    <div class="alarm-checkbox-cell">
+                        <input type="checkbox" class="todo-checkbox" ${alarm.completed ? 'checked' : ''} onclick="toggleComplete(${index})">
+                    </div>
+                    <div class="alarm-body-content">
+                        <div class="alarm-meta">
+                            ${imgTag}
+                            <span class="alarm-time-text">${displayTime}</span>
+                            <span class="alarm-desc-text">— ${alarm.label || 'Event'}</span>
+                            ${alertIcon}
+                        </div>
+                        <div class="alarm-actions">
+                            <button class="btn-action-icon" onclick="editAlarm(${index})" title="Edit event">
+                                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </button>
+                            <button class="btn-action-icon delete" onclick="removeAlarm(${index})" title="Delete entry">
+                                <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                li.addEventListener('dragstart', handleDragStart);
+                li.addEventListener('dragover', handleDragOver);
+                li.addEventListener('drop', handleDrop);
+                li.addEventListener('dragend', handleDragEnd);
+                
+                alarmList.appendChild(li);
+            });
+            localStorage.setItem('saved_schedule_v12', JSON.stringify(alarms));
+        }
+
+        /* NATIVE DRAG AND DROP HANDLERS */
+        let dragSourceIndex = null;
+
+        function handleDragStart(e) {
+            if (e.target.tagName === 'INPUT' || e.target.closest('.alarm-actions')) {
+                e.preventDefault();
+                return;
+            }
+            this.classList.add('dragging');
+            dragSourceIndex = this.getAttribute('data-index');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            return false;
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            const targetIndex = this.getAttribute('data-index');
+            if (dragSourceIndex !== null && dragSourceIndex !== targetIndex) {
+                const movedItem = alarms.splice(dragSourceIndex, 1)[0];
+                alarms.splice(targetIndex, 0, movedItem);
+                drawAlarms();
+            }
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            dragSourceIndex = null;
+        }
+
+        function removeAlarm(i) { stopActiveAlarm(); alarms.splice(i,1); drawAlarms(); }
+
+        function editAlarm(i) {
+            editingIndex = i;
+            const target = alarms[i];
+            
+            document.getElementById('modalTitle').textContent = "Edit Schedule Event";
+            document.getElementById('alarmLabelInput').value = target.label || '';
+            document.getElementById('isAlarmToggle').checked = target.isAlarm;
+            
+            selectedPictoUrl = target.picto || '';
+            if (selectedPictoUrl) {
+                document.getElementById('imgSelectedPreview').src = selectedPictoUrl;
+                document.getElementById('selectedPictoFeedback').style.display = 'block';
+            } else {
+                document.getElementById('selectedPictoFeedback').style.display = 'none';
+            }
+
+            document.getElementById('pictoSearchInput').value = "";
+            document.getElementById('pictoResults').innerHTML = "";
+            document.getElementById('pictoResults').style.display = 'none';
+
+            openModal('addAlarmModal');
+            setupWheelTracks();
+            
+            let [h, m] = target.time.split(':');
+            setWheelToTime(h, m);
+        }
+
+        /* PRESET ENGINE DELEGATION RULES */
+        document.getElementById('openPresets').onclick = () => {
+            document.getElementById('presetNameInput').value = "";
+            renderPresetsList();
+            openModal('presetsModal');
+        };
+
+        document.getElementById('btnSavePreset').onclick = () => {
+            const name = document.getElementById('presetNameInput').value.trim();
+            if (!name) return alert("Please enter a name for your schedule template.");
+            
+            savedPresets[name] = JSON.parse(JSON.stringify(alarms));
+            localStorage.setItem('schedule_presets_v12', JSON.stringify(savedPresets));
+            document.getElementById('presetNameInput').value = "";
+            renderPresetsList();
+        };
+
+        function renderPresetsList() {
+            const container = document.getElementById('presetsContainer');
+            container.innerHTML = '';
+            const keys = Object.keys(savedPresets);
+            
+            if (keys.length === 0) {
+                container.innerHTML = `<div style="font-size:0.85rem; color:var(--text-muted); text-align:center; padding: 1rem 0;">No templates saved yet.</div>`;
+                return;
+            }
+            
+            keys.forEach(key => {
+                const item = document.createElement('div');
+                item.className = 'preset-row-item';
+                item.innerHTML = `
+                    <button class="preset-name-clickable">${key}</button>
+                    <button class="btn-action-icon delete" title="Delete Preset">
+                        <svg viewBox="0 0 24 24" style="width:16px; height:16px;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    </button>
+                `;
+                
+                item.querySelector('.preset-name-clickable').onclick = () => {
+                    if (confirm(`Load layout "${key}"? This overrides your active workspace screen list.`)) {
+                        alarms = JSON.parse(JSON.stringify(savedPresets[key]));
+                        drawAlarms();
+                        closeModal('presetsModal');
+                    }
+                };
+                
+                item.querySelector('.btn-action-icon.delete').onclick = () => {
+                    if (confirm(`Remove template "${key}" permanently?`)) {
+                        delete savedPresets[key];
+                        localStorage.setItem('schedule_presets_v12', JSON.stringify(savedPresets));
+                        renderPresetsList();
+                    }
+                };
+                
+                container.appendChild(item);
+            });
+        }
+
+        document.getElementById('openSettings').onclick = () => openModal('settingsModal');
+        
+        document.getElementById('openAddAlarm').onclick = () => {
+            editingIndex = null;
+            document.getElementById('modalTitle').textContent = "Add New Event";
+            selectedPictoUrl = "";
+            document.getElementById('alarmLabelInput').value = "";
+            document.getElementById('pictoSearchInput').value = "";
+            document.getElementById('pictoResults').innerHTML = "";
+            document.getElementById('pictoResults').style.display = 'none';
+            document.getElementById('selectedPictoFeedback').style.display = 'none';
+            document.getElementById('isAlarmToggle').checked = false;
+            
+            openModal('addAlarmModal');
+            setupWheelTracks();
+            setWheelToTime("07", "00");
+        };
+
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        document.getElementById('saveAlarmBtn').onclick = () => {
+            let finalHour = parseInt(selectedHour);
+            if (!configs.is24H) {
+                if (selectedMeridian === 'PM' && finalHour < 12) finalHour += 12;
+                if (selectedMeridian === 'AM' && finalHour === 12) finalHour = 0;
+            }
+
+            const cleanTimeStr = `${String(finalHour).padStart(2,'0')}:${selectedMinute}`;
+            const label = document.getElementById('alarmLabelInput').value.trim();
+            const isAlarm = document.getElementById('isAlarmToggle').checked;
+            
+            const legacyCompletedStatus = (editingIndex !== null) ? alarms[editingIndex].completed : false;
+            const payload = { time: cleanTimeStr, label, picto: selectedPictoUrl, isAlarm, completed: legacyCompletedStatus };
+
+            if (editingIndex !== null) {
+                alarms[editingIndex] = payload;
+            } else {
+                alarms.push(payload);
+            }
+            
+            drawAlarms();
+            closeModal('addAlarmModal');
+        };
+
+        document.getElementById('setDigitalMaster').onchange = (e) => {
+            configs.showDigital = e.target.checked;
+            document.getElementById('digitalClockWrapper').style.display = configs.showDigital ? 'block' : 'none';
+            document.getElementById('digitalSubGroup').classList.toggle('hidden', !configs.showDigital);
+            tick();
+        };
+
+        document.getElementById('setAnalogueMaster').onchange = (e) => {
+            configs.showAna = e.target.checked;
+            document.getElementById('analogueClock').classList.toggle('show', configs.showAna);
+            document.getElementById('analogueSubGroup').classList.toggle('hidden', !configs.showAna);
+            tick();
+        };
+
+        document.getElementById('set24H').onchange = (e) => { configs.is24H = e.target.checked; tick(); setupWheelTracks(); drawAlarms(); };
+        document.getElementById('setSec').onchange = (e) => { configs.showSec = e.target.checked; tick(); };
+        document.getElementById('setAnaSec').onchange = (e) => { secondHand.style.display = e.target.checked ? 'block' : 'none'; };
+        document.getElementById('setAnaMin').onchange = (e) => { document.querySelectorAll('.minute-marker').forEach(m => m.style.display = e.target.checked ? 'block' : 'none'); };
+
+        setInterval(tick, 1000);
+        tick();
+        drawAlarms();
+    </script>
+</body>
+</html>
