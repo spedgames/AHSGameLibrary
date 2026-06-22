@@ -146,7 +146,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["phonics", "coding", "dictation"],
+    "tags": ["phonics", "dictation"],
     "uploadDate": "2026-05-30"
   },
   {
@@ -246,7 +246,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop", "tablet"],
-    "tags": ["body parts", "sentence building", "vocabulary"],
+    "tags": ["body parts", "sentence building", "vocabulary", "typing"],
     "uploadDate": "2026-05-25"
   },
   {
@@ -266,7 +266,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop"],
-    "tags": ["predictable charts", "sentence building", "vocabulary", "writing"],
+    "tags": ["predictable charts", "sentence building", "vocabulary", "writing", "typing"],
     "uploadDate": "2026-05-02"
   },
   {
