@@ -899,7 +899,7 @@
         <div class="home-wrap">
             <div class="hero">
                 <h1>Games that make learning joyful 🎉</h1>
-                <p>Educational games and applications across Literacy, Numeracy, SEL, and Daily Living domains — designed for students at Rainbow Centre Admiral Hill School.</p>
+                <p>Educational games and applications across Literacy, Numeracy, SEL, and Daily Living domains — designed for every student at Rainbow Centre Admiral Hill School.</p>
             </div>
             <div class="home-section">
                 <div class="section-row-header">
@@ -1017,28 +1017,6 @@
                 <p>Our goal is to make games accessible for students with different abilities, and provide a platform for them to learn, explore, and succeed at their own pace.</p>
                 <p>We also hope to support families by providing resources that parents and caregivers can easily use at home to practise and reinforce important skills.</p>
             </div>
-
-            <!-- Section 2: Game Design Guidelines -->
-            <div class="about-section">
-                <div class="about-section-header">
-                    <div class="about-section-icon">📐</div>
-                    <h2>Game Design Guidelines</h2>
-                </div>
-                <p>Games in the AHS Game Library are designed with our students in mind. The following principles are used to guide us toward creating accessible, engaging, and effective learning tools.</p>
-                <div class="guidelines-grid">
-                    <div class="guideline-card">
-                        <div class="guideline-card-title">🗂️ Structure</div>
-                        <p>Students with autism thrive with predictability. A well-structured game removes uncertainty — students know what to do, how much is left, and when they're done. This clarity reduces anxiety and keeps students focused on learning rather than figuring out what's expected of them.</p>
-                    </div>
-                    <div class="guideline-card">
-                        <div class="guideline-card-title">🎨 Sensory Management</div>
-                        <p>Designing games for our students requires balancing diverse sensory needs - some thrive on vivid feedback, while others may find it overwhelming. Providing calm visual and audio effects, a pressure-free pace and the flexibility to control these settings create an environment where students feel safe, comfortable and engaged when exploring games.</p>                    </div>
-                    <div class="guideline-card">
-                        <div class="guideline-card-title">♿ Accessibility & Differentiation</div>
-                        <p>No two students are the same. Games should meet students where they are — supporting different abilities, preferences and learning paces. When a game is designed for every student, every student gets a genuine chance to succeed.</p>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -1050,7 +1028,7 @@
 
             <div class="tab-bar">
                 <button class="tab-btn active" onclick="switchContributeTab('submit-game', this)">Submit a Game</button>
-                <button class="tab-btn" onclick="switchContributeTab('suggest-game', this)">Submit an Idea</button>
+                <button class="tab-btn" onclick="switchContributeTab('suggest-game', this)">Submit a Suggestion</button>
             </div>
 
             <!-- Tab: Submit a Game -->
@@ -1093,7 +1071,7 @@
             <!-- Tab: Submit a Suggestion -->
             <div id="tab-suggest-game" class="tab-panel">
                 <div class="form-card">
-                    <h2>Submit a Game Idea</h2>
+                    <h2>Submit a Game Suggestion</h2>
                     <p class="form-desc">Have an idea for a game you'd like us to create? Share your game ideas or learning objectives and we'll do our best to bring them to life.</p>
 
                     <div class="form-row">
@@ -1518,11 +1496,10 @@ function validateAndPlay(id) {
     const isTablet = (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) || /iPad/i.test(ua);
     const device = isTablet ? 'tablet' : (/Mobile/i.test(ua) ? 'mobile' : 'desktop');
     const ok = !g.compatibility || g.compatibility.includes(device);
-    if (!ok && !confirm(`This game is optimised for ${g.compatibility.join('/')}. Open anyway?`)) return;
-    const a = document.createElement('a');
-    a.href = new URL(getGameUrl(g), window.location.href).href;
-    a.target = '_blank'; a.rel = 'noopener noreferrer';
-    document.body.appendChild(a); a.click(); a.remove();
+    if (!ok && !confirm(`This game is optimised for ${g.compatibility.join('/')} and may not work well on your device. Open anyway?`)) return;
+
+    // Open the game directly in the same tab instead of launching a new window
+    window.location.href = new URL(getGameUrl(g), window.location.href).href;
 }
 
 /* ── CONTRIBUTE & FEEDBACK ── */
