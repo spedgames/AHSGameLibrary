@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimalist Studio Clock & Schedule Pad</title>
+    <title>Schedule Mate</title>
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -133,7 +133,14 @@
             touch-action: manipulation;
         }
 
-        .icon-btn:hover { background: var(--border-color); }
+        /* Fix iOS Sticky Hover Bug */
+        @media (hover: hover) and (pointer: fine) {
+            .icon-btn:hover { background: var(--border-color); }
+            .btn-action-icon:hover { background: #f1f5f9; color: var(--text-main); }
+            .btn-action-icon.delete:hover { background: #fee2e2; color: #ef4444; }
+            .preset-name-clickable:hover { color: var(--accent-color); }
+        }
+
         .icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
 
         .digital-display-wrapper { display: block; margin-bottom: 0.5rem; margin-top: 2rem; }
@@ -167,7 +174,7 @@
         .second-hand { width: 1.5px; height: 76px; background-color: var(--accent-color); margin-left: -0.75px; z-index: 6; }
 
         .alarm-list { list-style: none; margin-top: 0.5rem; }
-        .alarm-item { display: flex; align-items: center; padding: 0.75rem 0.5rem 0.75rem 0; border-bottom: 1px dashed rgba(71, 85, 105, 0.08); cursor: grab; background: transparent; transition: background 0.2s ease, opacity 0.2s ease; touch-action: none; /* Prevents native page scrolling while dragging an item on mobile */ }
+        .alarm-item { display: flex; align-items: center; padding: 0.75rem 0.5rem 0.75rem 0; border-bottom: 1px dashed rgba(71, 85, 105, 0.08); cursor: grab; background: transparent; transition: background 0.2s ease, opacity 0.2s ease; touch-action: none; }
         .alarm-item:active { cursor: grabbing; }
         .alarm-item.dragging { opacity: 0.4; background: rgba(99, 102, 241, 0.05); }
         
@@ -179,7 +186,7 @@
         .alarm-body-content { display: flex; justify-content: space-between; align-items: center; width: calc(100% - 2.5rem); padding-left: 1rem; }
         
         .alarm-meta { display: flex; align-items: center; gap: 0.85rem; flex-grow: 1; min-width: 0; overflow: hidden; white-space: nowrap; pointer-events: none; transition: all 0.2s; padding-right: 1rem; }
-        .alarm-actions { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; z-index: 4; }
+        .alarm-actions { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; z-index: 10; position: relative; }
         
         .alarm-item.completed { opacity: 0.5; }
         .alarm-item.completed .alarm-meta { text-decoration: line-through; text-decoration-color: var(--text-muted); }
@@ -193,10 +200,9 @@
         .alarm-alert-indicator.silent { color: var(--text-muted); opacity: 0.4; }
         .alarm-alert-indicator svg { width: 14px; height: 14px; fill: currentColor; }
 
-        .btn-action-icon { background: transparent; border: none; color: #94a3b8; cursor: pointer; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; }
-        .btn-action-icon:hover { background: #f1f5f9; color: var(--text-main); }
-        .btn-action-icon.delete:hover { background: #fee2e2; color: #ef4444; }
-        .btn-action-icon svg { width: 18px; height: 18px; fill: currentColor; }
+        /* Unified Touch Target Padding for iOS Minimal Target Compliance */
+        .btn-action-icon { background: transparent; border: none; color: #94a3b8; cursor: pointer; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; touch-action: manipulation; }
+        .btn-action-icon svg { width: 18px; height: 18px; fill: currentColor; pointer-events: none; }
 
         /* MODALS ENGINE */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.15); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: flex-end; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
@@ -211,7 +217,6 @@
         .preset-row-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
         .preset-row-item:last-child { border-bottom: none; }
         .preset-name-clickable { font-weight: 600; color: var(--text-main); cursor: pointer; flex-grow: 1; text-align: left; background: none; border: none; font-size: 0.95rem; }
-        .preset-name-clickable:hover { color: var(--accent-color); }
 
         /* iOS ROTARY SCROLL WHEEL */
         .ios-wheel-picker {
@@ -444,7 +449,7 @@
         let touchStartIdx = null;
         let activeTouchY = 0;
 
-        // SAFE AUDIO INITIALIZATION RULE
+        // CRITICAL IPAD WEB AUDIO UNLOCK ENGINE
         function unlockWebAudioEngine() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -452,12 +457,21 @@
             if (audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
-            // Remove the validation listeners once user verification baseline passes
-            window.removeEventListener('click', unlockWebAudioEngine);
-            window.removeEventListener('touchstart', unlockWebAudioEngine);
+            
+            // Prime with a silent buffer block to definitively grant continuous activation rights
+            if (audioCtx && audioCtx.state === 'running') {
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start(0);
+                
+                // Clear validation bindings once engine security handshake verification completes
+                window.removeEventListener('pointerdown', unlockWebAudioEngine);
+            }
         }
-        window.addEventListener('click', unlockWebAudioEngine);
-        window.addEventListener('touchstart', unlockWebAudioEngine);
+        // Pointerdown matches all primary taps instantaneously across view layers
+        window.addEventListener('pointerdown', unlockWebAudioEngine);
 
         function buildAnalogueLayout() {
             for (let i = 1; i <= 12; i++) {
@@ -616,7 +630,7 @@
             stopActiveAlarm();
 
             if (alarm.isAlarm) {
-                // Ensure audio framework instance is active
+                // Instantly query or repair context state bounds safely
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
@@ -688,10 +702,10 @@
                             ${alertIcon}
                         </div>
                         <div class="alarm-actions">
-                            <button class="btn-action-icon" onclick="editAlarm(${index})" title="Edit event">
+                            <button class="btn-action-icon edit-btn" title="Edit event">
                                 <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                             </button>
-                            <button class="btn-action-icon delete" onclick="removeAlarm(${index})" title="Delete entry">
+                            <button class="btn-action-icon delete-btn" title="Delete entry">
                                 <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                             </button>
                         </div>
@@ -708,6 +722,23 @@
                 li.addEventListener('touchstart', handleTouchStart, { passive: false });
                 li.addEventListener('touchmove', handleTouchMove, { passive: false });
                 li.addEventListener('touchend', handleTouchEnd);
+
+                // CROSS-PLATFORM INTERACTION ENGINES FOR ACTION BUTTONS
+                const eBtn = li.querySelector('.edit-btn');
+                const dBtn = li.querySelector('.delete-btn');
+
+                // Pointerdown fires instantly on physical contact without double-tap hover blockages
+                eBtn.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    editAlarm(index);
+                });
+
+                dBtn.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    removeAlarm(index);
+                });
                 
                 alarmList.appendChild(li);
             });
@@ -751,8 +782,8 @@
 
         /* TOUCH EVENT HANDLERS (IPAD / MOBILE) */
         function handleTouchStart(e) {
-            // Guard clause: Avoid misfires if interactive nodes are targeted
-            if (e.target.tagName === 'INPUT' || e.target.closest('.alarm-actions')) {
+            // Isolates swipe detection away from action columns to let buttons pass through cleanly
+            if (e.target.tagName === 'INPUT' || e.target.closest('.alarm-actions') || e.target.closest('.todo-checkbox')) {
                 return;
             }
             touchStartIdx = parseInt(this.getAttribute('data-index'));
@@ -762,10 +793,9 @@
 
         function handleTouchMove(e) {
             if (touchStartIdx === null) return;
-            e.preventDefault(); // Lock mobile safari page layout scroll bounds
+            e.preventDefault(); 
 
             const currentY = e.touches[0].clientY;
-            // Scan container elements to spot layout collision targets
             const targetNode = document.elementFromPoint(e.touches[0].clientX, currentY);
             if (!targetNode) return;
 
@@ -773,13 +803,11 @@
             if (closestLi && closestLi !== this) {
                 const targetIdx = parseInt(closestLi.getAttribute('data-index'));
                 if (touchStartIdx !== targetIdx) {
-                    // Update layout indices in realtime for smoother visual response
                     const item = alarms.splice(touchStartIdx, 1)[0];
                     alarms.splice(targetIdx, 0, item);
                     touchStartIdx = targetIdx; 
                     drawAlarms();
                     
-                    // Maintain selection persistence across list draw loops
                     const updatedItems = alarmList.querySelectorAll('.alarm-item');
                     updatedItems.forEach(li => {
                         if (parseInt(li.getAttribute('data-index')) === touchStartIdx) {
@@ -795,7 +823,7 @@
                 this.classList.remove('dragging');
             }
             touchStartIdx = null;
-            drawAlarms(); // Flush layout stack shifts safely to localStorage
+            drawAlarms(); 
         }
 
         function removeAlarm(i) { stopActiveAlarm(); alarms.splice(i,1); drawAlarms(); }
@@ -872,13 +900,15 @@
                     }
                 };
                 
-                item.querySelector('.btn-action-icon.delete').onclick = () => {
+                // Transformed into explicit pointerdown trigger to bypass ghost click filters
+                item.querySelector('.btn-action-icon.delete').addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
                     if (confirm(`Remove template "${key}" permanently?`)) {
                         delete savedPresets[key];
                         localStorage.setItem('schedule_presets_v12', JSON.stringify(savedPresets));
                         renderPresetsList();
                     }
-                };
+                });
                 
                 container.appendChild(item);
             });
