@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Letter Match — AHS Game Library</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #FDF0F4;
+  --surface:   #FFFFFF;
+  --card:      #FEF6F9;
+  --border:    #F2C4D4;
+  --primary:   #C2436A;
+  --primary-d: #8C2F4C;
+  --accent:    #F97BB0;
+  --accent-d:  #C45080;
+  --success:   #3DAA6A;
+  --success-l: #D4F0E2;
+  --error:     #E05252;
+  --error-l:   #FCE4E4;
+  --text:      #3A1C28;
+  --muted:     #8E5A6E;
+  --radius:    16px;
+  --radius-sm: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+  min-height: 100%; width: 100%;
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ── Overlay / menu screens ─────────────────────────────────────────────── */
+/* Scrollable on short screens, centred on tall ones */
+.screen {
+  min-height: 100dvh;           /* dynamic viewport height — safe on mobile */
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: clamp(16px, 4vw, 40px) clamp(16px, 5vw, 48px);
+  gap: clamp(12px, 2.5vh, 22px);
+  background: var(--bg);
+  overflow-y: auto;             /* scroll if content taller than viewport */
+}
+.screen.hidden { display: none; }
+
+.screen h1 {
+  font-size: clamp(1.6rem, 5vw, 2.8rem);
+  font-weight: 900; color: var(--primary);
+  text-align: center; line-height: 1.2;
+}
+.screen p {
+  font-size: clamp(0.95rem, 2.2vw, 1.2rem);
+  color: var(--muted); text-align: center;
+  max-width: 500px; line-height: 1.6;
+}
+
+/* mode selector — 3 cols on ≥360px, 1 col on tiny screens */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px; width: 100%; max-width: 480px;
+}
+@media (max-width: 340px) {
+  .mode-grid { grid-template-columns: 1fr; }
+}
+.mode-card {
+  background: var(--surface);
+  border: 2.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: clamp(10px, 2vw, 16px) 8px;
+  text-align: center; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.mode-card.selected { border-color: var(--primary); background: #FDEAF0; }
+.mode-card .mode-icon { font-size: clamp(1.4rem, 4vw, 2rem); line-height: 1; margin-bottom: 4px; }
+.mode-card .mode-lbl { font-size: clamp(0.72rem, 1.8vw, 0.88rem); font-weight: 700; color: var(--text); }
+.mode-card .mode-sub { font-size: clamp(0.65rem, 1.5vw, 0.72rem); color: var(--muted); margin-top: 2px; }
+
+/* round / choices row */
+.round-row {
+  display: flex; gap: 8px;
+  width: 100%; max-width: 380px; justify-content: center;
+}
+.round-btn {
+  flex: 1; padding: clamp(10px, 2vw, 14px) 8px;
+  background: var(--surface);
+  border: 2.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(0.95rem, 2.5vw, 1.15rem); font-weight: 700;
+  color: var(--muted); cursor: pointer;
+  transition: border-color .15s, background .15s;
+  line-height: 1.3;
+}
+.round-btn.selected { border-color: var(--primary); background: #FDEAF0; color: var(--primary); }
+
+.btn-play {
+  padding: clamp(14px, 2.5vw, 18px) clamp(32px, 8vw, 56px);
+  background: var(--accent);
+  border: none; border-radius: 999px;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1.1rem, 3.5vw, 1.4rem); font-weight: 900;
+  color: #fff; cursor: pointer;
+  box-shadow: 0 4px 0 var(--accent-d);
+  transition: transform .1s, box-shadow .1s;
+  touch-action: manipulation;
+}
+.btn-play:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--accent-d); }
+
+.section-label {
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--muted); letter-spacing: .08em;
+  text-transform: uppercase; width: 100%;
+  max-width: 480px; text-align: left;
+}
+
+/* ── Game wrapper — fixed full-screen during play ────────────────────────── */
+#game-wrap {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+#game-wrap.hidden { display: none; }
+
+/* top bar */
+#topbar {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: clamp(8px, 1.5vw, 12px) clamp(12px, 3vw, 24px);
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--border);
+  flex-shrink: 0; gap: 12px;
+}
+#topbar .game-title {
+  font-size: clamp(0.85rem, 2.5vw, 1.05rem);
+  font-weight: 900; color: var(--primary);
+  white-space: nowrap;
+}
+#progress-wrap { flex: 1; min-width: 0; max-width: 240px; }
+#progress-bar-bg {
+  background: var(--border);
+  border-radius: 999px; height: 9px; overflow: hidden;
+}
+#progress-bar-fill {
+  background: var(--primary);
+  height: 100%; border-radius: 999px;
+  width: 0%; transition: width .4s ease;
+}
+#round-label {
+  font-size: clamp(0.7rem, 1.8vw, 0.82rem);
+  font-weight: 700; color: var(--muted);
+  margin-bottom: 3px; text-align: center;
+  white-space: nowrap;
+}
+#vol-btn {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: clamp(5px, 1vw, 8px) clamp(8px, 1.5vw, 12px);
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  cursor: pointer; line-height: 1;
+  touch-action: manipulation; flex-shrink: 0;
+}
+
+/* ── Main play area ─────────────────────────────────────────────────────── */
+/*  Mobile/tablet portrait  → single column, stacked
+    Tablet landscape/desktop → side-by-side (prompt left, choices right)  */
+#main-area {
+  flex: 1; overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(10px, 2vh, 20px) clamp(12px, 3vw, 24px);
+  gap: clamp(10px, 2vh, 18px);
+}
+
+/* Side-by-side on wide landscape screens */
+@media (min-width: 640px) and (orientation: landscape),
+       (min-width: 900px) {
+  #main-area {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(20px, 4vw, 48px);
+  }
+  #left-col {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
+  #right-col {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 12px;
+    flex: 1; max-width: 480px;
+  }
+}
+
+/* On narrow / portrait, left-col and right-col just stack */
+#left-col, #right-col {
+  display: contents; /* transparent wrappers on mobile */
+}
+@media (min-width: 640px) and (orientation: landscape),
+       (min-width: 900px) {
+  #left-col, #right-col { display: flex; }
+}
+
+/* ── Prompt card ─────────────────────────────────────────────────────────── */
+#prompt-card {
+  background: var(--surface);
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  padding: clamp(10px, 2vw, 18px) clamp(16px, 4vw, 32px);
+  text-align: center;
+  flex-shrink: 0;
+}
+#prompt-label {
+  font-size: clamp(0.65rem, 1.6vw, 0.78rem);
+  font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing:.06em; margin-bottom: 6px;
+}
+#prompt-letter {
+  font-size: clamp(3.5rem, 12vw, 7rem);
+  font-weight: 900; color: var(--primary); line-height: 1;
+}
+#prompt-picto {
+  margin-top: 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+#prompt-picto img {
+  width: clamp(44px, 8vw, 64px);
+  height: clamp(44px, 8vw, 64px);
+  object-fit: contain; border-radius: 8px;
+}
+#prompt-picto span { font-size: clamp(0.65rem, 1.6vw, 0.78rem); color: var(--muted); font-weight: 700; }
+
+/* ── Instruction strip ────────────────────────────────────────────────────── */
+#instr {
+  font-size: clamp(0.88rem, 2.2vw, 1.05rem);
+  font-weight: 700; color: var(--muted);
+  text-align: center; flex-shrink: 0;
+}
+
+/* ── Choice buttons ──────────────────────────────────────────────────────── */
+#choices {
+  display: grid;
+  gap: clamp(8px, 2vw, 14px);
+  width: 100%; max-width: 460px;
+  flex-shrink: 0;
+}
+#choices.n2 { grid-template-columns: 1fr 1fr; }
+#choices.n4 { grid-template-columns: 1fr 1fr; }
+
+.choice-btn {
+  background: var(--surface);
+  border: 3px solid var(--border);
+  border-radius: var(--radius);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+  padding: clamp(10px, 2.5vw, 20px) 8px;
+  cursor: pointer;
+  transition: border-color .12s, background .12s, transform .1s;
+  min-height: clamp(72px, 12vw, 120px);
+  touch-action: manipulation;
+}
+.choice-btn:active { transform: scale(0.96); }
+.choice-letter {
+  font-size: clamp(1.8rem, 6vw, 3.8rem);
+  font-weight: 900; color: var(--text); line-height: 1;
+}
+.choice-btn.disabled { pointer-events: none; opacity: .45; }
+
+/* correct/wrong override the pastel bg set inline */
+.choice-btn.correct { border-color: var(--success) !important; background: var(--success-l) !important; }
+.choice-btn.correct .choice-letter { color: var(--success); }
+.choice-btn.wrong   { border-color: var(--error)   !important; background: var(--error-l)   !important; }
+.choice-btn.wrong   .choice-letter { color: var(--error); }
+
+/* ── Feedback text ───────────────────────────────────────────────────────── */
+#feedback {
+  font-size: clamp(1.1rem, 3.5vw, 1.8rem);
+  font-weight: 900; text-align: center;
+  min-height: 2rem; flex-shrink: 0;
+}
+#feedback.ok  { color: var(--success); }
+#feedback.err { color: var(--error); }
+
+/* ── End screen ──────────────────────────────────────────────────────────── */
+#end-screen .score-big {
+  font-size: clamp(2.8rem, 10vw, 5.5rem);
+  font-weight: 900; color: var(--primary); line-height: 1;
+}
+#end-screen .score-sub {
+  font-size: clamp(0.9rem, 2.2vw, 1.05rem);
+  color: var(--muted); font-weight: 700; text-align: center;
+}
+.btn-again {
+  padding: clamp(13px, 2.5vw, 18px) clamp(32px, 8vw, 56px);
+  background: var(--primary);
+  border: none; border-radius: 999px;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(1rem, 3vw, 1.3rem); font-weight: 900;
+  color: #fff; cursor: pointer;
+  box-shadow: 0 4px 0 var(--primary-d);
+  transition: transform .1s, box-shadow .1s;
+  touch-action: manipulation;
+}
+.btn-again:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--primary-d); }
+.btn-menu {
+  padding: clamp(10px, 2vw, 13px) clamp(24px, 6vw, 36px);
+  background: transparent;
+  border: 2.5px solid var(--border);
+  border-radius: 999px;
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(0.88rem, 2.2vw, 1rem); font-weight: 700;
+  color: var(--muted); cursor: pointer;
+  transition: border-color .15s, color .15s;
+  touch-action: manipulation;
+}
+.btn-menu:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  60%      { transform: translateX(8px); }
+}
+.shake { animation: shake .35s ease; }
+
+@keyframes pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+.pop { animation: pop .25s ease; }
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .shake, .pop { animation: none; }
+  #progress-bar-fill { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ START SCREEN ══════════════════════════════════════════════════════ -->
+<div id="start-screen" class="screen">
+  <h1>Letter Match 🔤</h1>
+  <p>Match the big letter to its small letter.<br>Every correct match is a win!</p>
+
+  <div class="section-label">Choose a mode</div>
+  <div class="mode-grid">
+    <div class="mode-card selected" data-mode="upper-lower" onclick="selectMode(this)">
+      <div class="mode-icon">Aa</div>
+      <div class="mode-lbl">Upper → Lower</div>
+      <div class="mode-sub">See A, find a</div>
+    </div>
+    <div class="mode-card" data-mode="lower-upper" onclick="selectMode(this)">
+      <div class="mode-icon">aA</div>
+      <div class="mode-lbl">Lower → Upper</div>
+      <div class="mode-sub">See a, find A</div>
+    </div>
+    <div class="mode-card" data-mode="mixed" onclick="selectMode(this)">
+      <div class="mode-icon">Aa↔</div>
+      <div class="mode-lbl">Mixed</div>
+      <div class="mode-sub">Both ways</div>
+    </div>
+  </div>
+
+  <div class="section-label">Number of choices</div>
+  <div class="round-row">
+    <button class="round-btn selected" data-choices="2" onclick="selectChoices(this)">2 choices<br><small style="font-weight:400;font-size:.7rem">easier</small></button>
+    <button class="round-btn" data-choices="4" onclick="selectChoices(this)">4 choices<br><small style="font-weight:400;font-size:.7rem">harder</small></button>
+  </div>
+
+  <div class="section-label">How many rounds?</div>
+  <div class="round-row">
+    <button class="round-btn selected" data-rounds="5" onclick="selectRounds(this)">5</button>
+    <button class="round-btn" data-rounds="10" onclick="selectRounds(this)">10</button>
+    <button class="round-btn" data-rounds="26" onclick="selectRounds(this)">All 26</button>
+  </div>
+
+  <button class="btn-play" onclick="startGame()">Let's Play! 🎉</button>
+</div>
+
+<!-- ══ GAME WRAP ══════════════════════════════════════════════════════════ -->
+<div id="game-wrap" class="hidden">
+  <div id="topbar">
+    <div class="game-title">Letter Match</div>
+    <div id="progress-wrap">
+      <div id="round-label">Round 1 of 5</div>
+      <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
+    </div>
+    <button id="vol-btn" onclick="toggleSound()">🔊</button>
+  </div>
+
+  <div id="main-area">
+    <div id="left-col">
+      <div id="prompt-card">
+        <div id="prompt-label">Find the matching letter</div>
+        <div id="prompt-letter">A</div>
+        <div id="prompt-picto">
+          <img id="picto-img" src="" alt="" style="display:none">
+          <span id="picto-word" style="font-style:italic;opacity:0.65;font-size:0.7rem"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="right-col">
+      <div id="instr">Tap the matching letter below</div>
+      <div id="choices" class="n2"></div>
+      <div id="feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ END SCREEN ═════════════════════════════════════════════════════════ -->
+<div id="end-screen" class="screen hidden">
+  <div style="font-size:3rem">🏆</div>
+  <h1>All Done!</h1>
+  <div class="score-big" id="final-score">10/10</div>
+  <div class="score-sub" id="final-sub">Correct matches</div>
+  <button class="btn-again" onclick="startGame()">Play Again 🔄</button>
+  <button class="btn-menu" onclick="goMenu()">Change settings 🏠</button>
+</div>
+
+<script>
+// ── Letter → ARASAAC pictogram word ─────────────────────────────────────
+// Each letter is paired with a simple concrete noun recognisable to students.
+// Word chosen to be a common Dolch/concrete word, ARASAAC-friendly.
+const LETTER_WORDS = {
+  A:'apple', B:'ball', C:'cat', D:'dog', E:'egg',
+  F:'fish', G:'grapes', H:'hat', I:'ice cream', J:'juice',
+  K:'kite', L:'leaf', M:'milk', N:'nose', O:'orange',
+  P:'pencil', Q:'queen', R:'rabbit', S:'sun', T:'tree',
+  U:'umbrella', V:'vegetables', W:'water', X:'xylophone',
+  Y:'yogurt', Z:'zebra'
+};
+
+// ARASAAC search API — returns pictogram IDs by keyword
+const ARASAAC_BASE = 'https://api.arasaac.org/v1';
+const pictoCache = {}; // word → img src
+
+async function fetchPicto(word) {
+  if (pictoCache[word]) return pictoCache[word];
+  try {
+    const r = await fetch(`${ARASAAC_BASE}/pictograms/en/bestsearch/${encodeURIComponent(word)}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data || data.length === 0) return null;
+    const id = data[0]._id;
+    const url = `https://static.arasaac.org/pictograms/${id}/${id}_300.png`;
+    pictoCache[word] = url;
+    return url;
+  } catch { return null; }
+}
+
+// ── State ────────────────────────────────────────────────────────────────
+let mode       = 'upper-lower';
+let numChoices = 2;
+let numRounds  = 5;
+let rounds     = [];
+let roundIdx   = 0;
+let correct    = 0;
+let locked     = false;
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+// ── Setup selectors ──────────────────────────────────────────────────────
+function selectMode(el) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  mode = el.dataset.mode;
+}
+function selectChoices(el) {
+  document.querySelectorAll('[data-choices]').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  numChoices = parseInt(el.dataset.choices);
+}
+function selectRounds(el) {
+  document.querySelectorAll('[data-rounds]').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  numRounds = parseInt(el.dataset.rounds);
+}
+
+// ── Build round list ─────────────────────────────────────────────────────
+function buildRounds() {
+  const pool = shuffle([...ALPHABET]).slice(0, Math.min(numRounds, 26));
+  return pool.map(letter => {
+    let promptLetter, answerLetter;
+    const dir = (mode === 'mixed') ? (Math.random() > .5 ? 'upper-lower' : 'lower-upper') : mode;
+    if (dir === 'upper-lower') {
+      promptLetter = letter;          // show uppercase
+      answerLetter = letter.toLowerCase(); // correct answer is lowercase
+    } else {
+      promptLetter = letter.toLowerCase(); // show lowercase
+      answerLetter = letter;               // correct answer is uppercase
+    }
+    // Build distractor pool: same "direction" letters, different
+    const distractors = ALPHABET
+      .filter(l => l !== letter)
+      .map(l => dir === 'upper-lower' ? l.toLowerCase() : l)
+      .filter(l => l !== answerLetter);
+    const chosen = shuffle(distractors).slice(0, numChoices - 1);
+    const choices = shuffle([answerLetter, ...chosen]);
+    return { promptLetter, answerLetter, letter, choices, dir };
+  });
+}
+
+// ── Game flow ────────────────────────────────────────────────────────────
+function startGame() {
+  hide('start-screen'); hide('end-screen');
+  show('game-wrap');
+  // User gesture has happened — safe to start audio context
+  getCtx();
+  
+  // Preload all pictograms before beginning rounds
+  ALPHABET.forEach(letter => {
+    const word = LETTER_WORDS[letter];
+    if (word) {
+      fetchPicto(word);
+    }
+  });
+
+  rounds   = buildRounds();
+  roundIdx = 0;
+  correct  = 0;
+  renderRound();
+}
+
+async function renderRound() {
+  locked = false;
+  const r = rounds[roundIdx];
+
+  // topbar
+  document.getElementById('round-label').textContent = `Round ${roundIdx+1} of ${rounds.length}`;
+  const pct = (roundIdx / rounds.length) * 100;
+  document.getElementById('progress-bar-fill').style.width = pct + '%';
+
+  // prompt
+  document.getElementById('prompt-letter').textContent = r.promptLetter;
+  document.getElementById('prompt-label').textContent =
+    r.dir === 'upper-lower' ? 'Find the small letter' : 'Find the big letter';
+
+  // pictogram for the prompt letter
+  const word = LETTER_WORDS[r.letter] || r.letter;
+  document.getElementById('picto-word').textContent = word;
+  const img = document.getElementById('picto-img');
+  img.style.display = 'none';
+  fetchPicto(word).then(src => {
+    if (src) { img.src = src; img.alt = word; img.style.display = 'block'; }
+  });
+
+  // choices
+  const choicesEl = document.getElementById('choices');
+  choicesEl.className = `n${numChoices}`;
+  choicesEl.innerHTML = '';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = '';
+
+  // Distinct pastel backgrounds for choice buttons — rotated & reshuffled
+  // each round so colour alone cannot become a learned cue.
+  const choicePalette = shuffle(['#FDE8F0','#E8F0FD','#FDF5E8','#E8FDF0','#F5E8FD','#E8FDF5']);
+
+  for (let i = 0; i < r.choices.length; i++) {
+    const ch = r.choices[i];
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.setAttribute('aria-label', `Letter ${ch}`);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'choice-letter';
+    lbl.textContent = ch;
+    btn.appendChild(lbl);
+
+    // No pictogram on choices — student must use letter recognition only.
+    // Give each button a distinct pastel background so they're visually
+    // separable without relying on any image matching.
+    btn.style.background = choicePalette[i % choicePalette.length];
+
+    btn.onclick = () => handleChoice(btn, ch, r.answerLetter, r.letter);
+    choicesEl.appendChild(btn);
+  }
+}
+
+function handleChoice(btn, chosen, answer, promptLetter) {
+  if (locked) return;
+  locked = true;
+  const allBtns = document.querySelectorAll('.choice-btn');
+
+  if (chosen === answer) {
+    btn.classList.add('correct', 'pop');
+    correct++;
+    setFeedback('✅  Correct!', 'ok');
+    // Chime first, then the browser speaks the letter name aloud
+    playCorrectAndSpeak(promptLetter);
+    allBtns.forEach(b => { if (b !== btn) b.classList.add('disabled'); });
+    setTimeout(nextRound, 1600);  // slightly longer to let speech finish
+  } else {
+    btn.classList.add('wrong', 'shake');
+    setFeedback('Try again 🔁', 'err');
+    playWrongTone();
+    // show correct after brief pause, then advance
+    setTimeout(() => {
+      allBtns.forEach(b => {
+        if (b.querySelector('.choice-letter').textContent === answer) b.classList.add('correct');
+        else if (b !== btn) b.classList.add('disabled');
+      });
+      setTimeout(nextRound, 900);
+    }, 600);
+  }
+}
+
+function nextRound() {
+  roundIdx++;
+  if (roundIdx >= rounds.length) {
+    endGame(); return;
+  }
+  renderRound();
+}
+
+function endGame() {
+  hide('game-wrap');
+  document.getElementById('final-score').textContent = `${correct} / ${rounds.length}`;
+  const pct = Math.round((correct / rounds.length) * 100);
+  document.getElementById('final-sub').textContent =
+    pct === 100 ? 'Perfect score! Amazing work! 🌟' :
+    pct >= 60   ? 'Great effort! Keep practising!' :
+                  'Good try! Play again to improve!';
+  show('end-screen');
+  document.getElementById('progress-bar-fill').style.width = '100%';
+}
+
+function goMenu() { hide('end-screen'); hide('game-wrap'); show('start-screen'); }
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+function setFeedback(msg, cls) {
+  const f = document.getElementById('feedback');
+  f.textContent = msg; f.className = cls;
+}
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+// ── Audio & Speech ────────────────────────────────────────────────────────
+let audioCtx       = null;
+let soundOn        = true;
+let _voices        = [];
+
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// ── Voice pre-loading ─────────────────────────────────────────────────────
+function loadVoices() {
+  const v = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  if (v.length) _voices = v;
+}
+if (window.speechSynthesis) {
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+// ── Correct: 3-note ascending bubble-pop, then letter spoken aloud ────────
+// E5 → G5 → C6, triangle wave, volume 0.13, done in 0.55 s.
+// Child-friendly and fun but short enough not to overwhelm.
+function playCorrectAndSpeak(letterChar) {
+  if (!soundOn) return;
+  try {
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+    [[659.25, 0.00],
+     [783.99, 0.19],
+     [1046.50, 0.38]].forEach(([freq, t]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const at = now + t;
+      gain.gain.setValueAtTime(0.001, at);
+      gain.gain.linearRampToValueAtTime(0.13,  at + 0.016);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.36);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(at); osc.stop(at + 0.40);
+    });
+  } catch(e) {}
+  // Speak letter after all 3 notes finish (≈ 650 ms), with cancel + gap
+  setTimeout(() => speakLetter(letterChar), 650);
+}
+
+// ── Wrong: single soft neutral dunk ──────────────────────────────────────
+function playWrongTone() {
+  if (!soundOn) return;
+  try {
+    const ctx  = getCtx();
+    const now  = ctx.currentTime;
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(160, now + 0.28);
+    gain.gain.setValueAtTime(0.07, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now); osc.stop(now + 0.5);
+  } catch(e) {}
+}
+
+// ── Speech: speak the letter name ────────────────────────────────────────
+// Pattern: cancel → 120 ms gap → speak
+// The gap is critical on iOS/Chrome where cancel() is async.
+function speakLetter(letterChar) {
+  if (!soundOn || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  setTimeout(() => {
+    if (!_voices.length) loadVoices();
+    // Converting character to lowercase prevents mobile engines from vocalising "capital"
+    const utt    = new SpeechSynthesisUtterance(letterChar.toLowerCase());
+    utt.rate     = 0.78;
+    utt.pitch    = 1.15;
+    utt.volume   = 1.0;
+    const preferred = ['Samantha','Karen','Moira','Zira','Hazel',
+                        'Google UK English Female','Google US English'];
+    const voice =
+      _voices.find(v => v.lang.startsWith('en') &&
+        preferred.some(n => v.name.includes(n))) ||
+      _voices.find(v => v.lang === 'en-US' || v.lang === 'en-GB') ||
+      _voices.find(v => v.lang.startsWith('en')) || null;
+    if (voice) utt.voice = voice;
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    window.speechSynthesis.speak(utt);
+  }, 120);
+}
+
+// ── Toggle ────────────────────────────────────────────────────────────────
+function toggleSound() {
+  soundOn = !soundOn;
+  document.getElementById('vol-btn').textContent = soundOn ? '🔊' : '🔇';
+  if (!soundOn && window.speechSynthesis) { window.speechSynthesis.cancel(); }
+}
+</script>
+</body>
+</html>
