@@ -1155,8 +1155,7 @@
                     <div id="detail-compat"></div>
                 </div>
                 <p id="detail-desc" class="detail-desc"></p>
-                <button id="detail-play-btn" class="play-btn">Play Game</button>
-            </div>
+<a id="detail-play-btn" href="" target="_blank" class="play-btn" style="text-decoration: none; text-align: center; display: block;">Play Game</a>            </div>
             <div class="qr-area">
                 <p class="qr-label">Open on Tablet</p>
                 <img id="detail-qr" src="" class="qr-code" alt="QR Code">
@@ -1470,23 +1469,12 @@ function renderGrid(id, games) {
 
 function createCard(g) {
     const newBadge = isNew(g) ? '<div class="badge-new">NEW</div>' : '';
-    const gameUrl = getGameUrl(g); // Get the URL for the game
-    
     return `<div class="game-card" onclick="openDetails('${g.id}')">
         ${newBadge}
         <div class="snapshot" style="background-image:url('${getGameThumb(g)}')"></div>
         <div class="card-content">
             <h3 class="card-title">${g.title}</h3>
             <p class="card-desc">${g.description}</p>
-            <div style="margin-top: auto; padding-top: 14px;">
-                <a href="${gameUrl}" 
-                   target="_blank" 
-                   class="play-btn" 
-                   style="display: block; text-align: center; text-decoration: none;" 
-                   onclick="event.stopPropagation();">
-                   Play Game
-                </a>
-            </div>
         </div>
     </div>`;
 }
@@ -1499,14 +1487,20 @@ function openDetails(id) {
     document.getElementById('detail-desc').textContent = g.description;
     document.getElementById('detail-img').style.backgroundImage = `url('${getGameThumb(g)}')`;
     document.getElementById('detail-creator').innerHTML = `${avatarSvg}<span class="creator-name">Created by <b>${g.creatorName || 'Instructor'}</b></span>`;
-    document.getElementById('detail-compat').innerHTML = g.compatibility
-        ? g.compatibility.map(c => `<span class="compat-badge">${c}</span>`).join('')
-        : '<span class="compat-badge">Universal</span>';
+    document.getElementById('detail-compat').innerHTML = g.compatibility ? g.compatibility.map(c => `<span class="compat-badge">${c}</span>`).join('') : '';
+    
+    // Set up the play game link button for native browser interactions (Right Click -> New Tab)
+    const playBtn = document.getElementById('detail-play-btn');
+    if (playBtn) {
+        playBtn.href = absUrl;
+    }
+
+    // Set up QR Code image and display ID
     document.getElementById('detail-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(absUrl)}`;
-    document.getElementById('detail-id').textContent = `ID: ${id}`;
-    document.getElementById('detail-play-btn').onclick = () => validateAndPlay(id);
+    document.getElementById('detail-id').textContent = `Game ID: ${g.id}`;
+
+    // Display the modal view
     document.getElementById('detail-view').style.display = 'block';
-    document.body.style.overflow = 'hidden';
 }
 
 function closeDetails() {
