@@ -1,5 +1,15 @@
 [
    {
+    "id": "sight-word-safari",
+    "title": "Sight Word Safari",
+    "description": "Reads common sight words (LC.RD.5.5)",
+    "creatorName": "Teacher Eileen",
+    "category": "Literacy",
+    "compatibility": ["desktop", "tablet", "mobile"],
+    "tags": ["reading", "sight words"],
+    "uploadDate": "2026-06-28"
+  },
+   {
     "id": "letter-match",
     "title": "Letter Match",
     "description": "Identify upper and lower case letters of the alphabet (ELO: LC.RD.04.02.00)",
