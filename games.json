@@ -1,5 +1,15 @@
 [
    {
+    "id": "first-then-visual",
+    "title": "First Then Visual",
+    "description": "Create first-then visual on the spot with timers and pictograms.",
+    "creatorName": "Teacher Carmina",
+    "category": "General",
+    "compatibility": ["desktop", "tablet", "mobile"],
+    "tags": ["time", "schedule", "tools", "structured teaching"],
+    "uploadDate": "2026-06-28"
+  },
+   {
     "id": "schedule-mate",
     "title": "Schedule Mate",
     "description": "Create schedules with time and pictograms.",
