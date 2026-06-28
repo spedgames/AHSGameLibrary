@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sight Word Safari</title>
+<style>
+  :root{
+    --bg1:#FFF4E0;
+    --bg2:#FFE8C2;
+    --panel:#FFFFFF;
+    --ink:#3A2E2A;
+    --accent:#FF9F45;
+    --accent-dark:#E8843A;
+    --green:#7FD8A0;
+    --green-dark:#4FBE7D;
+    --blue:#8FCBFF;
+    --pink:#FFB3C6;
+    --purple:#C9A8FF;
+    --yellow:#FFE07D;
+    --shadow:rgba(0,0,0,0.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:'Segoe UI Rounded',-apple-system,'Helvetica Neue',Arial,sans-serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    color:var(--ink);
+    overflow:hidden;
+    touch-action:manipulation;
+  }
+  #app{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    width:100vw;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .screen{
+    width:100%;
+    max-width:900px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    min-height:100vh;
+    box-sizing:border-box;
+  }
+  .hidden{display:none !important;}
+
+  /* ---------- Title screen ---------- */
+  .title-card{
+    background:var(--panel);
+    border-radius:32px;
+    padding:32px 28px 24px;
+    box-shadow:0 10px 0 var(--shadow);
+    text-align:center;
+    width:100%;
+    max-width:560px;
+  }
+  .logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;}
+  h1{
+    font-size:clamp(28px,6vw,42px);
+    margin:0;
+    color:var(--accent-dark);
+    text-shadow:2px 2px 0 #fff, 3px 3px 0 var(--shadow);
+  }
+  .subtitle{font-size:clamp(15px,2.6vw,19px);color:#7a6a5e;margin:6px 0 22px;font-weight:600;}
+  .mode-grid{display:flex;flex-direction:column;gap:14px;}
+  .mode-btn{
+    border:none;
+    border-radius:22px;
+    padding:16px 18px;
+    font-size:clamp(18px,3.6vw,22px);
+    font-weight:800;
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 6px 0 var(--shadow);
+    transition:transform .08s ease;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .mode-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow);}
+  .mode-btn .desc{font-size:0.6em;font-weight:600;opacity:.92;display:block;margin-top:2px;}
+  .mode-btn .label-wrap{text-align:left;}
+  #modeEasy{background:linear-gradient(180deg,var(--green),var(--green-dark));}
+  #modeMedium{background:linear-gradient(180deg,var(--blue),#5DA9E8);}
+  #modeHard{background:linear-gradient(180deg,var(--purple),#A07AE8);}
+  .emoji-badge{font-size:1.4em;flex:0 0 auto;}
+
+  /* ---------- Game screen ---------- */
+  #gameScreen{justify-content:flex-start;padding-top:14px;}
+  .topbar{
+    width:100%;max-width:760px;
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .pill{
+    background:var(--panel);
+    border-radius:999px;
+    padding:8px 16px;
+    font-weight:800;
+    font-size:clamp(14px,2.6vw,18px);
+    box-shadow:0 4px 0 var(--shadow);
+    color:var(--accent-dark);
+  }
+  .icon-btn{
+    background:var(--panel);
+    border:none;
+    border-radius:50%;
+    width:48px;height:48px;
+    font-size:22px;
+    box-shadow:0 4px 0 var(--shadow);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .icon-btn:active{transform:translateY(3px);}
+
+  .stage{
+    width:100%;max-width:760px;
+    background:var(--panel);
+    border-radius:30px;
+    box-shadow:0 10px 0 var(--shadow);
+    padding:22px 18px 26px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+  }
+
+  .mascot-row{display:flex;align-items:center;justify-content:center;gap:14px;}
+
+  .listen-btn{
+    background:linear-gradient(180deg,var(--yellow),#F4C24A);
+    border:none;
+    border-radius:50%;
+    width:96px;height:96px;
+    font-size:42px;
+    box-shadow:0 6px 0 var(--shadow);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    animation:pulseGlow 2.6s ease-in-out infinite;
+  }
+  .listen-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow);}
+  @keyframes pulseGlow{
+    0%,100%{box-shadow:0 6px 0 var(--shadow), 0 0 0 0 rgba(244,194,74,0.5);}
+    50%{box-shadow:0 6px 0 var(--shadow), 0 0 0 14px rgba(244,194,74,0);}
+  }
+
+  .target-word-display{
+    font-size:clamp(40px,9vw,68px);
+    font-weight:800;
+    color:var(--accent-dark);
+    letter-spacing:1px;
+  }
+
+  .sentence-box{
+    font-size:clamp(18px,3.6vw,24px);
+    font-weight:600;
+    color:#6b5b4f;
+    background:#FFF7EC;
+    border-radius:18px;
+    padding:10px 18px;
+    text-align:center;
+    max-width:90%;
+  }
+  .sentence-box .blank{
+    display:inline-block;
+    min-width:1.6em;
+    border-bottom:3px dashed var(--accent);
+    color:transparent;
+  }
+
+  .instruction{
+    font-size:clamp(15px,3vw,19px);
+    font-weight:700;
+    color:#9a8a7c;
+  }
+
+  .choices{
+    display:grid;
+    gap:14px;
+    width:100%;
+    justify-content:center;
+  }
+  .choices.cols2{grid-template-columns:repeat(2,minmax(120px,1fr));}
+  .choices.cols3{grid-template-columns:repeat(3,minmax(100px,1fr));}
+  .choices.cols4{grid-template-columns:repeat(2,minmax(110px,1fr));}
+  @media (min-width:520px){
+    .choices.cols4{grid-template-columns:repeat(4,minmax(100px,1fr));}
+  }
+
+  .choice-btn{
+    border:none;
+    border-radius:20px;
+    padding:18px 10px;
+    font-size:clamp(22px,5vw,32px);
+    font-weight:800;
+    color:#fff;
+    cursor:pointer;
+    min-height:78px;
+    box-shadow:0 6px 0 var(--shadow);
+    transition:transform .08s ease, filter .15s ease;
+  }
+  .choice-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow);}
+  .c0{background:linear-gradient(180deg,#FF9F45,#E8843A);}
+  .c1{background:linear-gradient(180deg,#8FCBFF,#5DA9E8);}
+  .c2{background:linear-gradient(180deg,#7FD8A0,#4FBE7D);}
+  .c3{background:linear-gradient(180deg,#FFB3C6,#F082A0);}
+
+  .choice-btn.correct-flash{
+    animation:correctPop .55s ease;
+    filter:brightness(1.15);
+  }
+  .choice-btn.wrong-flash{
+    animation:wrongShake .45s ease;
+  }
+  @keyframes correctPop{
+    0%{transform:scale(1);}
+    40%{transform:scale(1.12);}
+    100%{transform:scale(1);}
+  }
+  @keyframes wrongShake{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-8px);}
+    75%{transform:translateX(8px);}
+  }
+  .choice-btn.dim{opacity:0.35;pointer-events:none;}
+
+  .progress-row{display:flex;gap:8px;margin-top:6px;}
+  .dot{width:14px;height:14px;border-radius:50%;background:#EADFCF;}
+  .dot.filled{background:var(--accent);}
+
+  /* ---------- Celebration ---------- */
+  #celebrate{
+    position:fixed;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,244,224,0.0);
+    pointer-events:none;
+    z-index:50;
+  }
+  .confetti-piece{
+    position:absolute;
+    width:12px;height:12px;
+    border-radius:3px;
+    opacity:0.95;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    to{transform:translateY(110vh) rotate(540deg);opacity:0.3;}
+  }
+
+  /* ---------- Finish screen ---------- */
+  #finishScreen{text-align:center;}
+  .finish-card{
+    background:var(--panel);
+    border-radius:32px;
+    padding:36px 26px;
+    box-shadow:0 10px 0 var(--shadow);
+    max-width:520px;
+  }
+  .finish-emoji{font-size:64px;margin-bottom:6px;}
+  .finish-stat{font-size:clamp(20px,4vw,28px);font-weight:800;color:var(--accent-dark);margin:14px 0;}
+  .big-btn{
+    border:none;
+    border-radius:22px;
+    padding:16px 30px;
+    font-size:clamp(18px,3.6vw,22px);
+    font-weight:800;
+    color:#fff;
+    background:linear-gradient(180deg,var(--accent),var(--accent-dark));
+    box-shadow:0 6px 0 var(--shadow);
+    cursor:pointer;
+    margin-top:10px;
+  }
+  .big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow);}
+  .secondary-btn{
+    border:none;background:#EFE6D8;color:#7a6a5e;
+    border-radius:22px;padding:14px 26px;font-size:clamp(15px,3vw,18px);
+    font-weight:700;cursor:pointer;margin-top:10px;
+  }
+
+  .footer-note{margin-top:14px;font-size:12px;color:#b3a596;text-align:center;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLE SCREEN -->
+  <div class="screen" id="titleScreen">
+    <div class="title-card">
+      <div class="logo-row">
+        <svg width="46" height="46" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="30" fill="#FFE07D"/>
+          <circle cx="22" cy="28" r="4" fill="#3A2E2A"/>
+          <circle cx="42" cy="28" r="4" fill="#3A2E2A"/>
+          <path d="M20 40 Q32 50 44 40" stroke="#3A2E2A" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </svg>
+        <h1>Sight Word Safari</h1>
+      </div>
+      <div class="subtitle">Tap the word you hear!</div>
+      <div class="mode-grid">
+        <button class="mode-btn" id="modeEasy">
+          <span class="label-wrap">Easy<span class="desc">See the word • 2 choices</span></span>
+          <span class="emoji-badge">🐢</span>
+        </button>
+        <button class="mode-btn" id="modeMedium">
+          <span class="label-wrap">Medium<span class="desc">See the word • 3 choices</span></span>
+          <span class="emoji-badge">🦁</span>
+        </button>
+        <button class="mode-btn" id="modeHard">
+          <span class="label-wrap">Hard<span class="desc">Listen only • 4 tricky choices</span></span>
+          <span class="emoji-badge">🐆</span>
+        </button>
+      </div>
+      <div class="footer-note">Tap a difficulty level to begin</div>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen hidden" id="gameScreen">
+    <div class="topbar">
+      <button class="icon-btn" id="homeBtn" aria-label="Home">🏠</button>
+      <div class="pill" id="scorePill">⭐ 0 / 10</div>
+      <button class="icon-btn" id="repeatBtn" aria-label="Repeat word">🔊</button>
+    </div>
+    <div class="stage">
+      <div class="mascot-row">
+        <svg width="54" height="54" viewBox="0 0 64 64" id="mascotSvg">
+          <circle cx="32" cy="32" r="30" fill="#FFB3C6"/>
+          <circle cx="22" cy="28" r="4" fill="#3A2E2A"/>
+          <circle cx="42" cy="28" r="4" fill="#3A2E2A"/>
+          <path d="M20 38 Q32 48 44 38" stroke="#3A2E2A" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </svg>
+        <button class="listen-btn" id="listenBtn" aria-label="Play word">🔊</button>
+      </div>
+
+      <div id="visibleWordWrap">
+        <div class="target-word-display" id="targetWordDisplay">the</div>
+      </div>
+
+      <div class="sentence-box hidden" id="sentenceBox">
+        I see <span class="blank" id="sentenceBlank">the</span> dog.
+      </div>
+
+      <div class="instruction" id="instructionText">Tap the matching word</div>
+
+      <div class="choices cols2" id="choicesWrap"></div>
+
+      <div class="progress-row" id="progressRow"></div>
+    </div>
+  </div>
+
+  <!-- FINISH SCREEN -->
+  <div class="screen hidden" id="finishScreen">
+    <div class="finish-card">
+      <div class="finish-emoji">🎉</div>
+      <h1 style="font-size:clamp(24px,5vw,34px);">Great Reading!</h1>
+      <div class="finish-stat" id="finishStat">10 / 10 words!</div>
+      <div>
+        <button class="big-btn" id="playAgainBtn">Play Again</button><br>
+        <button class="secondary-btn" id="homeBtn2">Choose Level</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="celebrate"></div>
+</div>
+
+<script>
+/* =========================================================
+   SIGHT WORD SAFARI
+   Single-file offline HTML5 game for moderate-severe autism
+   support. Follows AHS Game Library audio/visual conventions.
+   ========================================================= */
+
+/* ---------- Word banks ---------- */
+// Easy: short, visually distinct, very high frequency
+const EASY_WORDS = ["the","and","a","I","go","to","is","up","on","my"];
+
+// Medium: still high frequency but slightly longer / more variety
+const MEDIUM_WORDS = ["said","they","with","look","like","play","have","came","ride","jump"];
+
+// Hard: includes visually similar / commonly confused sight word pairs
+const HARD_WORDS = ["was","saw","what","that","this","there","where","were","then","them"];
+
+// Distractor pools matched per difficulty (kept separate from target word lists
+// so a target word never accidentally also appears as a distractor in the same round)
+const EASY_DISTRACTORS = ["it","at","he","she","we","so","do","be","in","an"];
+const MEDIUM_DISTRACTORS = ["want","made","take","came","walk","know","good","time","help","make"];
+const HARD_DISTRACTORS = ["who","when","than","with","white","while","these","those","went","wish"];
+
+let currentMode = "easy";
+let roundsTotal = 10;
+let roundIndex = 0;
+let score = 0;
+let currentTarget = "";
+let currentChoices = [];
+let answered = false;
+let wordQueue = [];          // shuffled, non-repeating queue of words for the active game
+let roundToken = 0;          // increments every round/game; invalidates stale async callbacks
+let pendingTimers = [];      // tracked setTimeout ids so we can cancel them on Home/restart
+
+/* ---------- Audio (Web Audio API, no external files) ---------- */
+let audioCtx = null;
+function getCtx(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+function playTone(freq, start, dur, type, gainVal){
+  const ctx = getCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type || "sine";
+  osc.frequency.value = freq;
+  gain.gain.value = gainVal || 0.18;
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(ctx.currentTime + start);
+  gain.gain.setValueAtTime(gainVal || 0.18, ctx.currentTime + start);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
+  osc.stop(ctx.currentTime + start + dur + 0.02);
+}
+function playCorrectSound(){
+  // 3-note ascending bubble-pop
+  playTone(523.25, 0, 0.14, "sine", 0.2);
+  playTone(659.25, 0.1, 0.14, "sine", 0.2);
+  playTone(783.99, 0.2, 0.22, "sine", 0.22);
+}
+function playWrongSound(){
+  // soft low "dunk"
+  playTone(180, 0, 0.18, "sine", 0.18);
+  playTone(140, 0.08, 0.22, "sine", 0.16);
+}
+function playLevelUpFanfare(){
+  [523.25,587.33,659.25,783.99,880].forEach((f,i)=>playTone(f, i*0.11, 0.18, "triangle", 0.18));
+}
+
+/* ---------- Speech synthesis ---------- */
+function speak(text, rate){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = rate || 0.85;
+  utter.pitch = 1.05;
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => /en/i.test(v.lang) && /female|en-US|en-GB/i.test(v.name));
+  if(preferred) utter.voice = preferred;
+  window.speechSynthesis.speak(utter);
+}
+// warm up voices list (some browsers load async)
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+
+/* ---------- Helpers ---------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function pickN(arr, n, exclude){
+  const pool = arr.filter(w => w !== exclude);
+  return shuffle(pool).slice(0, n);
+}
+function vibrate(ms){
+  if(navigator.vibrate) navigator.vibrate(ms);
+}
+function safeTimeout(fn, ms){
+  const id = setTimeout(fn, ms);
+  pendingTimers.push(id);
+  return id;
+}
+function clearPendingTimers(){
+  pendingTimers.forEach(id => clearTimeout(id));
+  pendingTimers = [];
+}
+// Builds a fresh, shuffled, non-repeating queue of words for a game session
+function buildWordQueue(words){
+  return shuffle(words);
+}
+
+/* ---------- Mode config ---------- */
+function getModeConfig(mode){
+  if(mode === "easy"){
+    return {
+      words: EASY_WORDS, distractors: EASY_DISTRACTORS,
+      numChoices: 2, showWord: true, showSentence: false
+    };
+  }
+  if(mode === "medium"){
+    return {
+      words: MEDIUM_WORDS, distractors: MEDIUM_DISTRACTORS,
+      numChoices: 3, showWord: true, showSentence: true
+    };
+  }
+  return {
+    words: HARD_WORDS, distractors: HARD_DISTRACTORS,
+    numChoices: 4, showWord: false, showSentence: false
+  };
+}
+
+const SIMPLE_SENTENCES = {
+  "said":"She _ hello.", "they":"_ are happy.", "with":"I play _ Sam.",
+  "look":"_ at the cat!", "like":"I _ ice cream.", "play":"Let's _ outside.",
+  "have":"I _ a ball.", "came":"He _ to school.", "ride":"I _ my bike.", "jump":"We _ high."
+};
+
+/* ---------- Round setup ---------- */
+function startMode(mode){
+  clearPendingTimers();
+  roundToken++;
+  currentMode = mode;
+  roundIndex = 0;
+  score = 0;
+  const cfg = getModeConfig(mode);
+  wordQueue = buildWordQueue(cfg.words);
+  document.getElementById("titleScreen").classList.add("hidden");
+  document.getElementById("finishScreen").classList.add("hidden");
+  document.getElementById("gameScreen").classList.remove("hidden");
+  buildProgressDots();
+  nextRound();
+}
+
+function buildProgressDots(){
+  const row = document.getElementById("progressRow");
+  row.innerHTML = "";
+  for(let i=0;i<roundsTotal;i++){
+    const d = document.createElement("div");
+    d.className = "dot";
+    d.id = "dot"+i;
+    row.appendChild(d);
+  }
+}
+function updateProgressDots(){
+  for(let i=0;i<roundsTotal;i++){
+    const d = document.getElementById("dot"+i);
+    if(!d) continue;
+    d.classList.toggle("filled", i < roundIndex);
+  }
+}
+
+function nextRound(){
+  if(roundIndex >= roundsTotal){
+    finishGame();
+    return;
+  }
+  answered = false;
+  roundToken++;
+  const myToken = roundToken;
+
+  const cfg = getModeConfig(currentMode);
+
+  // refill the queue if we've used every word (keeps it non-repeating per pass)
+  if(wordQueue.length === 0){
+    wordQueue = buildWordQueue(cfg.words);
+  }
+  const target = wordQueue.pop();
+  const distractors = pickN(cfg.distractors, cfg.numChoices - 1, target);
+  const choices = shuffle([target, ...distractors]);
+
+  // Build the round's full state as one atomic object BEFORE touching the DOM,
+  // so the word shown, the sentence, the spoken audio, and the answer choices
+  // can never fall out of sync with each other.
+  const round = { target, choices, sentence: cfg.showSentence ? SIMPLE_SENTENCES[target] : null };
+
+  // commit to globals
+  currentTarget = round.target;
+  currentChoices = round.choices;
+
+  document.getElementById("scorePill").textContent = "⭐ " + score + " / " + roundsTotal;
+  updateProgressDots();
+
+  const visibleWrap = document.getElementById("visibleWordWrap");
+  const sentenceBox = document.getElementById("sentenceBox");
+  const targetDisplay = document.getElementById("targetWordDisplay");
+  const instruction = document.getElementById("instructionText");
+
+  if(cfg.showWord){
+    visibleWrap.classList.remove("hidden");
+    targetDisplay.textContent = round.target;
+    instruction.textContent = "Tap the matching word";
+  } else {
+    visibleWrap.classList.add("hidden");
+    instruction.textContent = "Listen, then tap the word you hear";
+  }
+
+  if(round.sentence){
+    sentenceBox.classList.remove("hidden");
+    const parts = round.sentence.split("_");
+    sentenceBox.textContent = "";
+    sentenceBox.appendChild(document.createTextNode(parts[0]));
+    const blankSpan = document.createElement("span");
+    blankSpan.className = "blank";
+    blankSpan.textContent = round.target;
+    sentenceBox.appendChild(blankSpan);
+    sentenceBox.appendChild(document.createTextNode(parts[1] || ""));
+  } else {
+    sentenceBox.classList.add("hidden");
+  }
+
+  // build choice buttons directly from round.choices (same object as everything above)
+  const wrap = document.getElementById("choicesWrap");
+  wrap.className = "choices " + (cfg.numChoices === 2 ? "cols2" : cfg.numChoices === 3 ? "cols3" : "cols4");
+  wrap.innerHTML = "";
+  round.choices.forEach((word, i) => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn c" + i;
+    btn.textContent = word;
+    btn.addEventListener("click", () => {
+      if(myToken !== roundToken) return; // ignore taps from a stale/replaced round
+      handleChoice(word, btn, round.target, myToken);
+    });
+    wrap.appendChild(btn);
+  });
+
+  // speak the target word after a brief pause so UI settles.
+  // Guarded by roundToken so a slow/late timer from an abandoned round
+  // never speaks the wrong word over a new one.
+  safeTimeout(() => {
+    if(myToken === roundToken) speak(round.target);
+  }, 350);
+}
+
+function handleChoice(word, btnEl, roundTarget, myToken){
+  if(answered) return;
+  if(myToken !== roundToken) return; // a new round has already started; ignore this stale tap
+  answered = true;
+  const allBtns = document.querySelectorAll("#choicesWrap .choice-btn");
+  allBtns.forEach(b => b.style.pointerEvents = "none"); // prevent double-tap while we process
+
+  if(word === roundTarget){
+    score++;
+    playCorrectSound();
+    vibrate(40);
+    btnEl.classList.add("correct-flash");
+    allBtns.forEach(b => { if(b !== btnEl) b.classList.add("dim"); });
+    launchConfetti();
+    speak(word + "! Great job!", 0.95);
+    document.getElementById("scorePill").textContent = "⭐ " + score + " / " + roundsTotal;
+    roundIndex++;
+    safeTimeout(() => {
+      if(myToken === roundToken) nextRound();
+    }, 1300);
+  } else {
+    playWrongSound();
+    vibrate([30,30,30]);
+    btnEl.classList.add("wrong-flash");
+    btnEl.classList.add("dim");
+    speak("Try again");
+    safeTimeout(() => {
+      if(myToken !== roundToken) return; // round moved on; nothing to re-enable
+      btnEl.classList.remove("wrong-flash");
+      answered = false;
+      allBtns.forEach(b => { if(!b.classList.contains("dim")) b.style.pointerEvents = "auto"; });
+    }, 500);
+  }
+}
+
+function launchConfetti(){
+  const colors = ["#FF9F45","#8FCBFF","#7FD8A0","#FFB3C6","#C9A8FF","#FFE07D"];
+  const container = document.getElementById("celebrate");
+  for(let i=0;i<26;i++){
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = Math.random()*100 + "vw";
+    piece.style.top = "-20px";
+    piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+    piece.style.animationDuration = (1.4 + Math.random()*1.2) + "s";
+    piece.style.transform = "rotate(" + Math.floor(Math.random()*360) + "deg)";
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), 2800);
+  }
+}
+
+function finishGame(){
+  document.getElementById("gameScreen").classList.add("hidden");
+  document.getElementById("finishScreen").classList.remove("hidden");
+  document.getElementById("finishStat").textContent = score + " / " + roundsTotal + " words!";
+  playLevelUpFanfare();
+  launchConfetti();
+  speak("Wonderful reading! You got " + score + " out of " + roundsTotal + " words!", 0.95);
+}
+
+function goHome(){
+  clearPendingTimers();
+  roundToken++;
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  document.getElementById("gameScreen").classList.add("hidden");
+  document.getElementById("finishScreen").classList.add("hidden");
+  document.getElementById("titleScreen").classList.remove("hidden");
+}
+
+/* ---------- Event wiring ---------- */
+document.getElementById("modeEasy").addEventListener("click", () => startMode("easy"));
+document.getElementById("modeMedium").addEventListener("click", () => startMode("medium"));
+document.getElementById("modeHard").addEventListener("click", () => startMode("hard"));
+document.getElementById("homeBtn").addEventListener("click", goHome);
+document.getElementById("homeBtn2").addEventListener("click", goHome);
+document.getElementById("playAgainBtn").addEventListener("click", () => startMode(currentMode));
+document.getElementById("listenBtn").addEventListener("click", () => speak(currentTarget));
+document.getElementById("repeatBtn").addEventListener("click", () => speak(currentTarget));
+
+// unlock audio context on first touch/click (iOS/Safari requirement)
+document.body.addEventListener("click", function unlock(){
+  getCtx();
+  if('speechSynthesis' in window){
+    const warm = new SpeechSynthesisUtterance(" ");
+    warm.volume = 0;
+    window.speechSynthesis.speak(warm);
+  }
+  document.body.removeEventListener("click", unlock);
+}, { once:true });
+
+// prevent double-tap zoom on iOS
+document.addEventListener("dblclick", e => e.preventDefault());
+let lastTouchEnd = 0;
+document.addEventListener("touchend", e => {
+  const now = Date.now();
+  if(now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive:false });
+</script>
+</body>
+</html>
