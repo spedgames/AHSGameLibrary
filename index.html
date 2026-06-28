@@ -1470,12 +1470,23 @@ function renderGrid(id, games) {
 
 function createCard(g) {
     const newBadge = isNew(g) ? '<div class="badge-new">NEW</div>' : '';
+    const gameUrl = getGameUrl(g); // Get the URL for the game
+    
     return `<div class="game-card" onclick="openDetails('${g.id}')">
         ${newBadge}
         <div class="snapshot" style="background-image:url('${getGameThumb(g)}')"></div>
         <div class="card-content">
             <h3 class="card-title">${g.title}</h3>
             <p class="card-desc">${g.description}</p>
+            <div style="margin-top: auto; padding-top: 14px;">
+                <a href="${gameUrl}" 
+                   target="_blank" 
+                   class="play-btn" 
+                   style="display: block; text-align: center; text-decoration: none;" 
+                   onclick="event.stopPropagation();">
+                   Play Game
+                </a>
+            </div>
         </div>
     </div>`;
 }
