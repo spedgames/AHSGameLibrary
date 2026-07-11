@@ -1,5 +1,15 @@
 [
    {
+    "id": "word-builder",
+    "title": "Word Builder",
+    "description": "Reads common sight words (LC.RD.5.5)",
+    "creatorName": "Teacher Eileen",
+    "category": "Literacy",
+    "compatibility": ["desktop", "tablet", "mobile"],
+    "tags": ["reading", "sight words"],
+    "uploadDate": "2026-07-11"
+  },
+   {
     "id": "zones-of-regulation",
     "title": "Zones of Regulation",
     "description": "Which zone does the emotion or behavior belong to?",
