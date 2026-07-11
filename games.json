@@ -2,7 +2,7 @@
   {
     "id": "number-balloons",
     "title": "Number Balloons",
-    "description": "Tap the balloons in sequence.",
+    "description": "Tap the balloons in order and watch them float up.",
     "creatorName": "Teacher Carmina",
     "category": "Numeracy",
     "compatibility": ["desktop", "tablet", "mobile"],
