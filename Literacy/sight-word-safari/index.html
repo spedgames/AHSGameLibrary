@@ -120,6 +120,7 @@
     display:flex;align-items:center;justify-content:center;
   }
   .icon-btn:active{transform:translateY(3px);}
+  .icon-btn.muted{opacity:0.55;}
 
   .stage{
     width:100%;max-width:760px;
@@ -327,7 +328,7 @@
     <div class="topbar">
       <button class="icon-btn" id="homeBtn" aria-label="Home">🏠</button>
       <div class="pill" id="scorePill">⭐ 0 / 10</div>
-      <button class="icon-btn" id="repeatBtn" aria-label="Repeat word">🔊</button>
+      <button class="icon-btn" id="soundBtn" aria-label="Mute sound effects">🔊</button>
     </div>
     <div class="stage">
       <div class="mascot-row">
@@ -408,6 +409,7 @@ let pendingTimers = [];      // tracked setTimeout ids so we can cancel them on 
 
 /* ---------- Audio (Web Audio API, no external files) ---------- */
 let audioCtx = null;
+let soundOn = true; // toggled by the sound button in the topbar; mutes sound effects only
 function getCtx(){
   if(!audioCtx){
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -415,6 +417,7 @@ function getCtx(){
   return audioCtx;
 }
 function playTone(freq, start, dur, type, gainVal){
+  if(!soundOn) return;
   const ctx = getCtx();
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -627,9 +630,13 @@ function nextRound(){
   // speak the target word after a brief pause so UI settles.
   // Guarded by roundToken so a slow/late timer from an abandoned round
   // never speaks the wrong word over a new one.
-  safeTimeout(() => {
-    if(myToken === roundToken) speak(round.target);
-  }, 350);
+  // When sound is muted, skip the auto-speak entirely; the word only plays
+  // once the listen button is tapped.
+  if(soundOn){
+    safeTimeout(() => {
+      if(myToken === roundToken) speak(round.target);
+    }, 350);
+  }
 }
 
 function handleChoice(word, btnEl, roundTarget, myToken){
@@ -646,7 +653,7 @@ function handleChoice(word, btnEl, roundTarget, myToken){
     btnEl.classList.add("correct-flash");
     allBtns.forEach(b => { if(b !== btnEl) b.classList.add("dim"); });
     launchConfetti();
-    speak(word + "! Great job!", 0.95);
+    if(soundOn) speak(word + "! Great job!", 0.95);
     document.getElementById("scorePill").textContent = "⭐ " + score + " / " + roundsTotal;
     roundIndex++;
     safeTimeout(() => {
@@ -709,7 +716,13 @@ document.getElementById("homeBtn").addEventListener("click", goHome);
 document.getElementById("homeBtn2").addEventListener("click", goHome);
 document.getElementById("playAgainBtn").addEventListener("click", () => startMode(currentMode));
 document.getElementById("listenBtn").addEventListener("click", () => speak(currentTarget));
-document.getElementById("repeatBtn").addEventListener("click", () => speak(currentTarget));
+document.getElementById("soundBtn").addEventListener("click", () => {
+  soundOn = !soundOn;
+  const btn = document.getElementById("soundBtn");
+  btn.textContent = soundOn ? "🔊" : "🔇";
+  btn.classList.toggle("muted", !soundOn);
+  btn.setAttribute("aria-label", soundOn ? "Mute sound effects" : "Unmute sound effects");
+});
 
 // unlock audio context on first touch/click (iOS/Safari requirement)
 document.body.addEventListener("click", function unlock(){
