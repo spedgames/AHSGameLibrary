@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="referrer" content="no-referrer-when-downgrade">
   <title>Zones of Regulation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,25 +49,64 @@
       --shadow-card:  0 20px 40px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
     }
     html, body {
-      width: 100%; height: 100%; overflow: hidden;
+      width: 100%; overflow: hidden;
+      /* Fallbacks for browsers without dvh support; JS keeps --vh in sync
+         with the *visible* viewport so mobile address/nav bars never clip
+         the game. */
+      height: 100%;
+      height: calc(var(--vh, 1vh) * 100);
       font-family: var(--font-body);
       background: linear-gradient(145deg, #dde3f8 0%, #c8d0ef 100%);
       color: var(--ink);
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
+      overscroll-behavior: none;
     }
     #shell {
-      width: 100vw; height: 100vh;
+      width: 100%;
+      height: 100vh;
+      height: calc(var(--vh, 1vh) * 100);
+      height: 100dvh; /* modern browsers: true visible viewport, ignores mobile bars */
       display: flex; align-items: center; justify-content: center;
+      box-sizing: border-box;
       padding: 12px;
+      padding-top:    max(12px, env(safe-area-inset-top));
+      padding-right:  max(12px, env(safe-area-inset-right));
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      padding-left:   max(12px, env(safe-area-inset-left));
     }
     #card {
       background: var(--surface);
       width: 100%; max-width: 960px;
       height: 100%; max-height: 860px;
+      min-height: 0;
       border-radius: var(--radius-xl);
       box-shadow: var(--shadow-card);
       position: relative; overflow: hidden;
+    }
+
+    /* ============================================================ RESPONSIVE TWEAKS */
+    /* Narrow phones: tighten side padding & drop chips to 2 columns so labels don't clip */
+    @media (max-width: 400px) {
+      #shell { padding-left: max(6px, env(safe-area-inset-left)); padding-right: max(6px, env(safe-area-inset-right)); }
+      .screen { padding-left: 16px; padding-right: 16px; }
+      #screen-game { padding-left: 12px; padding-right: 12px; }
+      .chips-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    /* Short viewports (landscape phones, small tablets in landscape):
+       shrink vertical rhythm so every screen still fits without scrolling. */
+    @media (max-height: 560px) {
+      .screen { padding: 12px 20px 10px; gap: 6px; }
+      #screen-game { padding: 8px 16px 8px; gap: 6px; }
+      .page-title { font-size: clamp(1.1rem, 3vw, 1.5rem); }
+      .subtitle { margin-top: 2px; }
+      #screen-start .config-area { gap: 8px; margin: 6px 0; }
+      .config-box { padding: 8px 12px; }
+      .btn { height: 42px; }
+      .zone-btn { height: 44px; }
+      .item-label { font-size: clamp(1rem, 2.6vw, 1.4rem); }
+      .end-trophy { font-size: 3rem; }
+      #feedback-toast { bottom: 56px; }
     }
 
     /* ============================================================ SCREENS */
@@ -482,6 +521,22 @@
 </div></div>
 
 <script>
+/* ============================================================ VIEWPORT HEIGHT FIX
+   Mobile browsers (Safari/Chrome) resize their address/nav bars in and out
+   of view, which makes 100vh unreliable and can clip the bottom of the
+   game. We measure the real visible height and store it as --vh, and also
+   prefer visualViewport when available (keyboard/URL-bar aware). */
+function setViewportHeightVar() {
+  const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
+}
+setViewportHeightVar();
+window.addEventListener('resize', setViewportHeightVar);
+window.addEventListener('orientationchange', () => setTimeout(setViewportHeightVar, 150));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', setViewportHeightVar);
+}
+
 /* ============================================================
    ITEM MASTER LIST
    zone: 'green' | 'yellow' | 'blue' | 'red'
