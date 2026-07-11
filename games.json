@@ -1,5 +1,15 @@
 [
    {
+    "id": "story-detective",
+    "title": "Story Detective",
+    "description": "Identifies details in a familiar story/text (Literary/Informational) (ELO:LC.RD.2.2)",
+    "creatorName": "Teacher Eileen",
+    "category": "Literacy",
+    "compatibility": ["desktop", "tablet", "mobile"],
+    "tags": ["reading", "story", "texts"],
+    "uploadDate": "2026-07-11"
+  },
+   {
     "id": "word-builder-safari",
     "title": "Word Builder",
     "description": "Reads common sight words (LC.RD.5.5)",
