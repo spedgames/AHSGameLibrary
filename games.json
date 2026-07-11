@@ -1,5 +1,45 @@
 [
    {
+    "id": "zones-of-regulation",
+    "title": "Zones of Regulation",
+    "description": "Which zone does the emotion or behavior belong to?",
+    "creatorName": "Teacher Joan",
+    "category": "SEL",
+    "compatibility": ["desktop"],
+    "tags": ["zones of regulation", "emotions", "behaviour"],
+    "uploadDate": "2026-07-11"
+  },
+   {
+    "id": "good-and-bad-choices",
+    "title": "Good and Bad Choices",
+    "description": "Everyday, we need to regulate our emotions. Let's identify some of the good and bad choices!",
+    "creatorName": "Teacher Joan",
+    "category": "SEL",
+    "compatibility": ["desktop"],
+    "tags": ["regulation", "good choices", "bad choices"],
+    "uploadDate": "2026-07-11"
+  },
+   {
+    "id": "emotions-drawing-game",
+    "title": "Emotions Drawing Game",
+    "description": "Think you know your emotions well? Let's see how you draw them out!",
+    "creatorName": "Teacher Joan",
+    "category": "SEL",
+    "compatibility": ["desktop"],
+    "tags": ["emotions", "feelings"],
+    "uploadDate": "2026-07-11"
+  },
+   {
+    "id": "emotions-typing-game",
+    "title": "Emotions Typing Game",
+    "description": "Identify and type out the emotions each person is feeling!",
+    "creatorName": "Teacher Joan",
+    "category": "SEL",
+    "compatibility": ["desktop"],
+    "tags": ["emotions", "feelings"],
+    "uploadDate": "2026-07-11"
+  },
+   {
     "id": "deliver-it",
     "title": "Deliver It",
     "description": "Learn about address by delivering food around Singapore.",
