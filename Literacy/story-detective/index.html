@@ -71,6 +71,15 @@
   }
   .hidden{display:none !important;}
 
+  /* Center the start screen's content as a block, so there's always
+     even breathing room above and below instead of content sticking
+     to the top with no room at the bottom. */
+  #screen-home{
+    justify-content:center;
+    justify-content:safe center; /* falls back to plain center if unsupported */
+    gap:clamp(10px, 2.5vh, 22px);
+  }
+
   /* ---------- Top bar ---------- */
   .topbar{
     width:100%;
@@ -109,19 +118,19 @@
 
   /* ---------- Headings ---------- */
   h1{
-    font-size:1.8rem;
+    font-size:clamp(1.35rem, 5.5vh, 1.8rem);
     margin:4px 0 2px;
     text-align:center;
   }
   .subtitle{
     color:var(--soft);
     text-align:center;
-    font-size:1.05rem;
-    margin-bottom:18px;
+    font-size:clamp(0.85rem, 3vh, 1.05rem);
+    margin-bottom:0;
   }
   .big-emoji{
-    font-size:4.2rem;
-    margin-bottom:6px;
+    font-size:clamp(2.4rem, 11vh, 4.2rem);
+    margin-bottom:0;
     display:inline-block;
     animation: floatBob 3.2s ease-in-out infinite;
   }
@@ -149,8 +158,8 @@
     width:100%;
     display:flex;
     flex-direction:column;
-    gap:16px;
-    margin-top:8px;
+    gap:clamp(8px, 2vh, 16px);
+    margin-top:0;
     position:relative;
     z-index:1;
   }
@@ -159,7 +168,7 @@
     border:none;
     border-radius:var(--radius);
     box-shadow:var(--shadow);
-    padding:18px 18px;
+    padding:clamp(12px, 2.6vh, 18px) 18px;
     display:flex;
     align-items:center;
     gap:16px;
@@ -572,8 +581,8 @@ const STORIES = [
       text: "<b>Maya</b> wears a yellow raincoat.",
       prompt: "Tap Maya.",
       hotspots: [
-        { id:"maya",  correct:true,  cx:170, cy:160, label:"👩🏻", color:"#F5C84C" },
-        { id:"dad",   correct:false, cx:340, cy:160, label:"👦🏻", color:"#8FC7F0" },
+        { id:"maya",  correct:true,  cx:170, cy:160, label:"🧒", color:"#F5C84C" },
+        { id:"dad",   correct:false, cx:340, cy:160, label:"👨", color:"#8FC7F0" },
         { id:"dog",   correct:false, cx:500, cy:160, label:"🐶", color:"#D8B26B" }
       ]
     },
@@ -793,9 +802,33 @@ function renderCustomIcon(name, cx, cy){
   return '';
 }
 
+// Fisher-Yates shuffle (returns a new array, does not mutate the input)
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// All answer buttons share this same border/glow color so the
+// border color itself never hints at which one is correct.
+const HOTSPOT_BORDER_COLOR = '#4F8FE8';
+
 function renderScene(q){
   const svgNS = "http://www.w3.org/2000/svg";
   const width = 660, height = 330;
+
+  // Take the fixed layout slots (cx/cy) from the story data, but
+  // randomly reassign which hotspot lands in which slot every time
+  // the question is shown, so the correct answer's position changes.
+  const slots = q.hotspots.map(h => ({ cx: h.cx, cy: h.cy }));
+  const shuffledHotspots = shuffleArray(q.hotspots).map((h, i) => ({
+    ...h,
+    cx: slots[i].cx,
+    cy: slots[i].cy
+  }));
 
   let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="${svgNS}">`;
   // soft background
@@ -803,15 +836,15 @@ function renderScene(q){
   // gentle ground line for visual grounding
   svg += `<rect x="0" y="${height-40}" width="${width}" height="40" fill="#F0E6CC"/>`;
 
-  q.hotspots.forEach(h => {
+  shuffledHotspots.forEach(h => {
     const r = 78;
     const innerContent = h.customSvg
       ? renderCustomIcon(h.customSvg, h.cx, h.cy)
-      : `<text x="${h.cx}" y="${h.cy + 28}" font-size="72" text-anchor="middle" dominant-baseline="middle">${h.label}</text>`;
+      : `<text x="${h.cx}" y="${h.cy}" font-size="72" text-anchor="middle" dominant-baseline="central">${h.label}</text>`;
     svg += `
       <g class="hotspot" data-hot="${h.id}" data-correct="${h.correct}" tabindex="0" role="button" aria-label="${h.id}">
-        <circle cx="${h.cx}" cy="${h.cy}" r="${r}" fill="${h.color}" opacity="0.18"/>
-        <circle cx="${h.cx}" cy="${h.cy}" r="${r-10}" fill="#FFFFFF" stroke="${h.color}" stroke-width="5"/>
+        <circle cx="${h.cx}" cy="${h.cy}" r="${r}" fill="${HOTSPOT_BORDER_COLOR}" opacity="0.18"/>
+        <circle cx="${h.cx}" cy="${h.cy}" r="${r-10}" fill="#FFFFFF" stroke="${HOTSPOT_BORDER_COLOR}" stroke-width="5"/>
         ${innerContent}
       </g>
     `;
