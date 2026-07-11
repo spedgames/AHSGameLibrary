@@ -1,636 +1,1072 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Word Builder Safari</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Story Detective</title>
 <style>
   :root{
-    --bg1:#E8F6FF;
-    --bg2:#D6EEFF;
+    --bg:#FFF8EE;
     --panel:#FFFFFF;
-    --ink:#2E3A45;
-    --accent:#4FB8E8;
-    --accent-dark:#2E97C9;
-    --green:#7FD8A0;
-    --green-dark:#4FBE7D;
-    --orange:#FFB36B;
-    --orange-dark:#F08C3A;
-    --pink:#FFB3C6;
-    --purple:#C9A8FF;
-    --yellow:#FFE07D;
-    --shadow:rgba(0,0,0,0.12);
+    --ink:#3A3A3A;
+    --soft:#7A7A7A;
+    --blue:#4F8FE8;
+    --blue-dark:#3568B0;
+    --green:#5FB87A;
+    --green-dark:#3E9259;
+    --yellow:#F5C84C;
+    --red:#E8665A;
+    --purple:#9B7FE0;
+    --radius:22px;
+    --shadow:0 6px 18px rgba(0,0,0,0.08);
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
-  html,body{
-    margin:0;padding:0;height:100%;
-    font-family:'Segoe UI Rounded',-apple-system,'Helvetica Neue',Arial,sans-serif;
-    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  html{
+    touch-action:manipulation; /* avoid double-tap zoom delay on iPad/mobile */
+    height:100%;
+    height:100dvh;
+    overflow:hidden; /* the game frame manages its own fit; page itself never scrolls */
+  }
+  body{
+    font-family:'Comic Sans MS','Segoe UI Rounded','Trebuchet MS',sans-serif;
+    background:var(--bg);
     color:var(--ink);
+    height:100%;
+    height:100dvh; /* avoids iOS Safari address-bar resize jump */
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+    overscroll-behavior-y:none; /* avoid iPad rubber-band scroll yanking the page */
     overflow:hidden;
-    touch-action:manipulation;
-  }
-  #app{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    min-height:100vh;width:100vw;
-    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   .screen{
-    width:100%;max-width:900px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    padding:16px;min-height:100vh;box-sizing:border-box;
+    width:100%;
+    max-width:720px;
+    height:100%;
+    max-height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:18px 16px 28px;
+    overflow-y:auto; /* safety fallback: scrolls internally rather than breaking the frame if content ever needs more room */
+    -webkit-overflow-scrolling:touch;
+  }
+  /* On tall/large desktop or tablet viewports, keep the game a comfortable
+     card-sized frame in the middle of the screen instead of stretching
+     into an oversized layout. */
+  @media (min-width:760px) and (min-height:640px){
+    body{ padding:24px; }
+    .screen{
+      height:min(100%, 880px);
+      max-height:min(100%, 880px);
+      border-radius:28px;
+      box-shadow:0 20px 50px rgba(0,0,0,0.10);
+      background:var(--panel);
+    }
   }
   .hidden{display:none !important;}
 
-  /* ---------- Title screen ---------- */
-  .title-card{
-    background:var(--panel);border-radius:32px;
-    padding:32px 28px 24px;box-shadow:0 10px 0 var(--shadow);
-    text-align:center;width:100%;max-width:560px;
+  /* ---------- Top bar ---------- */
+  .topbar{
+    width:100%;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+    gap:8px;
   }
-  .logo-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;}
-  h1{font-size:clamp(26px,6vw,40px);margin:0;color:var(--accent-dark);text-shadow:2px 2px 0 #fff,3px 3px 0 var(--shadow);}
-  .subtitle{font-size:clamp(15px,2.6vw,19px);color:#5b6b78;margin:6px 0 22px;font-weight:600;}
-  .mode-grid{display:flex;flex-direction:column;gap:14px;}
-  .mode-btn{
-    border:none;border-radius:22px;padding:16px 18px;
-    font-size:clamp(18px,3.6vw,22px);font-weight:800;color:#fff;cursor:pointer;
-    box-shadow:0 6px 0 var(--shadow);transition:transform .08s ease;
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
+  .topbar-left{
+    display:flex;
+    gap:8px;
   }
-  .mode-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow);}
-  .mode-btn .desc{font-size:0.58em;font-weight:600;opacity:.92;display:block;margin-top:2px;}
-  .mode-btn .label-wrap{text-align:left;}
-  #modeEasy{background:linear-gradient(180deg,var(--green),var(--green-dark));}
-  #modeMedium{background:linear-gradient(180deg,var(--accent),var(--accent-dark));}
-  #modeHard{background:linear-gradient(180deg,var(--purple),#A07AE8);}
-  .emoji-badge{font-size:1.4em;flex:0 0 auto;}
-  .footer-note{margin-top:14px;font-size:12px;color:#9aa9b5;text-align:center;}
+  .iconbtn{
+    background:var(--panel);
+    border:none;
+    border-radius:16px;
+    width:48px;
+    height:48px;
+    font-size:22px;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    touch-action:manipulation;
+  }
+  .iconbtn:active{transform:scale(0.93);}
+  .iconbtn[disabled]{
+    opacity:0.35;
+    cursor:default;
+  }
+  .iconbtn[disabled]:active{transform:none;}
 
-  /* ---------- Game screen ---------- */
-  #gameScreen{justify-content:flex-start;padding-top:14px;}
-  .topbar{width:100%;max-width:760px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-  .pill{background:var(--panel);border-radius:999px;padding:8px 16px;font-weight:800;font-size:clamp(14px,2.6vw,18px);box-shadow:0 4px 0 var(--shadow);color:var(--accent-dark);}
-  .icon-btn{background:var(--panel);border:none;border-radius:50%;width:48px;height:48px;font-size:22px;box-shadow:0 4px 0 var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;}
-  .icon-btn:active{transform:translateY(3px);}
-
-  .stage{
-    width:100%;max-width:760px;background:var(--panel);border-radius:30px;
-    box-shadow:0 10px 0 var(--shadow);padding:22px 18px 26px;
-    display:flex;flex-direction:column;align-items:center;gap:16px;
+  /* ---------- Headings ---------- */
+  h1{
+    font-size:1.8rem;
+    margin:4px 0 2px;
+    text-align:center;
+  }
+  .subtitle{
+    color:var(--soft);
+    text-align:center;
+    font-size:1.05rem;
+    margin-bottom:18px;
+  }
+  .big-emoji{
+    font-size:4.2rem;
+    margin-bottom:6px;
+    display:inline-block;
+    animation: floatBob 3.2s ease-in-out infinite;
+  }
+  @keyframes floatBob{
+    0%,100%{ transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(-10px) rotate(-4deg); }
   }
 
-  /* step indicator pills */
-  .step-indicator{display:flex;gap:8px;}
-  .step-pill{
-    padding:6px 14px;border-radius:999px;font-size:13px;font-weight:800;
-    background:#EEF3F6;color:#9aa9b5;
+  /* Soft drifting background shapes for a livelier, non-distracting feel */
+  .bg-float{
+    position:fixed;
+    font-size:2.4rem;
+    opacity:0.16;
+    pointer-events:none;
+    z-index:0;
+    animation: driftUpDown 6s ease-in-out infinite;
   }
-  .step-pill.active{background:var(--accent);color:#fff;}
-  .step-pill.done{background:var(--green-dark);color:#fff;}
-
-  .emoji-display{font-size:clamp(60px,14vw,90px);line-height:1;}
-
-  .listen-btn{
-    background:linear-gradient(180deg,var(--yellow),#F4C24A);border:none;border-radius:50%;
-    width:74px;height:74px;font-size:32px;box-shadow:0 6px 0 var(--shadow);cursor:pointer;
-    display:flex;align-items:center;justify-content:center;animation:pulseGlow 2.6s ease-in-out infinite;
-  }
-  .listen-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow);}
-  @keyframes pulseGlow{
-    0%,100%{box-shadow:0 6px 0 var(--shadow), 0 0 0 0 rgba(244,194,74,0.5);}
-    50%{box-shadow:0 6px 0 var(--shadow), 0 0 0 14px rgba(244,194,74,0);}
+  @keyframes driftUpDown{
+    0%,100%{ transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(-18px) rotate(8deg); }
   }
 
-  .instruction{font-size:clamp(16px,3.2vw,20px);font-weight:800;color:var(--accent-dark);text-align:center;}
+  /* ---------- Home screen story cards ---------- */
+  .story-list{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    margin-top:8px;
+    position:relative;
+    z-index:1;
+  }
+  .story-card{
+    background:var(--panel);
+    border:none;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px 18px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    cursor:pointer;
+    text-align:left;
+    width:100%;
+    opacity:0;
+    transform:translateY(16px);
+    animation: cardRiseIn 0.55s ease forwards;
+    touch-action:manipulation;
+  }
+  @keyframes cardRiseIn{
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .story-card:active{transform:scale(0.97);}
+  .story-card .emoji{
+    font-size:3rem;
+    flex-shrink:0;
+    display:inline-block;
+    transition: transform 0.2s ease;
+  }
+  .story-card:hover .emoji{
+    transform: scale(1.15) rotate(-6deg);
+  }
+  .story-card .title{font-size:1.25rem;font-weight:bold;}
+  .story-card .desc{color:var(--soft);font-size:0.95rem;margin-top:2px;}
 
-  /* ---------- SPELL step ---------- */
-  .spell-wrap{display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;}
-  .blanks-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
-  .blank-slot{
-    width:50px;height:58px;border-bottom:5px solid var(--accent);
-    display:flex;align-items:center;justify-content:center;
-    font-size:32px;font-weight:800;color:var(--accent-dark);
+  /* ---------- Story screen ---------- */
+  .progress-row{
+    display:flex;
+    flex-shrink:0;
+    gap:8px;
+    margin:6px 0 14px;
   }
-  .blank-slot.filled{border-bottom:5px solid var(--green-dark);animation:popIn .3s ease;}
-  @keyframes popIn{0%{transform:scale(0.5);}60%{transform:scale(1.15);}100%{transform:scale(1);}}
-  .tiles-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:420px;}
-  .letter-tile{
-    width:54px;height:54px;border-radius:14px;border:none;
-    font-size:26px;font-weight:800;color:#fff;
-    background:linear-gradient(180deg,var(--accent),var(--accent-dark));
-    box-shadow:0 5px 0 var(--shadow);cursor:pointer;
+  .dot{
+    width:14px;height:14px;border-radius:50%;
+    background:#E2DCCB;
+    transition:background .25s;
   }
-  .letter-tile:active{transform:translateY(3px);box-shadow:0 2px 0 var(--shadow);}
-  .letter-tile.used{visibility:hidden;}
-  .letter-tile.shake{animation:tileShake .4s ease;}
-  @keyframes tileShake{
+  .dot.done{background:var(--green);}
+  .dot.current{background:var(--yellow);}
+
+  .narration-card{
+    background:var(--panel);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px 20px;
+    width:100%;
+    flex-shrink:0;
+    margin-bottom:14px;
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .narration-card .listen-btn{
+    background:var(--blue);
+    border:none;
+    color:white;
+    border-radius:50%;
+    width:48px;height:48px;
+    font-size:22px;
+    flex-shrink:0;
+    cursor:pointer;
+    box-shadow:0 3px 8px rgba(79,143,232,0.4);
+    touch-action:manipulation;
+  }
+  .narration-card .listen-btn:active{transform:scale(0.92);}
+  .narration-text{
+    font-size:1.15rem;
+    line-height:1.5;
+  }
+  .narration-text b{color:var(--blue-dark);}
+
+  .question-card{
+    background:#FFF1D6;
+    border:3px solid var(--yellow);
+    border-radius:var(--radius);
+    padding:14px 18px;
+    width:100%;
+    flex-shrink:0;
+    margin-bottom:16px;
+    font-size:1.2rem;
+    font-weight:bold;
+    text-align:center;
+  }
+
+  /* ---------- Scene (hotspot area) ---------- */
+  .scene-wrap{
+    position:relative;
+    width:100%;
+    flex:1 1 0;
+    min-height:120px; /* keeps the scene visible even on very short viewports */
+    background:var(--panel);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .scene-wrap svg{
+    width:100%;
+    height:100%;
+    display:block;
+    /* SVG's own viewBox + default preserveAspectRatio (xMidYMid meet)
+       keeps the illustration correctly proportioned and centered no
+       matter how the flexible container above is sized. */
+  }
+  .hotspot{
+    cursor:pointer;
+    transition: transform .15s;
+    touch-action:manipulation;
+  }
+  .hotspot:hover{ filter:brightness(1.05); }
+  .hotspot.correct-flash{
+    animation: pulseGreen 0.6s ease;
+  }
+  .hotspot.wrong-flash{
+    animation: shakeRed 0.5s ease;
+  }
+  @keyframes pulseGreen{
+    0%{filter:none;}
+    40%{filter:drop-shadow(0 0 14px rgba(95,184,122,0.9));}
+    100%{filter:none;}
+  }
+  @keyframes shakeRed{
     0%,100%{transform:translateX(0);}
     25%{transform:translateX(-6px);}
     75%{transform:translateX(6px);}
   }
 
-  /* ---------- CHOOSE step ---------- */
-  .choices{display:grid;gap:14px;width:100%;justify-content:center;}
-  .choices.cols2{grid-template-columns:repeat(2,minmax(120px,1fr));}
-  .choices.cols3{grid-template-columns:repeat(3,minmax(100px,1fr));}
-  .choices.cols4{grid-template-columns:repeat(2,minmax(110px,1fr));}
-  @media (min-width:520px){ .choices.cols4{grid-template-columns:repeat(4,minmax(100px,1fr));} }
-  .choice-btn{
-    border:none;border-radius:20px;padding:18px 10px;
-    font-size:clamp(20px,4.6vw,28px);font-weight:800;color:#fff;cursor:pointer;
-    min-height:72px;box-shadow:0 6px 0 var(--shadow);transition:transform .08s ease, filter .15s ease;
+  .feedback-banner{
+    width:100%;
+    flex-shrink:0;
+    text-align:center;
+    font-size:1.3rem;
+    font-weight:bold;
+    border-radius:18px;
+    padding:14px;
+    margin-bottom:12px;
   }
-  .choice-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow);}
-  .c0{background:linear-gradient(180deg,#FF9F45,#E8843A);}
-  .c1{background:linear-gradient(180deg,#8FCBFF,#5DA9E8);}
-  .c2{background:linear-gradient(180deg,#7FD8A0,#4FBE7D);}
-  .c3{background:linear-gradient(180deg,#FFB3C6,#F082A0);}
-  .choice-btn.correct-flash{animation:correctPop .55s ease;filter:brightness(1.15);}
-  .choice-btn.wrong-flash{animation:wrongShake .45s ease;}
-  @keyframes correctPop{0%{transform:scale(1);}40%{transform:scale(1.12);}100%{transform:scale(1);}}
-  @keyframes wrongShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
-  .choice-btn.dim{opacity:0.35;pointer-events:none;}
-
-  .progress-row{display:flex;gap:8px;margin-top:6px;}
-  .dot{width:14px;height:14px;border-radius:50%;background:#E3EDF2;}
-  .dot.filled{background:var(--accent);}
-
-  #celebrate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:50;}
-  .confetti-piece{position:absolute;width:12px;height:12px;border-radius:3px;opacity:0.95;animation:fall linear forwards;}
-  @keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:0.3;}}
-
-  #finishScreen{text-align:center;}
-  .finish-card{background:var(--panel);border-radius:32px;padding:36px 26px;box-shadow:0 10px 0 var(--shadow);max-width:520px;}
-  .finish-emoji{font-size:64px;margin-bottom:6px;}
-  .finish-stat{font-size:clamp(20px,4vw,28px);font-weight:800;color:var(--accent-dark);margin:14px 0;}
-  .big-btn{
-    border:none;border-radius:22px;padding:16px 30px;font-size:clamp(18px,3.6vw,22px);font-weight:800;color:#fff;
-    background:linear-gradient(180deg,var(--accent),var(--accent-dark));box-shadow:0 6px 0 var(--shadow);cursor:pointer;margin-top:10px;
+  .feedback-banner.correct{
+    background:#E3F6E8;
+    color:var(--green-dark);
+    border:3px solid var(--green);
   }
-  .big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow);}
-  .secondary-btn{border:none;background:#EAF2F6;color:#5b6b78;border-radius:22px;padding:14px 26px;font-size:clamp(15px,3vw,18px);font-weight:700;cursor:pointer;margin-top:10px;}
+  .feedback-banner.try{
+    background:#FBE9E7;
+    color:#B5453B;
+    border:3px solid var(--red);
+  }
+
+  /* ---------- Celebration / complete screen ---------- */
+  .confetti-emoji{
+    font-size:5rem;
+    margin-bottom:6px;
+    animation: bounceIn 0.7s ease;
+  }
+  @keyframes bounceIn{
+    0%{ transform:scale(0) rotate(-10deg); opacity:0; }
+    60%{ transform:scale(1.25) rotate(8deg); opacity:1; }
+    80%{ transform:scale(0.92) rotate(-4deg); }
+    100%{ transform:scale(1) rotate(0deg); }
+  }
+  .star-row{
+    font-size:2.6rem;
+    margin:10px 0 18px;
+    letter-spacing:6px;
+  }
+  .star-row span{
+    display:inline-block;
+    opacity:0;
+    transform:scale(0);
+    animation: starPop 0.5s ease forwards;
+  }
+  @keyframes starPop{
+    0%{ opacity:0; transform:scale(0) rotate(-30deg); }
+    60%{ opacity:1; transform:scale(1.3) rotate(10deg); }
+    100%{ opacity:1; transform:scale(1) rotate(0deg); }
+  }
+  .confetti-piece{
+    position:fixed;
+    top:-40px;
+    font-size:1.8rem;
+    pointer-events:none;
+    z-index:60;
+    animation-name: confettiFall;
+    animation-timing-function: ease-in;
+    animation-fill-mode: forwards;
+  }
+  @keyframes confettiFall{
+    0%{ transform: translateY(0) rotate(0deg); opacity:1; }
+    100%{ transform: translateY(110vh) rotate(360deg); opacity:0.9; }
+  }
+  .summary-card{
+    background:var(--panel);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px;
+    width:100%;
+    text-align:center;
+    font-size:1.15rem;
+    margin-bottom:20px;
+    animation: fadeUp 0.6s ease 0.3s both;
+  }
+  @keyframes fadeUp{
+    0%{ opacity:0; transform:translateY(14px); }
+    100%{ opacity:1; transform:translateY(0); }
+  }
+  .action-btn{
+    background:var(--blue);
+    color:white;
+    border:none;
+    border-radius:18px;
+    font-size:1.15rem;
+    font-weight:bold;
+    padding:14px 26px;
+    margin:6px;
+    box-shadow:0 4px 10px rgba(79,143,232,0.4);
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  .action-btn.secondary{
+    background:var(--purple);
+    box-shadow:0 4px 10px rgba(155,127,224,0.4);
+  }
+  .action-btn:active{transform:scale(0.96);}
+
+  /* ---------- Sparkle reward pop ---------- */
+  .sparkle-pop{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    font-size:5rem;
+    pointer-events:none;
+    z-index:50;
+    animation: popFade 0.9s ease forwards;
+  }
+  @keyframes popFade{
+    0%{opacity:0; transform:translate(-50%,-50%) scale(0.3);}
+    25%{opacity:1; transform:translate(-50%,-50%) scale(1.15);}
+    70%{opacity:1; transform:translate(-50%,-50%) scale(1);}
+    100%{opacity:0; transform:translate(-50%,-50%) scale(0.9);}
+  }
+
+  /* ---------- Responsive tweaks: small phones ---------- */
+  @media (max-width: 380px){
+    .screen{ padding:14px 10px 20px; }
+    h1{ font-size:1.5rem; }
+    .subtitle{ font-size:0.95rem; }
+    .big-emoji{ font-size:3.4rem; }
+    .narration-text{ font-size:1.05rem; }
+    .question-card{ font-size:1.05rem; padding:12px 14px; }
+    .story-card .title{ font-size:1.1rem; }
+    .story-card .emoji{ font-size:2.5rem; }
+    .iconbtn{ width:44px; height:44px; font-size:20px; }
+  }
+
+  /* ---------- Responsive tweaks: short / landscape screens (e.g. iPad landscape, phone landscape) ---------- */
+  @media (max-height: 480px){
+    .screen{ padding:10px 16px 14px; }
+    .big-emoji{ font-size:2.6rem; margin-bottom:0; }
+    h1{ font-size:1.4rem; margin:2px 0; }
+    .subtitle{ margin-bottom:10px; }
+    .narration-card{ padding:10px 14px; margin-bottom:8px; }
+    .question-card{ padding:8px 14px; margin-bottom:8px; }
+    .narration-text{ font-size:1rem; }
+    .question-card{ font-size:1.05rem; }
+  }
+  /* Prevent accidental pull-to-refresh / overscroll bounce on iPad Safari */
+  body{ overflow-x:hidden; }
 </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- TITLE SCREEN -->
-  <div class="screen" id="titleScreen">
-    <div class="title-card">
-      <div class="logo-row">
-        <span style="font-size:40px;">🦒</span>
-        <h1>Word Builder Safari</h1>
-      </div>
-      <div class="subtitle">Spell it. Read it!</div>
-      <div class="mode-grid">
-        <button class="mode-btn" id="modeEasy">
-          <span class="label-wrap">Easy<span class="desc">Things • 2 choices</span></span>
-          <span class="emoji-badge">🐢</span>
-        </button>
-        <button class="mode-btn" id="modeMedium">
-          <span class="label-wrap">Medium<span class="desc">Things &amp; Actions • Spell + Read</span></span>
-          <span class="emoji-badge">🦁</span>
-        </button>
-        <button class="mode-btn" id="modeHard">
-          <span class="label-wrap">Hard<span class="desc">Actions • Spell + Listen &amp; Read</span></span>
-          <span class="emoji-badge">🐆</span>
-        </button>
-      </div>
-      <div class="footer-note">Tap a difficulty level to begin</div>
+<!-- ============ HOME SCREEN ============ -->
+<div class="screen" id="screen-home">
+  <div class="bg-float" style="top:8%; left:6%; animation-delay:0s;">📚</div>
+  <div class="bg-float" style="top:14%; left:80%; animation-delay:1.5s;">✏️</div>
+  <div class="bg-float" style="top:70%; left:10%; animation-delay:0.8s;">🌟</div>
+  <div class="bg-float" style="top:78%; left:84%; animation-delay:2.2s;">🔎</div>
+
+  <div class="big-emoji">🔍📖</div>
+  <h1>Story Detective</h1>
+  <div class="subtitle">Tap to find the matching detail in each picture!</div>
+
+  <div class="story-list" id="story-list"></div>
+</div>
+
+<!-- ============ STORY/QUESTION SCREEN ============ -->
+<div class="screen hidden" id="screen-story">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="iconbtn" id="btn-home" aria-label="Home">🏠</button>
     </div>
+    <div class="progress-row" id="progress-row"></div>
+    <button class="iconbtn" id="btn-sound-toggle" aria-label="Sound on" aria-pressed="true">🔊</button>
   </div>
 
-  <!-- GAME SCREEN -->
-  <div class="screen hidden" id="gameScreen">
-    <div class="topbar">
-      <button class="icon-btn" id="homeBtn" aria-label="Home">🏠</button>
-      <div class="pill" id="scorePill">⭐ 0 / 8</div>
-      <button class="icon-btn" id="muteBtn" aria-label="Mute sound effects">🔊</button>
-    </div>
-    <div class="stage">
-      <div class="step-indicator" id="stepIndicator"></div>
-
-      <div class="emoji-display" id="emojiDisplay">🐱</div>
-      <button class="listen-btn" id="listenBtn" aria-label="Repeat word">🔊</button>
-
-      <div class="instruction" id="instructionText">Tap the letters to spell the word</div>
-
-      <!-- SPELL STEP -->
-      <div id="spellStep" class="spell-wrap hidden">
-        <div class="blanks-row" id="blanksRow"></div>
-        <div class="tiles-row" id="tilesRow"></div>
-      </div>
-
-      <!-- CHOOSE STEP -->
-      <div id="chooseStep" class="hidden" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;">
-        <div class="choices cols2" id="choicesWrap"></div>
-      </div>
-
-      <div class="progress-row" id="progressRow"></div>
-    </div>
+  <div class="narration-card">
+    <button class="listen-btn" id="btn-listen" aria-label="Listen">🔊</button>
+    <div class="narration-text" id="narration-text"></div>
   </div>
 
-  <!-- FINISH SCREEN -->
-  <div class="screen hidden" id="finishScreen">
-    <div class="finish-card">
-      <div class="finish-emoji">🦒🎉</div>
-      <h1 style="font-size:clamp(24px,5vw,34px);">Amazing Word Building!</h1>
-      <div class="finish-stat" id="finishStat">8 / 8 words!</div>
-      <div>
-        <button class="big-btn" id="playAgainBtn">Play Again</button><br>
-        <button class="secondary-btn" id="homeBtn2">Choose Level</button>
-      </div>
-    </div>
-  </div>
+  <div class="question-card" id="question-card"></div>
 
-  <div id="celebrate"></div>
+  <div class="feedback-banner hidden" id="feedback-banner"></div>
+
+  <div class="scene-wrap" id="scene-wrap"></div>
+</div>
+
+<!-- ============ STORY COMPLETE SCREEN ============ -->
+<div class="screen hidden" id="screen-complete">
+  <div class="confetti-emoji">🎉</div>
+  <h1 id="complete-title">Great Job!</h1>
+  <div class="star-row" id="star-row"></div>
+  <div class="summary-card" id="summary-card"></div>
+  <div>
+    <button class="action-btn" id="btn-play-again">🔁 Play Again</button>
+    <button class="action-btn secondary" id="btn-go-home">🏠 More Stories</button>
+  </div>
 </div>
 
 <script>
-/* =========================================================
-   WORD BUILDER SAFARI
-   Variant of Sight Word Safari teaching concrete nouns/verbs
-   through two layered interactions per word:
-     1) SPELL  - tap letter tiles in order to build the word
-     2) READ   - multiple-choice word recognition
-   Single offline HTML file. Follows AHS Game Library
-   audio/visual conventions.
-   ========================================================= */
+/* ============================================================
+   STORY DETECTIVE — story data
+   Each story = { id, title, emoji, desc, intro, questions:[...] }
+   Each question = {
+     text: narration sentence read aloud + shown,
+     prompt: short question shown in the question card,
+     scene: raw SVG string (the illustration),
+     hotspots: [ {id, shapeSelector (data-hot id), correct:boolean, label} ]
+   }
+   Hotspots are plain SVG groups with class="hotspot" and
+   data-hot="X" data-correct="true/false". Click handling is
+   done generically in app.js via event delegation.
+   ============================================================ */
 
-/* ---------- Word banks (concrete, picturable nouns & verbs) ---------- */
-const NOUNS = ["cat","dog","ball","cup","sun","car","bed","fish","book","bird"];
-const VERBS = ["run","eat","sit","jump","drink","sleep","walk","swim","read","hop"];
-const LONG_NOUNS_FOR_HARD = ["book","fish","bird"]; // a few nouns mixed into Hard for variety
+const STORIES = [
 
-const EMOJI = {
-  cat:"🐱", dog:"🐶", ball:"⚽", cup:"☕", sun:"☀️", car:"🚗", bed:"🛏️", fish:"🐠", book:"📖", bird:"🐦",
-  run:"🏃", eat:"🍽️", sit:"🪑", jump:"🤸", drink:"🥤", sleep:"😴", walk:"🚶", swim:"🏊", read:"📖", hop:"🐇"
-};
+/* ============================================================
+   STORY 1 — "Lin's Lunchbox"  (very simple, single object focus)
+   ============================================================ */
+{
+  id: "lunchbox",
+  emoji: "🍱",
+  title: "Lin's Lunchbox",
+  desc: "Find what Lin packs for lunch.",
+  questions: [
+    {
+      text: "Lin packs an <b>apple</b> in her lunchbox.",
+      prompt: "Tap the apple.",
+      hotspots: [
+        { id:"apple",  correct:true,  cx:150, cy:150, label:"🍎", color:"#E8665A" },
+        { id:"banana", correct:false, cx:330, cy:150, label:"🍌", color:"#F5C84C" },
+        { id:"carrot", correct:false, cx:510, cy:150, label:"🥕", color:"#F08A3C" }
+      ]
+    },
+    {
+      text: "Lin also packs a <b>sandwich</b>.",
+      prompt: "Tap the sandwich.",
+      hotspots: [
+        { id:"juice",     correct:false, cx:150, cy:150, label:"🧃", color:"#4F8FE8" },
+        { id:"sandwich",  correct:true,  cx:330, cy:150, label:"🥪", color:"#D8B26B" },
+        { id:"cookie",    correct:false, cx:510, cy:150, label:"🍪", color:"#B97A4B" }
+      ]
+    },
+    {
+      text: "For a drink, Lin has <b>juice</b>.",
+      prompt: "Tap the juice box.",
+      hotspots: [
+        { id:"milk",  correct:false, cx:150, cy:150, label:"🥛", color:"#CFCFCF" },
+        { id:"water", correct:false, cx:330, cy:150, label:"💧", color:"#8FC7F0" },
+        { id:"juice", correct:true,  cx:510, cy:150, label:"🧃", color:"#4F8FE8" }
+      ]
+    },
+    {
+      text: "Lin's favorite snack is a <b>cookie</b>.",
+      prompt: "Tap the cookie.",
+      hotspots: [
+        { id:"cookie", correct:true,  cx:150, cy:150, label:"🍪", color:"#B97A4B" },
+        { id:"chips",  correct:false, cx:330, cy:150, label:"🥨", color:"#D8A86B" },
+        { id:"grapes", correct:false, cx:510, cy:150, label:"🍇", color:"#9B7FE0" }
+      ]
+    }
+  ]
+},
 
-let roundsTotal = 8;
-let roundIndex = 0;
-let score = 0;
-let currentMode = "easy";
-let wordQueue = [];
-let roundToken = 0;
-let pendingTimers = [];
+/* ============================================================
+   STORY 2 — "The Rainy Day"  (setting / character focus)
+   ============================================================ */
+{
+  id: "rainyday",
+  emoji: "🌧️",
+  title: "The Rainy Day",
+  desc: "Find people, places, and things in the story.",
+  questions: [
+    {
+      text: "It is a <b>rainy</b> day outside.",
+      prompt: "Tap the rain.",
+      hotspots: [
+        { id:"sun",   correct:false, cx:150, cy:120, label:"☀️", color:"#F5C84C" },
+        { id:"rain",  correct:true,  cx:330, cy:120, label:"🌧️", color:"#4F8FE8" },
+        { id:"snow",  correct:false, cx:510, cy:120, label:"❄️", color:"#9ED3F2" }
+      ]
+    },
+    {
+      text: "<b>Maya</b> wears a yellow raincoat.",
+      prompt: "Tap Maya.",
+      hotspots: [
+        { id:"maya",  correct:true,  cx:170, cy:160, label:"🧒", color:"#F5C84C" },
+        { id:"dad",   correct:false, cx:340, cy:160, label:"👨", color:"#8FC7F0" },
+        { id:"dog",   correct:false, cx:500, cy:160, label:"🐶", color:"#D8B26B" }
+      ]
+    },
+    {
+      text: "Maya holds a big <b>umbrella</b>.",
+      prompt: "Tap the umbrella.",
+      hotspots: [
+        { id:"umbrella", correct:true,  cx:150, cy:150, label:"☂️", color:"#9B7FE0" },
+        { id:"boots",    correct:false, cx:330, cy:150, label:"👢", color:"#F5C84C" },
+        { id:"hat",      correct:false, cx:510, cy:150, label:"🧢", color:"#E8665A" }
+      ]
+    },
+    {
+      text: "Maya jumps in a <b>puddle</b>.",
+      prompt: "Tap the puddle.",
+      hotspots: [
+        { id:"puddle", correct:true,  cx:330, cy:230, label:"💧", color:"#4F8FE8", customSvg:"puddle" },
+        { id:"rock",   correct:false, cx:150, cy:230, label:"🪨", color:"#A8A29B" },
+        { id:"leaf",   correct:false, cx:510, cy:230, label:"🍃", color:"#5FB87A" }
+      ]
+    }
+  ]
+},
 
-// per-round mutable sub-state (reset every round)
-let stepList = [];
-let stepIndex = 0;
-let spellTarget = "";
-let spellProgress = "";   // letters confirmed so far
-let currentRoundTarget = "";
+/* ============================================================
+   STORY 3 — "The Garden Helper"  (sequence / action focus)
+   ============================================================ */
+{
+  id: "garden",
+  emoji: "🌻",
+  title: "The Garden Helper",
+  desc: "Find what Sam uses to grow flowers.",
+  questions: [
+    {
+      text: "Sam digs in the dirt with a <b>shovel</b>.",
+      prompt: "Tap the shovel.",
+      hotspots: [
+        { id:"shovel", correct:true,  cx:150, cy:150, label:"🛠️", color:"#8B5E3C", customSvg:"shovel" },
+        { id:"rake",   correct:false, cx:330, cy:150, label:"🧹", color:"#D8B26B" },
+        { id:"hose",   correct:false, cx:510, cy:150, label:"🚿", color:"#4F8FE8" }
+      ]
+    },
+    {
+      text: "Sam plants a tiny <b>seed</b>.",
+      prompt: "Tap the seed.",
+      hotspots: [
+        { id:"seed",   correct:true,  cx:150, cy:150, label:"🌱", color:"#5FB87A" },
+        { id:"flower", correct:false, cx:330, cy:150, label:"🌼", color:"#F5C84C" },
+        { id:"tree",   correct:false, cx:510, cy:150, label:"🌳", color:"#3E9259" }
+      ]
+    },
+    {
+      text: "Sam waters the seed with a <b>watering can</b>.",
+      prompt: "Tap the watering can.",
+      hotspots: [
+        { id:"bucket", correct:false, cx:150, cy:150, label:"🪣", color:"#9B7FE0" },
+        { id:"can",    correct:true,  cx:330, cy:150, label:"🪴", color:"#4F8FE8", customSvg:"wateringcan" },
+        { id:"cup",    correct:false, cx:510, cy:150, label:"🥤", color:"#E8665A" }
+      ]
+    },
+    {
+      text: "After many days, a <b>sunflower</b> grows!",
+      prompt: "Tap the sunflower.",
+      hotspots: [
+        { id:"sunflower", correct:true,  cx:330, cy:150, label:"🌻", color:"#F5C84C" },
+        { id:"mushroom",  correct:false, cx:150, cy:150, label:"🍄", color:"#E8665A" },
+        { id:"cactus",    correct:false, cx:510, cy:150, label:"🌵", color:"#5FB87A" }
+      ]
+    }
+  ]
+}
 
-/* ---------- Audio (Web Audio API) ---------- */
+];
+
+</script>
+<script>
+/* ============================================================
+   STORY DETECTIVE — app logic
+   ============================================================ */
+
+const screenHome = document.getElementById('screen-home');
+const screenStory = document.getElementById('screen-story');
+const screenComplete = document.getElementById('screen-complete');
+
+const storyListEl = document.getElementById('story-list');
+const progressRowEl = document.getElementById('progress-row');
+const narrationTextEl = document.getElementById('narration-text');
+const questionCardEl = document.getElementById('question-card');
+const sceneWrapEl = document.getElementById('scene-wrap');
+const feedbackBannerEl = document.getElementById('feedback-banner');
+const btnListen = document.getElementById('btn-listen');
+const btnSoundToggle = document.getElementById('btn-sound-toggle');
+const btnHome = document.getElementById('btn-home');
+
+const completeTitleEl = document.getElementById('complete-title');
+const starRowEl = document.getElementById('star-row');
+const summaryCardEl = document.getElementById('summary-card');
+const btnPlayAgain = document.getElementById('btn-play-again');
+const btnGoHome = document.getElementById('btn-go-home');
+
+let currentStory = null;
+let currentQIndex = 0;
+let correctSet = new Set(); // indices of questions answered correctly
+let attemptedWrongThisQ = false;
+let answeredThisQ = false;
+let soundOn = true; // master sound toggle: gates auto-narration + sound effects
+
+/* ---------------- HOME SCREEN ---------------- */
+function renderHome(){
+  storyListEl.innerHTML = '';
+  STORIES.forEach((story, i) => {
+    const card = document.createElement('button');
+    card.className = 'story-card';
+    card.style.animationDelay = (i * 0.12) + 's';
+    card.innerHTML = `
+      <div class="emoji">${story.emoji}</div>
+      <div>
+        <div class="title">${story.title}</div>
+        <div class="desc">${story.desc}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => startStory(story));
+    storyListEl.appendChild(card);
+  });
+}
+
+function showScreen(el){
+  [screenHome, screenStory, screenComplete].forEach(s => s.classList.add('hidden'));
+  el.classList.remove('hidden');
+}
+
+/* ---------------- START / NAVIGATE STORY ---------------- */
+function startStory(story){
+  currentStory = story;
+  currentQIndex = 0;
+  correctSet = new Set();
+  showScreen(screenStory);
+  renderQuestion();
+}
+
+function renderProgressDots(){
+  progressRowEl.innerHTML = '';
+  currentStory.questions.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i < currentQIndex ? ' done' : (i === currentQIndex ? ' current' : ''));
+    progressRowEl.appendChild(dot);
+  });
+}
+
+function renderQuestion(){
+  answeredThisQ = false;
+  attemptedWrongThisQ = false;
+  feedbackBannerEl.classList.add('hidden');
+  feedbackBannerEl.className = 'feedback-banner hidden';
+
+  renderProgressDots();
+
+  const q = currentStory.questions[currentQIndex];
+  narrationTextEl.innerHTML = q.text;
+  questionCardEl.textContent = q.prompt;
+
+  renderScene(q);
+
+  // Auto-read narration aloud (only when sound is turned on)
+  speakAuto(stripHtml(q.text) + ' ' + q.prompt);
+}
+
+/* ---------------- BUILD SCENE (consistent layout, 3 big tappable choices) ---------------- */
+function renderCustomIcon(name, cx, cy){
+  // Simple, bold, instantly-recognizable hand-drawn icons for items
+  // that don't have a clear matching emoji.
+  if(name === 'shovel'){
+    return `
+      <g transform="translate(${cx},${cy})">
+        <!-- handle -->
+        <rect x="-6" y="-48" width="12" height="55" rx="6" fill="#A8763E"/>
+        <!-- grip -->
+        <ellipse cx="0" cy="-50" rx="14" ry="9" fill="#7A5326"/>
+        <!-- blade -->
+        <path d="M -22 5 L 22 5 L 14 38 Q 0 50 -14 38 Z" fill="#9AA5AD" stroke="#6E777E" stroke-width="3"/>
+      </g>
+    `;
+  }
+  if(name === 'wateringcan'){
+    return `
+      <g transform="translate(${cx},${cy}) scale(0.95)">
+        <!-- main body: rounded can shape -->
+        <path d="M -22 -8 Q -24 30 0 32 Q 24 30 22 -8 Q 22 -22 0 -22 Q -22 -22 -22 -8 Z"
+              fill="#5FA8E0" stroke="#3568B0" stroke-width="3"/>
+        <!-- top opening -->
+        <ellipse cx="0" cy="-22" rx="13" ry="6" fill="#3568B0"/>
+        <!-- arched carry handle over the top -->
+        <path d="M -14 -24 Q 0 -48 14 -24" fill="none" stroke="#3568B0" stroke-width="6" stroke-linecap="round"/>
+        <!-- long spout going up-right, classic watering-can silhouette -->
+        <path d="M 20 -6 L 50 -34" stroke="#3568B0" stroke-width="9" stroke-linecap="round"/>
+        <!-- sprinkler head (rose) at end of spout -->
+        <circle cx="53" cy="-37" r="8" fill="#5FA8E0" stroke="#3568B0" stroke-width="3"/>
+        <!-- water droplets falling from the rose -->
+        <circle cx="48" cy="-22" r="3" fill="#9ED3F2"/>
+        <circle cx="58" cy="-20" r="3" fill="#9ED3F2"/>
+        <circle cx="53" cy="-14" r="3" fill="#9ED3F2"/>
+      </g>
+    `;
+  }
+  if(name === 'puddle'){
+    return `
+      <g transform="translate(${cx},${cy})">
+        <!-- flat irregular puddle shape, viewed from above, sitting on the ground -->
+        <path d="M -40 6 Q -44 -8 -22 -10 Q -8 -22 12 -12 Q 36 -14 40 2 Q 44 14 22 16 Q 0 22 -20 14 Q -38 16 -40 6 Z"
+              fill="#6FC1F5" stroke="#3568B0" stroke-width="3" opacity="0.9"/>
+        <!-- ripple highlights to read clearly as water on the ground, not a drop -->
+        <ellipse cx="-6" cy="0" rx="16" ry="7" fill="#BCE3FB" opacity="0.8"/>
+        <ellipse cx="14" cy="6" rx="9" ry="4" fill="#E8F6FE" opacity="0.7"/>
+      </g>
+    `;
+  }
+  return '';
+}
+
+function renderScene(q){
+  const svgNS = "http://www.w3.org/2000/svg";
+  const width = 660, height = 330;
+
+  let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="${svgNS}">`;
+  // soft background
+  svg += `<rect x="0" y="0" width="${width}" height="${height}" fill="#FBF4E6"/>`;
+  // gentle ground line for visual grounding
+  svg += `<rect x="0" y="${height-40}" width="${width}" height="40" fill="#F0E6CC"/>`;
+
+  q.hotspots.forEach(h => {
+    const r = 78;
+    const innerContent = h.customSvg
+      ? renderCustomIcon(h.customSvg, h.cx, h.cy)
+      : `<text x="${h.cx}" y="${h.cy + 28}" font-size="72" text-anchor="middle" dominant-baseline="middle">${h.label}</text>`;
+    svg += `
+      <g class="hotspot" data-hot="${h.id}" data-correct="${h.correct}" tabindex="0" role="button" aria-label="${h.id}">
+        <circle cx="${h.cx}" cy="${h.cy}" r="${r}" fill="${h.color}" opacity="0.18"/>
+        <circle cx="${h.cx}" cy="${h.cy}" r="${r-10}" fill="#FFFFFF" stroke="${h.color}" stroke-width="5"/>
+        ${innerContent}
+      </g>
+    `;
+  });
+
+  svg += `</svg>`;
+  sceneWrapEl.innerHTML = svg;
+
+  // attach listeners
+  sceneWrapEl.querySelectorAll('.hotspot').forEach(g => {
+    g.addEventListener('click', onHotspotClick);
+    g.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' '){ onHotspotClick({currentTarget:g}); }
+    });
+  });
+}
+
+function onHotspotClick(e){
+  if(answeredThisQ) return; // lock after correct answer found
+  const g = e.currentTarget;
+  const isCorrect = g.getAttribute('data-correct') === 'true';
+
+  if(isCorrect){
+    answeredThisQ = true;
+    g.classList.add('correct-flash');
+    showFeedback(true);
+    correctSet.add(currentQIndex);
+    popSparkle(g);
+    playCorrectSound();
+    // Auto-advance after a short pause so the student sees/hears the feedback
+    setTimeout(goToNextQuestion, 1400);
+  } else {
+    g.classList.add('wrong-flash');
+    setTimeout(()=>g.classList.remove('wrong-flash'), 500);
+    attemptedWrongThisQ = true;
+    showFeedback(false);
+    playIncorrectSound();
+  }
+}
+
+function goToNextQuestion(){
+  currentQIndex++;
+  if(currentQIndex >= currentStory.questions.length){
+    finishStory();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showFeedback(correct){
+  feedbackBannerEl.classList.remove('hidden');
+  if(correct){
+    feedbackBannerEl.className = 'feedback-banner correct';
+    feedbackBannerEl.textContent = pickPraise();
+  } else {
+    feedbackBannerEl.className = 'feedback-banner try';
+    feedbackBannerEl.textContent = "Try again!";
+  }
+}
+
+function pickPraise(){
+  const options = ["Great find! ⭐", "Yes! That's it! 🎉", "Nice job! 👏", "You found it! 🌟"];
+  return options[Math.floor(Math.random()*options.length)];
+}
+
+/* ---------------- SPARKLE POP ---------------- */
+function popSparkle(targetEl){
+  const pop = document.createElement('div');
+  pop.className = 'sparkle-pop';
+  pop.textContent = '✨';
+  document.body.appendChild(pop);
+  setTimeout(()=>pop.remove(), 900);
+}
+
+/* ---------------- FINISH STORY ---------------- */
+function finishStory(){
+  showScreen(screenComplete);
+  const total = currentStory.questions.length;
+  completeTitleEl.textContent = `Great Job!`;
+  const starCount = correctSet.size === total ? 3 : (correctSet.size >= Math.ceil(total/2) ? 2 : 1);
+
+  // Build stars with staggered pop-in animation
+  starRowEl.innerHTML = '';
+  for(let i=0;i<3;i++){
+    const span = document.createElement('span');
+    span.textContent = i < starCount ? '⭐' : '☆';
+    span.style.animationDelay = (0.15 + i*0.18) + 's';
+    starRowEl.appendChild(span);
+  }
+
+  summaryCardEl.innerHTML = `You found <b>${correctSet.size} of ${total}</b> story details in<br><b>${currentStory.title}</b> ${currentStory.emoji}`;
+
+  launchConfetti();
+  playFanfareSound();
+  speakAuto(`Great job! You finished ${currentStory.title}.`);
+}
+
+/* Falling confetti burst across the screen */
+function launchConfetti(){
+  const pieces = ['🎉','✨','🎊','⭐','🌟'];
+  const count = 22;
+  for(let i=0;i<count;i++){
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.textContent = pieces[Math.floor(Math.random()*pieces.length)];
+    el.style.left = Math.random()*100 + 'vw';
+    const duration = 1.8 + Math.random()*1.4;
+    const delay = Math.random()*0.6;
+    el.style.animationDuration = duration + 's';
+    el.style.animationDelay = delay + 's';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), (duration+delay)*1000 + 200);
+  }
+}
+
+btnPlayAgain.addEventListener('click', () => startStory(currentStory));
+btnGoHome.addEventListener('click', () => { showScreen(screenHome); });
+btnHome.addEventListener('click', () => { showScreen(screenHome); });
+
+/* ---------------- LISTEN / SOUND TOGGLE ---------------- */
+function currentNarrationFull(){
+  const q = currentStory.questions[currentQIndex];
+  return stripHtml(q.text) + ' ' + q.prompt;
+}
+// The listen button next to the narration always works, even with sound
+// switched off, so a player can still choose to hear a sentence read.
+btnListen.addEventListener('click', () => speak(currentNarrationFull()));
+
+/* ---------------- SOUND ON/OFF TOGGLE ---------------- */
+function updateSoundToggleUI(){
+  btnSoundToggle.textContent = soundOn ? '🔊' : '🔇';
+  btnSoundToggle.setAttribute('aria-label', soundOn ? 'Sound on' : 'Sound off');
+  btnSoundToggle.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+}
+btnSoundToggle.addEventListener('click', () => {
+  soundOn = !soundOn;
+  if(!soundOn){
+    try{ window.speechSynthesis.cancel(); }catch(err){ /* ignore */ }
+  }
+  updateSoundToggleUI();
+});
+updateSoundToggleUI();
+
+/* ---------------- SOUND EFFECTS (Web Audio, no external files) ---------------- */
 let audioCtx = null;
-let sfxMuted = false;
-function getCtx(){
-  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function getAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(err){ return null; }
+  }
+  if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
   return audioCtx;
 }
-function toggleSfxMute(){
-  sfxMuted = !sfxMuted;
-  const btn = document.getElementById("muteBtn");
-  btn.textContent = sfxMuted ? "🔇" : "🔊";
-  btn.setAttribute("aria-label", sfxMuted ? "Unmute sound effects" : "Mute sound effects");
-}
-function playTone(freq, start, dur, type, gainVal){
-  if(sfxMuted) return;
-  const ctx = getCtx();
+
+function playTone(freq, startTime, duration, ctx, type='sine', peakGain=0.25){
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.type = type || "sine";
-  osc.frequency.value = freq;
-  gain.gain.value = gainVal || 0.18;
-  osc.connect(gain); gain.connect(ctx.destination);
-  osc.start(ctx.currentTime + start);
-  gain.gain.setValueAtTime(gainVal || 0.18, ctx.currentTime + start);
-  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
-  osc.stop(ctx.currentTime + start + dur + 0.02);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
 }
+
+/* Cheerful little ascending major-chord chime for a correct answer */
 function playCorrectSound(){
-  playTone(523.25,0,0.14,"sine",0.2); playTone(659.25,0.1,0.14,"sine",0.2); playTone(783.99,0.2,0.22,"sine",0.22);
-}
-function playWrongSound(){ playTone(180,0,0.18,"sine",0.18); playTone(140,0.08,0.22,"sine",0.16); }
-function playTickSound(){ playTone(880,0,0.08,"square",0.10); }
-function playLevelUpFanfare(){
-  [523.25,587.33,659.25,783.99,880].forEach((f,i)=>playTone(f,i*0.11,0.18,"triangle",0.18));
-}
-
-/* ---------- Speech synthesis ---------- */
-function speak(text, rate){
-  if(!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = rate || 0.85;
-  utter.pitch = 1.05;
-  const voices = window.speechSynthesis.getVoices();
-  const preferred = voices.find(v => /en/i.test(v.lang) && /female|en-US|en-GB/i.test(v.name));
-  if(preferred) utter.voice = preferred;
-  window.speechSynthesis.speak(utter);
-}
-if('speechSynthesis' in window){
-  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-}
-
-/* ---------- Helpers ---------- */
-function shuffle(arr){
-  const a = arr.slice();
-  for(let i=a.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
-  }
-  return a;
-}
-function pickN(arr, n, exclude){
-  const pool = arr.filter(w => w !== exclude);
-  return shuffle(pool).slice(0, n);
-}
-function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
-function safeTimeout(fn, ms){ const id = setTimeout(fn, ms); pendingTimers.push(id); return id; }
-function clearPendingTimers(){ pendingTimers.forEach(id => clearTimeout(id)); pendingTimers = []; }
-
-/* ---------- Mode config ---------- */
-function getModeConfig(mode){
-  if(mode === "easy"){
-    return { words: NOUNS, distractorPool: NOUNS.concat(VERBS), steps: ["choose"], numChoices: 2, hideWordOnChoose: false };
-  }
-  if(mode === "medium"){
-    return { words: shuffle(NOUNS.concat(VERBS)), distractorPool: NOUNS.concat(VERBS), steps: ["spell","choose"], numChoices: 3, hideWordOnChoose: false };
-  }
-  return { words: VERBS.concat(LONG_NOUNS_FOR_HARD), distractorPool: NOUNS.concat(VERBS), steps: ["spell","choose"], numChoices: 4, hideWordOnChoose: true };
-}
-
-const STEP_LABELS = { spell:"🔤 Spell", choose:"👀 Read" };
-
-/* ---------- Game flow ---------- */
-function startMode(mode){
-  clearPendingTimers();
-  roundToken++;
-  currentMode = mode;
-  roundIndex = 0;
-  score = 0;
-  const cfg = getModeConfig(mode);
-  wordQueue = shuffle(cfg.words);
-  document.getElementById("titleScreen").classList.add("hidden");
-  document.getElementById("finishScreen").classList.add("hidden");
-  document.getElementById("gameScreen").classList.remove("hidden");
-  buildProgressDots();
-  nextRound();
-}
-
-function buildProgressDots(){
-  const row = document.getElementById("progressRow");
-  row.innerHTML = "";
-  for(let i=0;i<roundsTotal;i++){
-    const d = document.createElement("div");
-    d.className = "dot"; d.id = "dot"+i;
-    row.appendChild(d);
-  }
-}
-function updateProgressDots(){
-  for(let i=0;i<roundsTotal;i++){
-    const d = document.getElementById("dot"+i);
-    if(d) d.classList.toggle("filled", i < roundIndex);
-  }
-}
-
-function nextRound(){
-  if(roundIndex >= roundsTotal){ finishGame(); return; }
-  roundToken++;
-  const myToken = roundToken;
-  const cfg = getModeConfig(currentMode);
-
-  if(wordQueue.length === 0) wordQueue = shuffle(cfg.words);
-  const target = wordQueue.pop();
-
-  // build this round's complete state atomically
-  const round = { target, cfg, myToken, steps: cfg.steps.slice(), stepIdx: 0 };
-  stepList = round.steps;
-  stepIndex = 0;
-  spellTarget = target;
-  spellProgress = "";
-  currentRoundTarget = target;
-
-  document.getElementById("scorePill").textContent = "⭐ " + score + " / " + roundsTotal;
-  updateProgressDots();
-  document.getElementById("emojiDisplay").textContent = EMOJI[target] || "❓";
-
-  renderStepIndicator();
-  runStep(round);
-
-  safeTimeout(() => { if(myToken === roundToken) speak(target); }, 350);
-}
-
-function renderStepIndicator(){
-  const wrap = document.getElementById("stepIndicator");
-  wrap.innerHTML = "";
-  if(stepList.length <= 1) return; // no need to show a single-step indicator
-  stepList.forEach((s, i) => {
-    const pill = document.createElement("div");
-    pill.className = "step-pill" + (i === stepIndex ? " active" : i < stepIndex ? " done" : "");
-    pill.textContent = STEP_LABELS[s];
-    pill.id = "stepPill"+i;
-    wrap.appendChild(pill);
+  if(!soundOn) return;
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const now = ctx.currentTime;
+  const notes = [523.25, 659.25, 784.0]; // C5, E5, G5
+  notes.forEach((freq, i) => {
+    playTone(freq, now + i * 0.09, 0.35, ctx, 'sine', 0.22);
   });
 }
 
-function showOnlyStep(stepName){
-  document.getElementById("spellStep").classList.toggle("hidden", stepName !== "spell");
-  document.getElementById("chooseStep").classList.toggle("hidden", stepName !== "choose");
+/* Clear but gentle descending "blip-blip" for an incorrect answer.
+   Distinct enough from the correct chime to be unmistakable,
+   but still soft (no harsh buzzer/error tone). */
+function playIncorrectSound(){
+  if(!soundOn) return;
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const now = ctx.currentTime;
+  playTone(392, now, 0.22, ctx, 'triangle', 0.20);
+  playTone(294, now + 0.18, 0.28, ctx, 'triangle', 0.20);
 }
 
-function runStep(round){
-  const stepName = stepList[stepIndex];
-  renderStepIndicator();
-  showOnlyStep(stepName);
-  if(stepName === "spell") setupSpellStep(round);
-  else if(stepName === "choose") setupChooseStep(round);
-}
-
-function advanceStep(round){
-  stepIndex++;
-  if(stepIndex >= stepList.length){
-    roundIndex++;
-    score++; // each fully-completed word earns a star
-    document.getElementById("scorePill").textContent = "⭐ " + score + " / " + roundsTotal;
-    playLevelUpFanfare();
-    launchConfetti();
-    safeTimeout(() => { if(round.myToken === roundToken) nextRound(); }, 1100);
-  } else {
-    runStep(round);
-  }
-}
-
-/* ---------- SPELL step: tap letter tiles in order ---------- */
-function setupSpellStep(round){
-  const target = round.target;
-  document.getElementById("instructionText").textContent = "Tap the letters to spell the word";
-  spellTarget = target;
-  spellProgress = "";
-
-  const blanksRow = document.getElementById("blanksRow");
-  blanksRow.innerHTML = "";
-  target.split("").forEach((ch, i) => {
-    const slot = document.createElement("div");
-    slot.className = "blank-slot";
-    slot.id = "blankSlot"+i;
-    blanksRow.appendChild(slot);
-  });
-
-  const tilesRow = document.getElementById("tilesRow");
-  tilesRow.innerHTML = "";
-  const letters = shuffle(target.split(""));
-  letters.forEach((ch, i) => {
-    const tile = document.createElement("button");
-    tile.className = "letter-tile";
-    tile.textContent = ch.toUpperCase();
-    tile.id = "tile"+i;
-    tile.addEventListener("click", () => handleLetterTap(ch, tile, round));
-    tilesRow.appendChild(tile);
+/* Triumphant little fanfare for finishing a whole story */
+function playFanfareSound(){
+  if(!soundOn) return;
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const now = ctx.currentTime;
+  const melody = [523.25, 523.25, 659.25, 784.0, 1046.5]; // C5 C5 E5 G5 C6
+  const timings = [0, 0.16, 0.32, 0.48, 0.66];
+  melody.forEach((freq, i) => {
+    playTone(freq, now + timings[i], 0.4, ctx, 'triangle', 0.24);
   });
 }
 
-function handleLetterTap(letter, tileEl, round){
-  if(round.myToken !== roundToken) return;
-  const nextIndex = spellProgress.length;
-  const expected = spellTarget[nextIndex];
-  if(letter === expected){
-    spellProgress += letter;
-    const slot = document.getElementById("blankSlot"+nextIndex);
-    if(slot){ slot.textContent = letter.toUpperCase(); slot.classList.add("filled"); }
-    tileEl.classList.add("used");
-    playTickSound();
-    vibrate(20);
-    if(spellProgress.length === spellTarget.length){
-      playCorrectSound();
-      speak(spellTarget);
-      safeTimeout(() => { if(round.myToken === roundToken) advanceStep(round); }, 900);
+/* ---------------- SPEECH SYNTH ---------------- */
+function speak(text){
+  try{
+    if(!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.92;
+    utter.pitch = 1.05;
+    window.speechSynthesis.speak(utter);
+  }catch(err){ /* fail silently */ }
+}
+
+// Used for automatic narration (on question load / story completion).
+// Manual taps on the listen button always call speak() directly instead,
+// so a player can still hear a sentence read even with sound switched off.
+function speakAuto(text){
+  if(!soundOn) return;
+  speak(text);
+}
+
+function stripHtml(html){
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
+/* ---------------- INIT ---------------- */
+renderHome();
+showScreen(screenHome);
+
+// iOS/iPadOS requires AudioContext + SpeechSynthesis to be touched
+// inside a real user-gesture before they'll produce sound. This
+// primes both on the very first tap anywhere in the app.
+function unlockAudioOnce(){
+  const ctx = getAudioCtx();
+  if(ctx && ctx.state === 'suspended'){ ctx.resume(); }
+  try{
+    if('speechSynthesis' in window){
+      // a near-silent warm-up utterance unlocks speech on iOS
+      const warm = new SpeechSynthesisUtterance(' ');
+      warm.volume = 0;
+      window.speechSynthesis.speak(warm);
     }
-  } else {
-    playWrongSound();
-    vibrate([20,20,20]);
-    tileEl.classList.add("shake");
-    safeTimeout(() => tileEl.classList.remove("shake"), 400);
-  }
+  }catch(err){ /* ignore */ }
+  document.removeEventListener('touchend', unlockAudioOnce);
+  document.removeEventListener('click', unlockAudioOnce);
 }
+document.addEventListener('touchend', unlockAudioOnce, { once:true, passive:true });
+document.addEventListener('click', unlockAudioOnce, { once:true });
 
-/* ---------- CHOOSE step: multiple-choice word recognition ---------- */
-function setupChooseStep(round){
-  const target = round.target;
-  const cfg = round.cfg;
-  document.getElementById("instructionText").textContent = cfg.hideWordOnChoose
-    ? "Listen, then tap the word you hear"
-    : "Tap the matching word";
-
-  const distractors = pickN(cfg.distractorPool, cfg.numChoices - 1, target);
-  const choices = shuffle([target, ...distractors]);
-
-  const wrap = document.getElementById("choicesWrap");
-  wrap.className = "choices " + (cfg.numChoices === 2 ? "cols2" : cfg.numChoices === 3 ? "cols3" : "cols4");
-  wrap.innerHTML = "";
-  let answered = false;
-  choices.forEach((word, i) => {
-    const btn = document.createElement("button");
-    btn.className = "choice-btn c" + i;
-    btn.textContent = word;
-    btn.addEventListener("click", () => {
-      if(round.myToken !== roundToken || answered) return;
-      answered = true;
-      const allBtns = wrap.querySelectorAll(".choice-btn");
-      allBtns.forEach(b => b.style.pointerEvents = "none");
-      if(word === target){
-        playCorrectSound();
-        vibrate(40);
-        btn.classList.add("correct-flash");
-        allBtns.forEach(b => { if(b !== btn) b.classList.add("dim"); });
-        speak(word + "! You red it!", 0.95); // "red" spelling is intentional so speech synthesis says the past-tense "read" (rhymes with "red") instead of the present-tense "reed"
-        safeTimeout(() => { if(round.myToken === roundToken) advanceStep(round); }, 1000);
-      } else {
-        playWrongSound();
-        vibrate([30,30,30]);
-        btn.classList.add("wrong-flash");
-        btn.classList.add("dim");
-        speak("Try again");
-        safeTimeout(() => {
-          if(round.myToken !== roundToken) return;
-          btn.classList.remove("wrong-flash");
-          answered = false;
-          allBtns.forEach(b => { if(!b.classList.contains("dim")) b.style.pointerEvents = "auto"; });
-        }, 500);
-      }
-    });
-    wrap.appendChild(btn);
-  });
-
-  safeTimeout(() => { if(round.myToken === roundToken && cfg.hideWordOnChoose) speak(target); }, 200);
-}
-
-function launchConfetti(){
-  const colors = ["#4FB8E8","#FFB36B","#7FD8A0","#FFB3C6","#C9A8FF","#FFE07D"];
-  const container = document.getElementById("celebrate");
-  for(let i=0;i<22;i++){
-    const piece = document.createElement("div");
-    piece.className = "confetti-piece";
-    piece.style.left = Math.random()*100 + "vw";
-    piece.style.top = "-20px";
-    piece.style.background = colors[Math.floor(Math.random()*colors.length)];
-    piece.style.animationDuration = (1.4 + Math.random()*1.2) + "s";
-    piece.style.transform = "rotate(" + Math.floor(Math.random()*360) + "deg)";
-    container.appendChild(piece);
-    safeTimeout(() => piece.remove(), 2800);
-  }
-}
-
-function finishGame(){
-  document.getElementById("gameScreen").classList.add("hidden");
-  document.getElementById("finishScreen").classList.remove("hidden");
-  document.getElementById("finishStat").textContent = score + " / " + roundsTotal + " words!";
-  playLevelUpFanfare();
-  launchConfetti();
-  speak("Wonderful word building! You built " + score + " out of " + roundsTotal + " words!", 0.95);
-}
-
-function goHome(){
-  clearPendingTimers();
-  roundToken++;
-  window.speechSynthesis && window.speechSynthesis.cancel();
-  document.getElementById("gameScreen").classList.add("hidden");
-  document.getElementById("finishScreen").classList.add("hidden");
-  document.getElementById("titleScreen").classList.remove("hidden");
-}
-
-/* ---------- Event wiring ---------- */
-document.getElementById("modeEasy").addEventListener("click", () => startMode("easy"));
-document.getElementById("modeMedium").addEventListener("click", () => startMode("medium"));
-document.getElementById("modeHard").addEventListener("click", () => startMode("hard"));
-document.getElementById("homeBtn").addEventListener("click", goHome);
-document.getElementById("homeBtn2").addEventListener("click", goHome);
-document.getElementById("playAgainBtn").addEventListener("click", () => startMode(currentMode));
-document.getElementById("listenBtn").addEventListener("click", () => speak(currentRoundTarget));
-document.getElementById("muteBtn").addEventListener("click", toggleSfxMute);
-
-// unlock audio context + speech on first interaction (iOS/Safari requirement)
-document.body.addEventListener("click", function unlock(){
-  getCtx();
-  if('speechSynthesis' in window){
-    const warm = new SpeechSynthesisUtterance(" ");
-    warm.volume = 0;
-    window.speechSynthesis.speak(warm);
-  }
-  document.body.removeEventListener("click", unlock);
-}, { once:true });
-
-// prevent double-tap zoom on iOS
-document.addEventListener("dblclick", e => e.preventDefault());
-let lastTouchEnd = 0;
-document.addEventListener("touchend", e => {
-  const now = Date.now();
-  if(now - lastTouchEnd <= 300) e.preventDefault();
-  lastTouchEnd = now;
-}, { passive:false });
 </script>
 </body>
 </html>
