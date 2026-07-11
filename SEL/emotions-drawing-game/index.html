@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Emotions Drawing Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ===================== RESET & ROOT ===================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --font-body: 'Inter', sans-serif;
+      --font-display: 'Poppins', sans-serif;
+
+      /* Palette — warm playful but grounded */
+      --ink:        #1a1a2e;
+      --ink-soft:   #4b5263;
+      --surface:    #ffffff;
+      --canvas-bg:  #f0f2f8;
+      --panel-bg:   #f7f8fc;
+      --border:     #e2e5f0;
+      --primary:    #4f46e5;
+      --primary-h:  #4338ca;
+      --primary-lt: #eef2ff;
+      --accent:     #f59e0b;
+      --correct:    #10b981;
+      --danger:     #ef4444;
+
+      --radius-xl:  22px;
+      --radius-lg:  14px;
+      --radius-md:  10px;
+      --radius-full: 9999px;
+      --shadow-card: 0 20px 40px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
+      --shadow-btn:  0 4px 12px rgba(79,70,229,0.25);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: var(--font-body);
+      background: linear-gradient(145deg, #dde3f8 0%, #c8d0ef 100%);
+      color: var(--ink);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* ===================== LAYOUT SHELL ===================== */
+    #shell {
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px;
+    }
+
+    #card {
+      background: var(--surface);
+      width: 100%; max-width: 960px;
+      height: 100%; max-height: 820px;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ===================== SCREENS ===================== */
+    .screen {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: space-between;
+      padding: 28px 28px 24px;
+      opacity: 0; pointer-events: none;
+      transform: translateY(6px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .screen.active {
+      opacity: 1; pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    /* ===================== TYPOGRAPHY ===================== */
+    .title {
+      font-family: var(--font-display);
+      font-weight: 800; font-size: clamp(1.6rem, 4vw, 2.4rem);
+      color: var(--primary); text-align: center; line-height: 1.15;
+    }
+    .subtitle {
+      font-size: clamp(0.85rem, 2vw, 1rem);
+      color: var(--ink-soft); text-align: center; margin-top: 4px;
+    }
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 0.8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--ink-soft); margin-bottom: 8px;
+    }
+
+    /* ===================== BUTTONS ===================== */
+    .btn {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+      background: var(--primary); color: #fff; border: none;
+      padding: 0 32px; height: 52px; border-radius: var(--radius-full);
+      cursor: pointer; transition: background 0.18s, transform 0.15s;
+      box-shadow: var(--shadow-btn); white-space: nowrap;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-width: 44px; min-height: 44px;
+    }
+    .btn:hover { background: var(--primary-h); transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+    .btn.btn-ghost {
+      background: var(--panel-bg); color: var(--ink);
+      box-shadow: none; border: 2px solid var(--border);
+    }
+    .btn.btn-ghost:hover { background: var(--border); }
+    .btn.btn-sm { height: 42px; padding: 0 20px; font-size: 0.875rem; }
+    .btn.btn-danger { background: var(--danger); box-shadow: 0 4px 12px rgba(239,68,68,0.25); }
+    .btn.btn-success { background: var(--correct); box-shadow: 0 4px 12px rgba(16,185,129,0.25); }
+
+    /* ===================== START SCREEN ===================== */
+    #screen-start .config-area {
+      flex: 1; width: 100%;
+      display: flex; flex-direction: column; gap: 14px;
+      overflow-y: auto; padding: 4px 2px; margin: 12px 0;
+    }
+
+    .config-box {
+      background: var(--panel-bg); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px 18px;
+    }
+
+    /* Emotion chips */
+    .chips-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .chip {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--radius-md); padding: 10px 12px;
+      cursor: pointer; transition: border-color 0.18s, background 0.18s;
+      font-weight: 600; font-size: 0.875rem;
+      min-height: 44px;
+    }
+    .chip input { accent-color: var(--primary); pointer-events: none; flex-shrink: 0; }
+    .chip.selected { border-color: var(--primary); background: var(--primary-lt); }
+    .chip.dim { opacity: 0.4; cursor: not-allowed; }
+    .chip-count { font-size: 0.78rem; color: var(--ink-soft); margin-top: 6px; text-align: right; }
+    .chip-count span { font-weight: 700; color: var(--primary); }
+
+    /* Mode toggle */
+    .mode-row { display: flex; gap: 10px; }
+    .mode-card {
+      flex: 1; background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--radius-md); padding: 12px 14px; cursor: pointer;
+      transition: border-color 0.18s, background 0.18s; min-height: 44px;
+    }
+    .mode-card.selected { border-color: var(--primary); background: var(--primary-lt); }
+    .mode-card strong { display: block; font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; }
+    .mode-card span { font-size: 0.78rem; color: var(--ink-soft); }
+
+    /* ===================== PRELOADER ===================== */
+    #screen-start { }
+
+    /* ===================== GAME SCREEN ===================== */
+    #screen-game {
+      padding: 16px 20px 14px;
+      gap: 10px;
+    }
+
+    /* Progress boxes row — matches typing game style */
+    .progress-row {
+      width: 100%; display: flex; justify-content: center; align-items: center;
+      background: var(--panel-bg); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 8px 12px;
+      gap: 6px; flex-wrap: wrap;
+    }
+    .progress-box {
+      width: 38px; height: 38px;
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display); font-weight: 800; font-size: 0.85rem;
+      color: var(--ink-soft);
+      transition: background 0.3s, border-color 0.3s, color 0.3s;
+      flex-shrink: 0;
+    }
+    .progress-box.completed {
+      background: #4b5563; border-color: #1f2937; color: #ffffff;
+    }
+    .progress-box.current {
+      border-color: var(--primary); color: var(--primary);
+      background: var(--primary-lt);
+    }
+
+    /* Game heading */
+    .game-heading {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: var(--primary); text-align: center;
+    }
+
+    /* Main workspace: reference + canvas side by side on wide, stacked on narrow */
+    .workspace {
+      flex: 1; width: 100%;
+      display: flex; gap: 12px;
+      min-height: 0;
+    }
+
+    /* Reference panel — square box, labels sit above it */
+    .ref-panel {
+      width: 200px; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 6px;
+    }
+    @media (max-width: 600px) {
+      .workspace { flex-direction: column; }
+      .ref-panel { width: 100%; flex-direction: column; align-items: center; }
+    }
+
+    .ref-label {
+      font-size: 0.85rem; font-weight: 700; color: var(--ink-soft);
+      text-align: center; width: 100%;
+    }
+    /* Big emotion name sits just above the ref box */
+    .ref-emotion-name {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(1.25rem, 2.8vw, 1.6rem);
+      color: var(--primary); text-align: center;
+      line-height: 1.1; width: 100%;
+    }
+    /* Square reference box */
+    .ref-box {
+      background: #fff; border: 2px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      width: 200px; height: 200px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; padding: 10px;
+    }
+    #ref-canvas {
+      width: 100%; height: 100%;
+      display: block;
+    }
+
+    /* Drawing panel */
+    .draw-panel {
+      flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .tool-group { display: flex; align-items: center; gap: 6px; }
+    .tool-btn {
+      width: 38px; height: 38px; border-radius: var(--radius-md);
+      border: 2px solid var(--border); background: var(--surface);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; transition: border-color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+    .tool-btn.active { border-color: var(--primary); background: var(--primary-lt); }
+    .tool-btn:hover { border-color: var(--primary); }
+
+    .color-swatch {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid transparent; cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+      flex-shrink: 0;
+    }
+    .color-swatch.active { border-color: var(--ink); transform: scale(1.2); }
+
+    .size-slider {
+      width: 80px; height: 4px; accent-color: var(--primary);
+      cursor: pointer; flex-shrink: 0;
+    }
+
+    /* Canvas wrapper */
+    .canvas-wrap {
+      flex: 1; position: relative;
+      border-radius: var(--radius-lg); overflow: hidden;
+      border: 2px solid var(--border);
+      background: #fff;
+      min-height: 0;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    #drawing-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      display: block;
+    }
+    /* Ghost guide canvas — sits below drawing canvas */
+    #guide-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      display: block;
+      pointer-events: none;
+      opacity: 0.18;
+    }
+
+    /* Bottom actions */
+    .action-row {
+      display: flex; gap: 8px; align-items: center; justify-content: flex-end; width: 100%;
+      flex-wrap: wrap;
+    }
+
+    /* ===================== RESULT SCREEN ===================== */
+    #screen-result {
+      justify-content: center; gap: 18px;
+    }
+    .result-content {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 14px; width: 100%;
+    }
+    .score-ring-wrap {
+      position: relative; width: 130px; height: 130px;
+    }
+    .score-ring-wrap svg { width: 130px; height: 130px; transform: rotate(-90deg); }
+    .score-ring-bg { fill: none; stroke: var(--border); stroke-width: 10; }
+    .score-ring-fill {
+      fill: none; stroke: var(--primary); stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 339.3; /* 2π×54 */
+      stroke-dashoffset: 339.3;
+      transition: stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1);
+    }
+    .score-ring-text {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .score-num {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: 2rem; color: var(--primary); line-height: 1;
+    }
+    .score-denom { font-size: 0.75rem; color: var(--ink-soft); font-weight: 600; }
+
+    .result-emotion-name {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 1.3rem; color: var(--ink);
+    }
+    .result-feedback {
+      font-size: 0.95rem; color: var(--ink-soft); text-align: center; max-width: 360px;
+    }
+
+    /* Side-by-side compare */
+    .compare-row {
+      display: flex; gap: 12px; width: 100%; max-width: 420px;
+    }
+    .compare-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .compare-thumb {
+      width: 100%; aspect-ratio: 1;
+      border-radius: var(--radius-md); overflow: hidden;
+      border: 2px solid var(--border);
+      background: var(--panel-bg);
+    }
+    .compare-thumb img, .compare-thumb canvas {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .compare-caption { font-size: 0.75rem; font-weight: 600; color: var(--ink-soft); }
+
+    .result-btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+    /* ===================== END SCREEN ===================== */
+    #screen-end {
+      justify-content: center; gap: 24px;
+    }
+    .end-trophy { font-size: 5rem; line-height: 1; }
+    .end-title {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      color: var(--correct);
+    }
+    .final-score-display {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 1.1rem; color: var(--ink-soft);
+    }
+    .final-score-display strong { color: var(--primary); font-size: 1.5rem; }
+
+    /* ===================== ANIMATIONS ===================== */
+    @keyframes pop-in { 0% { transform: scale(0.85); opacity:0; } 100% { transform: scale(1); opacity:1; } }
+    .pop-in { animation: pop-in 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+    @keyframes shake {
+      0%,100%{ transform:translateX(0); }
+      20%,60%{ transform:translateX(-7px); }
+      40%,80%{ transform:translateX(7px); }
+    }
+    .shake { animation: shake 0.4s ease; }
+  </style>
+</head>
+<body>
+<div id="shell">
+  <div id="card">
+
+    <!-- ========== START SCREEN ========== -->
+    <div id="screen-start" class="screen active">
+      <div style="text-align:center">
+        <h1 class="title">🎨 Emotions Drawing Game</h1>
+        <p class="subtitle">Draw the emotion — then see how close you got!</p>
+      </div>
+
+      <div class="config-area">
+        <!-- Emotion selector -->
+        <div class="config-box">
+          <p class="section-label">Emotions to include</p>
+          <div class="chips-grid" id="emotion-chips">
+            <label class="chip selected"><input type="checkbox" value="Happy" checked><span>😊 Happy</span></label>
+            <label class="chip selected"><input type="checkbox" value="Angry" checked><span>😠 Angry</span></label>
+            <label class="chip selected"><input type="checkbox" value="Sad" checked><span>😢 Sad</span></label>
+            <label class="chip selected"><input type="checkbox" value="Irritated" checked><span>😤 Irritated</span></label>
+            <label class="chip selected"><input type="checkbox" value="Proud" checked><span>🏅 Proud</span></label>
+            <label class="chip selected"><input type="checkbox" value="Embarrassed" checked><span>😳 Embarrassed</span></label>
+            <label class="chip"><input type="checkbox" value="Scared"><span>😨 Scared</span></label>
+            <label class="chip"><input type="checkbox" value="Excited"><span>🤩 Excited</span></label>
+            <label class="chip"><input type="checkbox" value="Tired"><span>😴 Tired</span></label>
+            <label class="chip"><input type="checkbox" value="Sick"><span>🤒 Sick</span></label>
+            <label class="chip"><input type="checkbox" value="Calm"><span>😌 Calm</span></label>
+          </div>
+          <p class="chip-count">Selected: <span id="chip-count-num">6</span> emotions</p>
+        </div>
+
+        <!-- Mode selector -->
+        <div class="config-box">
+          <p class="section-label">Scaffolding Mode</p>
+          <div class="mode-row">
+            <label class="mode-card selected" data-mode="Guided">
+              <input type="radio" name="mode" value="Guided" checked style="display:none">
+              <strong>Guided</strong>
+              <span>Faint stencil shown on canvas to trace</span>
+            </label>
+            <label class="mode-card" data-mode="Non-Guided">
+              <input type="radio" name="mode" value="Non-Guided" style="display:none">
+              <strong>Non-Guided</strong>
+              <span>Blank canvas — draw from memory</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn" id="btn-start">Start Game ✏️</button>
+    </div>
+
+    <!-- ========== GAME SCREEN ========== -->
+    <div id="screen-game" class="screen">
+
+      <!-- Progress boxes -->
+      <div class="progress-row" id="progress-boxes"></div>
+
+      <p class="game-heading" id="game-heading">Draw how a <strong>Happy</strong> face looks!</p>
+
+      <div class="workspace">
+        <!-- Reference panel -->
+        <div class="ref-panel">
+          <p class="ref-label">How to draw it 👇</p>
+          <p class="ref-emotion-name" id="ref-emotion-name">Happy</p>
+          <div class="ref-box" id="ref-box">
+            <canvas id="ref-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Drawing panel -->
+        <div class="draw-panel">
+          <!-- Toolbar -->
+          <div class="toolbar">
+            <div class="tool-group">
+              <!-- Draw tool -->
+              <button class="tool-btn active" id="tool-pen" title="Pen">✏️</button>
+              <!-- Eraser -->
+              <button class="tool-btn" id="tool-eraser" title="Eraser">🧹</button>
+              <!-- Clear -->
+              <button class="tool-btn" id="tool-clear" title="Clear canvas">🗑️</button>
+            </div>
+            <div class="tool-group" id="color-palette">
+              <!-- swatches built by JS -->
+            </div>
+            <div class="tool-group">
+              <input type="range" class="size-slider" id="size-slider" min="2" max="24" value="5" title="Brush size">
+            </div>
+          </div>
+
+          <!-- Canvas area -->
+          <div class="canvas-wrap" id="canvas-wrap">
+            <canvas id="guide-canvas"></canvas>
+            <canvas id="drawing-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-row">
+        <button class="btn btn-ghost btn-sm" id="btn-skip">Skip</button>
+        <button class="btn btn-sm" id="btn-submit-draw">Submit Drawing ✓</button>
+      </div>
+    </div>
+
+    <!-- ========== RESULT SCREEN ========== -->
+    <div id="screen-result" class="screen">
+      <div class="result-content">
+        <p class="result-emotion-name" id="result-emotion-name">Happy</p>
+
+        <!-- Score ring -->
+        <div class="score-ring-wrap pop-in">
+          <svg viewBox="0 0 120 120">
+            <circle class="score-ring-bg" cx="60" cy="60" r="54"/>
+            <circle class="score-ring-fill" id="ring-fill" cx="60" cy="60" r="54"/>
+          </svg>
+          <div class="score-ring-text">
+            <span class="score-num" id="ring-score">0</span>
+            <span class="score-denom">/ 10</span>
+          </div>
+        </div>
+
+        <p class="result-feedback" id="result-feedback">Great effort!</p>
+
+        <!-- Compare thumbnails -->
+        <div class="compare-row">
+          <div class="compare-item">
+            <div class="compare-thumb"><canvas id="result-ref-thumb"></canvas></div>
+            <p class="compare-caption">Target stencil</p>
+          </div>
+          <div class="compare-item">
+            <div class="compare-thumb"><canvas id="result-drawing-thumb"></canvas></div>
+            <p class="compare-caption">Your drawing</p>
+          </div>
+        </div>
+
+        <div class="result-btn-row">
+          <button class="btn btn-ghost btn-sm" id="btn-next-from-result">Next emotion →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== END SCREEN ========== -->
+    <div id="screen-end" class="screen">
+      <div class="end-trophy">🏆</div>
+      <h2 class="end-title">Finished!</h2>
+      <p class="final-score-display">Total score: <strong id="final-score-num">0</strong> pts</p>
+      <p class="subtitle" id="final-feedback">Amazing drawing skills!</p>
+      <button class="btn" id="btn-play-again">Play Again 🎨</button>
+    </div>
+
+  </div><!-- #card -->
+</div><!-- #shell -->
+
+<script>
+/* ==========================================================
+   ASSETS — same Pexels images from the typing game
+   ========================================================== */
+const ASSETS = {
+  Happy: [
+    "https://images.pexels.com/photos/5275849/pexels-photo-5275849.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/10787961/pexels-photo-10787961.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/4680787/pexels-photo-4680787.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Angry: [
+    "https://images.pexels.com/photos/9443587/pexels-photo-9443587.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/8727513/pexels-photo-8727513.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/3812739/pexels-photo-3812739.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Sad: [
+    "https://images.pexels.com/photos/7743433/pexels-photo-7743433.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/14105480/pexels-photo-14105480.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/4680623/pexels-photo-4680623.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Irritated: [
+    "https://images.pexels.com/photos/8638016/pexels-photo-8638016.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/6275023/pexels-photo-6275023.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Proud: [
+    "https://images.pexels.com/photos/6250866/pexels-photo-6250866.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/6250898/pexels-photo-6250898.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/4720407/pexels-photo-4720407.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Embarrassed: [
+    "https://images.pexels.com/photos/3771679/pexels-photo-3771679.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/8280263/pexels-photo-8280263.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/6274992/pexels-photo-6274992.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Scared: [
+    "https://images.pexels.com/photos/3808008/pexels-photo-3808008.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/3807571/pexels-photo-3807571.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/6953490/pexels-photo-6953490.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Excited: [
+    "https://images.pexels.com/photos/3807517/pexels-photo-3807517.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/5063569/pexels-photo-5063569.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/7752788/pexels-photo-7752788.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Tired: [
+    "https://images.pexels.com/photos/3807628/pexels-photo-3807628.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/8386434/pexels-photo-8386434.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/3807533/pexels-photo-3807533.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Sick: [
+    "https://images.pexels.com/photos/3807629/pexels-photo-3807629.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/3807631/pexels-photo-3807631.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+  Calm: [
+    "https://images.pexels.com/photos/3807635/pexels-photo-3807635.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/3807534/pexels-photo-3807534.jpeg?auto=compress&cs=tinysrgb&w=400",
+    "https://images.pexels.com/photos/3807517/pexels-photo-3807517.jpeg?auto=compress&cs=tinysrgb&w=400",
+  ],
+};
+
+/* ==========================================================
+   GUIDED STENCIL PATHS — simple SVG face outlines per emotion
+   Drawn on the guide canvas at ~180×180 logical units
+   ========================================================== */
+const STENCILS = {
+  // Each stencil is a function(ctx, w, h) that draws the guide
+  Happy(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    // Head circle
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Eyes
+    ctx.beginPath(); ctx.arc(68*s,70*s,7*s,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(112*s,70*s,7*s,0,Math.PI*2); ctx.stroke();
+    // Smile
+    ctx.beginPath(); ctx.arc(90*s,85*s,35*s, 0.3, Math.PI-0.3); ctx.stroke();
+    // Eyebrows (up/relaxed)
+    ctx.beginPath(); ctx.moveTo(57*s,56*s); ctx.quadraticCurveTo(68*s,50*s,79*s,56*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(101*s,56*s); ctx.quadraticCurveTo(112*s,50*s,123*s,56*s); ctx.stroke();
+  },
+  Angry(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Eyes
+    ctx.beginPath(); ctx.arc(68*s,72*s,7*s,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(112*s,72*s,7*s,0,Math.PI*2); ctx.stroke();
+    // Angry frown
+    ctx.beginPath(); ctx.arc(90*s,105*s,28*s, Math.PI+0.3, -0.3); ctx.stroke();
+    // Angry eyebrows (angled inward)
+    ctx.beginPath(); ctx.moveTo(55*s,60*s); ctx.lineTo(80*s,68*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(125*s,60*s); ctx.lineTo(100*s,68*s); ctx.stroke();
+  },
+  Sad(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Eyes with tears
+    ctx.beginPath(); ctx.arc(68*s,72*s,7*s,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(112*s,72*s,7*s,0,Math.PI*2); ctx.stroke();
+    // Tear drops
+    ctx.beginPath(); ctx.moveTo(68*s,79*s); ctx.lineTo(66*s,95*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(112*s,79*s); ctx.lineTo(110*s,95*s); ctx.stroke();
+    // Sad frown (upside down arc)
+    ctx.beginPath(); ctx.arc(90*s,115*s,28*s, Math.PI+0.3, -0.3); ctx.stroke();
+    // Sad eyebrows (drooping outward)
+    ctx.beginPath(); ctx.moveTo(57*s,58*s); ctx.quadraticCurveTo(68*s,64*s,79*s,58*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(101*s,58*s); ctx.quadraticCurveTo(112*s,64*s,123*s,58*s); ctx.stroke();
+  },
+  Irritated(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Left eye — squinted shut (horizontal line with top lid arc)
+    ctx.beginPath(); ctx.arc(68*s,73*s, 8*s, Math.PI, 0); ctx.stroke(); // top lid curve
+    ctx.beginPath(); ctx.moveTo(60*s,73*s); ctx.lineTo(76*s,73*s); ctx.stroke(); // flat bottom = squint
+    // Right eye — fully open circle (one eye open, one squinted = irritated)
+    ctx.beginPath(); ctx.arc(112*s,71*s, 8*s, 0, Math.PI*2); ctx.stroke();
+    // Frown
+    ctx.beginPath(); ctx.arc(90*s,118*s,24*s, Math.PI+0.35, -0.35); ctx.stroke();
+    // Left eyebrow — angled sharply down toward nose (furrow over squinted eye)
+    ctx.beginPath(); ctx.moveTo(52*s,58*s); ctx.lineTo(78*s,67*s); ctx.stroke();
+    // Right eyebrow — also angled inward but less extreme (over open eye)
+    ctx.beginPath(); ctx.moveTo(128*s,58*s); ctx.lineTo(104*s,64*s); ctx.stroke();
+    // Wrinkle pinch between brows
+    ctx.beginPath(); ctx.moveTo(87*s,63*s); ctx.lineTo(93*s,63*s); ctx.stroke();
+  },
+  Proud(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Eyes — slightly closed/confident
+    ctx.beginPath(); ctx.arc(68*s,70*s,7*s,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(112*s,70*s,7*s,0,Math.PI*2); ctx.stroke();
+    // Confident smirk (slight one-sided smile)
+    ctx.beginPath(); ctx.moveTo(70*s,100*s); ctx.quadraticCurveTo(90*s,108*s,115*s,98*s); ctx.stroke();
+    // Raised, arched eyebrows (one side slightly higher)
+    ctx.beginPath(); ctx.moveTo(57*s,52*s); ctx.quadraticCurveTo(68*s,46*s,79*s,52*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(101*s,50*s); ctx.quadraticCurveTo(112*s,44*s,123*s,50*s); ctx.stroke();
+    // Chin-up head tilt — neck slightly tilted
+    ctx.beginPath(); ctx.moveTo(82*s,147*s); ctx.lineTo(78*s,165*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(98*s,147*s); ctx.lineTo(102*s,165*s); ctx.stroke();
+  },
+  Embarrassed(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Eyes looking down/sideways
+    ctx.beginPath(); ctx.arc(68*s,72*s,7*s,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(112*s,72*s,7*s,0,Math.PI*2); ctx.stroke();
+    // Wavy awkward smile
+    ctx.beginPath();
+    ctx.moveTo(68*s,104*s);
+    ctx.bezierCurveTo(78*s,98*s, 82*s,112*s, 90*s,106*s);
+    ctx.bezierCurveTo(98*s,100*s, 102*s,112*s, 112*s,104*s);
+    ctx.stroke();
+    // Rosy cheeks (circles)
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#f87171';
+    ctx.beginPath(); ctx.arc(52*s,88*s,14*s,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(128*s,88*s,14*s,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    // Slightly raised eyebrows
+    ctx.beginPath(); ctx.moveTo(57*s,58*s); ctx.quadraticCurveTo(68*s,53*s,79*s,58*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(101*s,58*s); ctx.quadraticCurveTo(112*s,53*s,123*s,58*s); ctx.stroke();
+  },
+  Scared(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Wide open circular eyes
+    ctx.beginPath(); ctx.arc(66*s,70*s,10*s,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(114*s,70*s,10*s,0,Math.PI*2); ctx.stroke();
+    // Open mouth (wide tall oval — gasp/scream)
+    ctx.beginPath(); ctx.ellipse(90*s,108*s, 16*s, 20*s, 0, 0, Math.PI*2); ctx.stroke();
+    // Eyebrows raised high and arched in alarm
+    ctx.beginPath(); ctx.moveTo(53*s,50*s); ctx.quadraticCurveTo(66*s,42*s,79*s,50*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(101*s,50*s); ctx.quadraticCurveTo(114*s,42*s,127*s,50*s); ctx.stroke();
+    // Exclamation mark — right side
+    ctx.lineWidth = 3.5 * s;
+    ctx.beginPath(); ctx.moveTo(164*s,38*s); ctx.lineTo(164*s,66*s); ctx.stroke();
+    ctx.lineWidth = 3 * s;
+    ctx.fillStyle = '#4f46e5';
+    ctx.beginPath(); ctx.arc(164*s,75*s, 3.5*s, 0, Math.PI*2); ctx.fill();
+
+    // === Arms only — two curved lines representing hands raised to cheeks ===
+    // Left arm — curves up from bottom-left to left cheek
+    ctx.beginPath();
+    ctx.moveTo(5*s, 155*s);
+    ctx.bezierCurveTo(0*s,115*s, 10*s,95*s, 26*s,85*s);
+    ctx.stroke();
+    // Right arm — mirror, curves up from bottom-right to right cheek
+    ctx.beginPath();
+    ctx.moveTo(175*s, 155*s);
+    ctx.bezierCurveTo(180*s,115*s, 170*s,95*s, 154*s,85*s);
+    ctx.stroke();
+  },
+  Excited(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Wide sparkling eyes
+    ctx.beginPath(); ctx.arc(66*s,68*s,9*s,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(114*s,68*s,9*s,0,Math.PI*2); ctx.stroke();
+    // Shine dots inside eyes
+    ctx.fillStyle = '#4f46e5';
+    ctx.beginPath(); ctx.arc(70*s,64*s,2*s,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(118*s,64*s,2*s,0,Math.PI*2); ctx.fill();
+    // :D mouth — flat horizontal top line + big rounded bottom arc (rotated D shape)
+    const mLeft = 64*s, mRight = 116*s, mTop = 96*s;
+    ctx.beginPath(); ctx.moveTo(mLeft, mTop); ctx.lineTo(mRight, mTop); ctx.stroke(); // flat top
+    ctx.beginPath(); ctx.arc(90*s, mTop, 26*s, 0, Math.PI); ctx.stroke();             // wide bottom arc
+    // Raised energetic eyebrows
+    ctx.beginPath(); ctx.moveTo(54*s,50*s); ctx.quadraticCurveTo(66*s,43*s,78*s,50*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(102*s,50*s); ctx.quadraticCurveTo(114*s,43*s,126*s,50*s); ctx.stroke();
+    // 4-point stars around the head
+    function star4(cx, cy, r) {
+      const inner = r * 0.4;
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * Math.PI / 4) - Math.PI / 2;
+        const rad = i % 2 === 0 ? r : inner;
+        const px = cx*s + rad*s * Math.cos(angle);
+        const py = cy*s + rad*s * Math.sin(angle);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.stroke();
+    }
+    star4(18, 32, 8);
+    star4(162, 24, 7);
+    star4(170, 52, 5);
+  },
+  Tired(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,88*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Half-closed droopy eyes (top arc = heavy eyelid drooping down)
+    ctx.beginPath(); ctx.arc(68*s,74*s, 9*s, Math.PI, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(59*s,74*s); ctx.lineTo(77*s,74*s); ctx.stroke();
+    ctx.beginPath(); ctx.arc(112*s,74*s, 9*s, Math.PI, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(103*s,74*s); ctx.lineTo(121*s,74*s); ctx.stroke();
+    // Slight flat/neutral mouth
+    ctx.beginPath(); ctx.moveTo(74*s,108*s); ctx.lineTo(106*s,108*s); ctx.stroke();
+    // Drooping eyebrows
+    ctx.beginPath(); ctx.moveTo(57*s,62*s); ctx.quadraticCurveTo(68*s,66*s,79*s,62*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(101*s,62*s); ctx.quadraticCurveTo(112*s,66*s,123*s,62*s); ctx.stroke();
+    // Large ZZZs — biggest closest, stepping up in a diagonal cascade
+    ctx.fillStyle = '#4f46e5';
+    ctx.font = `bold ${Math.round(30*s)}px sans-serif`;
+    ctx.fillText('Z', 95*s, 42*s);   // large Z closest to head
+    ctx.font = `bold ${Math.round(22*s)}px sans-serif`;
+    ctx.fillText('Z', 118*s, 24*s);  // medium Z
+    ctx.font = `bold ${Math.round(16*s)}px sans-serif`;
+    ctx.fillText('Z', 137*s, 10*s);  // small Z furthest away
+  },
+  Sick(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Closed eyes — gentle downward arcs (eyes shut, unwell)
+    ctx.beginPath(); ctx.arc(68*s,70*s, 9*s, 0, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(112*s,70*s, 9*s, 0, Math.PI); ctx.stroke();
+    // Complete closed mouth — a full gentle drooping arc (lips together)
+    ctx.beginPath();
+    ctx.moveTo(68*s,104*s);
+    ctx.quadraticCurveTo(90*s,114*s, 112*s,104*s);
+    ctx.stroke();
+    // Slightly raised top lip to close the mouth
+    ctx.beginPath();
+    ctx.moveTo(68*s,104*s);
+    ctx.quadraticCurveTo(90*s,100*s, 112*s,104*s);
+    ctx.stroke();
+    // Thermometer — separate from mouth, tucked into right corner of lips
+    // Small dot at mouth corner to show it's held between lips
+    ctx.beginPath(); ctx.arc(112*s,104*s, 2.5*s, 0, Math.PI*2); ctx.fill();
+    // Stem angling outward-right from mouth corner
+    ctx.beginPath(); ctx.moveTo(114*s,103*s); ctx.lineTo(145*s,90*s); ctx.stroke();
+    // Bulb at outer tip
+    ctx.beginPath(); ctx.arc(148*s,88*s, 5.5*s, 0, Math.PI*2); ctx.stroke();
+    // Mercury fill inside bulb
+    ctx.globalAlpha = 0.5; ctx.fillStyle = '#ef4444';
+    ctx.beginPath(); ctx.arc(148*s,88*s, 3.5*s, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = '#4f46e5';
+    // Pale green cheeks (unwell tint)
+    ctx.globalAlpha = 0.18; ctx.fillStyle = '#86efac';
+    ctx.beginPath(); ctx.arc(52*s,90*s,16*s,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(128*s,90*s,16*s,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    // Slightly furrowed unwell brows
+    ctx.strokeStyle = '#4f46e5';
+    ctx.beginPath(); ctx.moveTo(57*s,58*s); ctx.quadraticCurveTo(68*s,62*s,79*s,58*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(101*s,58*s); ctx.quadraticCurveTo(112*s,62*s,123*s,58*s); ctx.stroke();
+  },
+  Calm(ctx, w, h) {
+    const s = w / 180;
+    ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(90*s,85*s,62*s,0,Math.PI*2); ctx.stroke();
+    // Eyes slanting downward toward nose — outer corners higher, inner lower
+    // Left eye: starts high on outside, curves down to the inner corner
+    ctx.beginPath();
+    ctx.moveTo(57*s,66*s);                          // outer-left (higher)
+    ctx.quadraticCurveTo(68*s,75*s, 80*s,72*s);    // sweeps down toward nose
+    ctx.stroke();
+    // Right eye: mirror — inner corner lower, curves up to outer
+    ctx.beginPath();
+    ctx.moveTo(100*s,72*s);                          // inner-right (lower)
+    ctx.quadraticCurveTo(112*s,75*s, 123*s,66*s);  // sweeps up to outer
+    ctx.stroke();
+    // Gentle small smile
+    ctx.beginPath(); ctx.arc(90*s,93*s,22*s, 0.2, Math.PI-0.2); ctx.stroke();
+    // Relaxed eyebrows — very slightly drooped at outer ends
+    ctx.beginPath(); ctx.moveTo(57*s,57*s); ctx.quadraticCurveTo(68*s,55*s,79*s,57*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(101*s,57*s); ctx.quadraticCurveTo(112*s,55*s,123*s,57*s); ctx.stroke();
+    // Small floating dots around head (peaceful aura)
+    ctx.fillStyle = '#4f46e5';
+    ctx.globalAlpha = 0.5;
+    const dots = [[28,50],[22,80],[28,110],[152,50],[158,80],[152,110]];
+    dots.forEach(([dx,dy]) => {
+      ctx.beginPath(); ctx.arc(dx*s, dy*s, 3*s, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+};
+
+/* ==========================================================
+   FEEDBACK MESSAGES by score band (out of 10)
+   ========================================================== */
+function getFeedback(score) {
+  if (score >= 9) return "Amazing! That's a perfect emotion drawing! 🌟";
+  if (score >= 7) return "Great job! The emotion really shows! 😊";
+  if (score >= 5) return "Good effort! Keep practising those features!";
+  if (score >= 3) return "Nice try! Look at the guide and try again.";
+  return "Keep going — every stroke is practice! 💪";
+}
+function getEndFeedback(avg) {
+  if (avg >= 7) return "Exceptional drawing skills! 🏆";
+  if (avg >= 5) return "Solid work — you're getting the hang of emotions!";
+  return "Keep drawing — you'll get there with practice!";
+}
+
+/* ==========================================================
+   COLOUR PALETTE for toolbar
+   ========================================================== */
+const PALETTE = ['#1a1a2e','#ef4444','#3b82f6','#10b981','#f59e0b','#a855f7','#ffffff'];
+
+/* ==========================================================
+   STATE
+   ========================================================== */
+let selectedEmotions = ['Happy','Angry','Sad','Irritated','Proud','Embarrassed'];
+let gameMode = 'Guided';
+let deck = [];      // array of emotion strings, shuffled
+let deckIndex = 0;
+let scores = [];
+let activeColor = '#1a1a2e';
+let brushSize = 5;
+let isErasing = false;
+let isDrawing = false;
+let lastX = 0, lastY = 0;
+
+// No min/max constraints — students can pick any number of emotions
+
+/* ==========================================================
+   DOM REFS
+   ========================================================== */
+const $ = id => document.getElementById(id);
+const screens = {
+  start:     $('screen-start'),
+  game:      $('screen-game'),
+  result:    $('screen-result'),
+  end:       $('screen-end'),
+};
+const drawingCanvas = $('drawing-canvas');
+const guideCanvas   = $('guide-canvas');
+const ctx           = drawingCanvas.getContext('2d');
+const gCtx          = guideCanvas.getContext('2d');
+const canvasWrap    = $('canvas-wrap');
+
+/* ==========================================================
+   SHOW SCREEN
+   ========================================================== */
+function showScreen(key) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[key].classList.add('active');
+}
+
+/* ==========================================================
+   INIT — no image preloading needed (reference uses canvas stencils,
+   not photos), so show start screen immediately on load.
+   ========================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  showScreen('start');
+});
+
+/* ==========================================================
+   BUILD COLOUR SWATCHES
+   ========================================================== */
+(function buildPalette() {
+  const container = $('color-palette');
+  PALETTE.forEach(hex => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (hex === activeColor ? ' active' : '');
+    sw.style.background = hex;
+    if (hex === '#ffffff') sw.style.border = '3px solid #d1d5db';
+    sw.addEventListener('click', () => {
+      activeColor = hex;
+      isErasing = false;
+      $('tool-pen').classList.add('active');
+      $('tool-eraser').classList.remove('active');
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+    });
+    container.appendChild(sw);
+  });
+})();
+
+/* ==========================================================
+   START SCREEN LOGIC
+   ========================================================== */
+// Chip toggles — no minimum or maximum, fully flexible
+document.querySelectorAll('#emotion-chips .chip input').forEach(cb => {
+  cb.parentElement.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    cb.checked = !cb.checked;
+    cb.parentElement.classList.toggle('selected', cb.checked);
+    selectedEmotions = Array.from(document.querySelectorAll('#emotion-chips input:checked')).map(i => i.value);
+    updateChipCount();
+  });
+});
+
+function updateChipCount() {
+  $('chip-count-num').textContent = selectedEmotions.length;
+  // No blocking — all chips always freely toggleable
+  document.querySelectorAll('#emotion-chips .chip').forEach(chip => {
+    chip.classList.remove('dim');
+  });
+}
+updateChipCount();
+
+// Mode cards
+document.querySelectorAll('.mode-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    gameMode = card.dataset.mode;
+  });
+});
+
+// Start button
+$('btn-start').addEventListener('click', () => {
+  if (selectedEmotions.length === 0) {
+    // Shake the chip panel as a hint
+    const panel = document.querySelector('#emotion-chips').closest('.config-box');
+    panel.classList.add('shake');
+    setTimeout(() => panel.classList.remove('shake'), 400);
+    return;
+  }
+  startGame();
+});
+
+/* ==========================================================
+   GAME FLOW
+   ========================================================== */
+function startGame() {
+  // Build shuffled deck
+  deck = [...selectedEmotions].sort(() => Math.random() - 0.5);
+  deckIndex = 0;
+  scores = [];
+
+  // Build numbered progress boxes
+  const container = $('progress-boxes');
+  container.innerHTML = '';
+  deck.forEach((_, i) => {
+    const box = document.createElement('div');
+    box.className = 'progress-box' + (i === 0 ? ' current' : '');
+    box.textContent = i + 1;
+    container.appendChild(box);
+  });
+
+  loadQuestion();
+  showScreen('game');
+}
+
+function loadQuestion() {
+  if (deckIndex >= deck.length) { showEndScreen(); return; }
+
+  const emotion = deck[deckIndex];
+
+  // Update numbered progress boxes
+  document.querySelectorAll('.progress-box').forEach((box, i) => {
+    box.classList.remove('completed', 'current');
+    if (i < deckIndex)        box.classList.add('completed');
+    else if (i === deckIndex) box.classList.add('current');
+  });
+
+  // Heading
+  $('game-heading').innerHTML = `Draw a <strong>${emotion}</strong> face!`;
+
+  // Big emotion label above reference stencil
+  $('ref-emotion-name').textContent = emotion;
+
+  // Draw stencil on the reference canvas (always shown, both modes)
+  drawRefCanvas(emotion);
+
+  // Resize & clear drawing canvases
+  resizeCanvases();
+  clearDrawing();
+
+  // Draw ghost guide on drawing canvas only in Guided mode
+  if (gameMode === 'Guided') {
+    drawGuide(emotion);
+  } else {
+    gCtx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
+  }
+}
+
+/* ==========================================================
+   CANVAS RESIZE — match display size with device pixel ratio
+   ========================================================== */
+function resizeCanvases() {
+  const wrap = canvasWrap;
+  const W = wrap.clientWidth;
+  const H = wrap.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+
+  [drawingCanvas, guideCanvas].forEach(c => {
+    c.width  = W * dpr;
+    c.height = H * dpr;
+    c.style.width  = W + 'px';
+    c.style.height = H + 'px';
+  });
+
+  ctx.scale(dpr, dpr);
+  gCtx.scale(dpr, dpr);
+}
+
+function clearDrawing() {
+  ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+}
+
+/* ==========================================================
+   DRAW REFERENCE CANVAS — stencil shown at full size in the ref panel
+   ========================================================== */
+function drawRefCanvas(emotion) {
+  const refCanvas = $('ref-canvas');
+  const box = $('ref-box');
+  const W = box.clientWidth  - 20;  // subtract padding (10px each side)
+  const H = box.clientHeight - 20;
+  const dpr = window.devicePixelRatio || 1;
+  refCanvas.width  = W * dpr;
+  refCanvas.height = H * dpr;
+  refCanvas.style.width  = W + 'px';
+  refCanvas.style.height = H + 'px';
+  const rCtx = refCanvas.getContext('2d');
+  rCtx.scale(dpr, dpr);
+  rCtx.clearRect(0, 0, W, H);
+
+  // Use full square area for the stencil
+  const size = Math.min(W, H) * 0.96;
+  const ox = (W - size) / 2;
+  const oy = (H - size) / 2;
+  rCtx.save();
+  rCtx.translate(ox, oy);
+  rCtx.strokeStyle = '#1a1a2e';
+  rCtx.fillStyle   = '#1a1a2e';
+  if (STENCILS[emotion]) STENCILS[emotion](rCtx, size, size);
+  rCtx.restore();
+}
+
+/* ==========================================================
+   DRAW GUIDE STENCIL on drawing canvas (Guided mode ghost)
+   ========================================================== */
+function drawGuide(emotion) {
+  const W = canvasWrap.clientWidth;
+  const H = canvasWrap.clientHeight;
+  gCtx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
+  gCtx.save();
+  // Centre the stencil
+  const size = Math.min(W, H) * 0.85;
+  const ox = (W - size) / 2;
+  const oy = (H - size) / 2;
+  gCtx.translate(ox, oy);
+  if (STENCILS[emotion]) STENCILS[emotion](gCtx, size, size);
+  gCtx.restore();
+}
+
+/* ==========================================================
+   DRAWING INPUT — mouse + touch
+   ========================================================== */
+function getPos(e) {
+  const rect = drawingCanvas.getBoundingClientRect();
+  if (e.touches) {
+    return {
+      x: e.touches[0].clientX - rect.left,
+      y: e.touches[0].clientY - rect.top,
+    };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  isDrawing = true;
+  const pos = getPos(e);
+  lastX = pos.x; lastY = pos.y;
+  // dot on single tap
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, (isErasing ? brushSize * 3 : brushSize) / 2, 0, Math.PI * 2);
+  ctx.fillStyle = isErasing ? 'rgba(0,0,0,1)' : activeColor;
+  if (isErasing) { ctx.globalCompositeOperation = 'destination-out'; }
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function draw(e) {
+  if (!isDrawing) return;
+  e.preventDefault();
+  const pos = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.strokeStyle = activeColor;
+  ctx.lineWidth = isErasing ? brushSize * 3 : brushSize;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (isErasing) ctx.globalCompositeOperation = 'destination-out';
+  ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+  lastX = pos.x; lastY = pos.y;
+}
+
+function endDraw() { isDrawing = false; }
+
+drawingCanvas.addEventListener('mousedown', startDraw);
+drawingCanvas.addEventListener('mousemove', draw);
+drawingCanvas.addEventListener('mouseup', endDraw);
+drawingCanvas.addEventListener('mouseleave', endDraw);
+drawingCanvas.addEventListener('touchstart', startDraw, { passive: false });
+drawingCanvas.addEventListener('touchmove', draw, { passive: false });
+drawingCanvas.addEventListener('touchend', endDraw);
+
+/* ==========================================================
+   TOOLBAR BUTTONS
+   ========================================================== */
+$('tool-pen').addEventListener('click', () => {
+  isErasing = false;
+  $('tool-pen').classList.add('active');
+  $('tool-eraser').classList.remove('active');
+});
+$('tool-eraser').addEventListener('click', () => {
+  isErasing = true;
+  $('tool-eraser').classList.add('active');
+  $('tool-pen').classList.remove('active');
+});
+$('tool-clear').addEventListener('click', clearDrawing);
+$('size-slider').addEventListener('input', e => { brushSize = parseInt(e.target.value); });
+
+/* ==========================================================
+   SUBMIT + SCORING
+   Pixel overlap: compare drawing pixels with guide stencil pixels.
+   If Non-Guided: we render the stencil off-screen to compare against.
+   Score = (drawn pixels that overlap stencil area) / (total stencil pixels) * 100
+   clamped to a max of 100 and a bonus of up to 10 for coverage.
+   ========================================================== */
+$('btn-submit-draw').addEventListener('click', submitDrawing);
+$('btn-skip').addEventListener('click', () => {
+  // Mark current box as completed before moving
+  const boxes = document.querySelectorAll('.progress-box');
+  if (boxes[deckIndex]) {
+    boxes[deckIndex].classList.remove('current');
+    boxes[deckIndex].classList.add('completed');
+  }
+  scores.push(0);
+  deckIndex++;
+  if (deckIndex >= deck.length) { showEndScreen(); return; }
+  loadQuestion();
+});
+
+function submitDrawing() {
+  const emotion = deck[deckIndex];
+  const score = computeScore(emotion, gameMode);
+  scores.push(score);
+  showResult(emotion, score);
+}
+
+function computeScore(emotion, mode) {
+  const W = canvasWrap.clientWidth;
+  const H = canvasWrap.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  const cW = W * dpr, cH = H * dpr;
+
+  // Render stencil into a temp canvas to get reference pixels
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = cW; tempCanvas.height = cH;
+  const tCtx = tempCanvas.getContext('2d');
+  tCtx.scale(dpr, dpr);
+
+  const size = Math.min(W, H) * 0.85;
+  const ox = (W - size) / 2;
+  const oy = (H - size) / 2;
+  tCtx.save();
+  tCtx.translate(ox, oy);
+  tCtx.strokeStyle = '#000'; tCtx.fillStyle = '#000';
+  if (STENCILS[emotion]) STENCILS[emotion](tCtx, size, size);
+  tCtx.restore();
+
+  // Sample pixels
+  const refData  = tCtx.getImageData(0, 0, cW, cH).data;
+  const drawData = ctx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height).data;
+
+  let refPixels = 0, hitPixels = 0, drawnPixels = 0;
+
+  for (let i = 3; i < refData.length; i += 4) {
+    const refAlpha  = refData[i];
+    const drawAlpha = drawData[i];
+    if (refAlpha > 30)  { refPixels++; if (drawAlpha > 30) hitPixels++; }
+    if (drawAlpha > 30) drawnPixels++;
+  }
+
+  // No drawing at all → 0
+  if (drawnPixels === 0) return 0;
+
+  // Recall: how much of the stencil area the player covered
+  const recall = refPixels > 0 ? hitPixels / refPixels : 0;
+
+  // Precision: how much of the player's drawing is on the stencil
+  const precision = drawnPixels > 0 ? hitPixels / drawnPixels : 0;
+
+  // F1 balanced score
+  const rawF1 = (precision + recall > 0)
+    ? 2 * precision * recall / (precision + recall)
+    : 0;
+
+  // Non-Guided gets a much more generous curve:
+  //   - cube-root curve (very lenient) + a floor boost of +2
+  // Guided gets square-root curve (already lenient) with no extra boost
+  let curved;
+  if (mode === 'Non-Guided') {
+    curved = Math.cbrt(rawF1);           // cube-root: very generous
+  } else {
+    curved = Math.sqrt(rawF1);           // square-root: generous
+  }
+
+  let score = Math.round(curved * 10);
+
+  // Non-Guided minimum for any drawing attempt: 3 (recognises the effort
+  // of drawing from memory with no ghost guide)
+  if (mode === 'Non-Guided' && drawnPixels > 0 && score < 3) score = 3;
+
+  // Guided minimum: 1 (always reward trying)
+  if (mode === 'Guided' && drawnPixels > 0 && score < 1) score = 1;
+
+  return Math.min(10, score);
+}
+
+/* ==========================================================
+   SHOW RESULT SCREEN
+   ========================================================== */
+function showResult(emotion, score) {
+  $('result-emotion-name').textContent = emotion;
+  $('ring-score').textContent = score;
+  $('result-feedback').textContent = getFeedback(score);
+
+  // Result reference thumb — draw stencil into the canvas
+  const refThumb = $('result-ref-thumb');
+  const SIZE = 200;
+  refThumb.width  = SIZE;
+  refThumb.height = SIZE;
+  refThumb.style.width  = '100%';
+  refThumb.style.height = '100%';
+  const rCtx = refThumb.getContext('2d');
+  rCtx.clearRect(0, 0, SIZE, SIZE);
+  rCtx.fillStyle = '#f7f8fc';
+  rCtx.fillRect(0, 0, SIZE, SIZE);
+  const pad = 14;
+  rCtx.save();
+  rCtx.translate(pad, pad);
+  rCtx.strokeStyle = '#1a1a2e';
+  rCtx.fillStyle   = '#1a1a2e';
+  if (STENCILS[emotion]) STENCILS[emotion](rCtx, SIZE - pad * 2, SIZE - pad * 2);
+  rCtx.restore();
+
+  // Drawing thumb — copy current player canvas
+  const thumb = $('result-drawing-thumb');
+  thumb.width  = drawingCanvas.width;
+  thumb.height = drawingCanvas.height;
+  thumb.style.width  = '100%';
+  thumb.style.height = '100%';
+  thumb.getContext('2d').drawImage(drawingCanvas, 0, 0);
+
+  // Animate ring — score is out of 10
+  const circumference = 339.3;
+  const fill = $('ring-fill');
+  fill.style.strokeDashoffset = circumference;
+  fill.style.stroke = score >= 7 ? '#10b981' : score >= 4 ? '#f59e0b' : '#ef4444';
+  setTimeout(() => {
+    fill.style.strokeDashoffset = circumference - (score / 10) * circumference;
+  }, 80);
+
+  showScreen('result');
+}
+
+$('btn-next-from-result').addEventListener('click', () => {
+  deckIndex++;
+  if (deckIndex >= deck.length) { showEndScreen(); return; }
+  loadQuestion();
+  showScreen('game');
+});
+
+/* ==========================================================
+   END SCREEN
+   ========================================================== */
+function showEndScreen() {
+  const total = scores.reduce((a, b) => a + b, 0);
+  const avg   = scores.length ? Math.round((total / scores.length) * 10) / 10 : 0;
+  $('final-score-num').textContent = `${total} / ${scores.length * 10}`;
+  $('final-feedback').textContent  = getEndFeedback(avg);
+  showScreen('end');
+}
+
+$('btn-play-again').addEventListener('click', () => {
+  showScreen('start');
+});
+
+/* ==========================================================
+   RESIZE HANDLER — re-fit canvases on orientation change
+   ========================================================== */
+window.addEventListener('resize', () => {
+  if (!screens.game.classList.contains('active')) return;
+  const emotion = deck[deckIndex] || deck[0];
+  // Save current drawing pixels
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width  = drawingCanvas.width;
+  tempCanvas.height = drawingCanvas.height;
+  tempCanvas.getContext('2d').drawImage(drawingCanvas, 0, 0);
+
+  resizeCanvases();
+  clearDrawing();
+
+  // Restore drawing scaled to new size
+  ctx.drawImage(tempCanvas, 0, 0, drawingCanvas.width, drawingCanvas.height);
+
+  // Redraw ref canvas and guide
+  if (emotion) drawRefCanvas(emotion);
+  if (gameMode === 'Guided' && emotion) drawGuide(emotion);
+});
+</script>
+</body>
+</html>
