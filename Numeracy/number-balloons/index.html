@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Number Balloons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#CDEEFF;
+    --sky-bottom:#F7FDFF;
+    --sun:#FFD166;
+    --ink:#2D3142;
+    --ink-soft:#6B7A8F;
+    --card-bg:#FFFFFF;
+    --slot-border:#BFD8EC;
+    --slot-fill:#FFF4D6;
+    --success:#FFD166;
+    --c1:#FF6B6B;
+    --c2:#4ECDC4;
+    --c3:#A78BFA;
+    --c4:#6BCB77;
+    --c5:#4D96FF;
+    --c6:#FFB84D;
+    --shadow: 0 10px 24px rgba(45,49,66,0.12);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select:none;
+  }
+  h1,h2,.balloon-num,.slot-num,.range-label,.overlay-emoji{
+    font-family:'Baloo 2', sans-serif;
+  }
+
+  #app{
+    position:relative;
+    width:100vw; height:100vh;
+    background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-bottom) 65%);
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---------- Ambient decoration ---------- */
+  .sun{
+    position:absolute; top:6%; right:8%;
+    width:clamp(50px,8vw,90px); height:clamp(50px,8vw,90px);
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 35%, #FFE29A, var(--sun));
+    box-shadow: 0 0 40px rgba(255,209,102,0.6);
+    z-index:0;
+  }
+  .cloud{
+    position:absolute;
+    background:#fff;
+    border-radius:50px;
+    opacity:0.85;
+    z-index:0;
+    filter: drop-shadow(0 6px 8px rgba(45,49,66,0.05));
+  }
+  .cloud::before, .cloud::after{
+    content:"";
+    position:absolute;
+    background:#fff;
+    border-radius:50%;
+  }
+  .cloud1{ width:100px; height:34px; top:14%; left:6%; }
+  .cloud1::before{ width:50px; height:50px; top:-24px; left:10px; }
+  .cloud1::after{ width:38px; height:38px; top:-18px; left:52px; }
+  .cloud2{ width:70px; height:26px; top:30%; left:80%; }
+  .cloud2::before{ width:36px; height:36px; top:-18px; left:8px; }
+  .cloud2::after{ width:28px; height:28px; top:-14px; left:36px; }
+
+  @media (prefers-reduced-motion: no-preference){
+    .cloud1{ animation: drift 60s linear infinite; }
+    .cloud2{ animation: drift 75s linear infinite reverse; }
+  }
+  @keyframes drift{
+    from{ transform: translateX(0); }
+    to{ transform: translateX(24px); }
+  }
+
+  /* ---------- Screens ---------- */
+  .screen{
+    position:absolute; inset:0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    z-index:1;
+  }
+  .screen.active{ display:flex; }
+
+  /* ---------- Start screen ---------- */
+  #start-screen{
+    justify-content:center;
+    gap:clamp(14px,2.4vh,26px);
+    padding: 24px 16px;
+    text-align:center;
+  }
+  #start-screen h1{
+    font-size:clamp(2.2rem, 6vw, 3.4rem);
+    font-weight:800;
+    margin:0;
+    color:var(--ink);
+  }
+  #start-screen h1 .accent{ color:var(--c5); }
+  .subtitle{
+    font-size:clamp(1rem,2.4vw,1.25rem);
+    color:var(--ink-soft);
+    font-weight:700;
+    margin:0 0 6px 0;
+  }
+  .option-group{
+    background:var(--card-bg);
+    border-radius:22px;
+    padding:16px 22px;
+    box-shadow:var(--shadow);
+    width:min(380px,86vw);
+  }
+  .option-label{
+    font-weight:800; font-size:1.05rem; margin:0 0 4px 0;
+  }
+  .option-hint{
+    font-size:0.85rem; color:var(--ink-soft); margin:0 0 10px 0; font-weight:600;
+  }
+  .choice-row{
+    display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
+  }
+  .choice-btn{
+    flex:1 1 84px;
+    font-family:'Baloo 2', sans-serif;
+    font-size:clamp(1rem,2.8vw,1.3rem);
+    font-weight:700;
+    padding:14px 8px;
+    border-radius:16px;
+    border:3px solid #E3EEF7;
+    background:#F4FAFF;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+    min-height:56px;
+  }
+  .choice-btn:hover{ transform: translateY(-2px); }
+  .choice-btn.active{
+    background: var(--c5);
+    border-color: var(--c5);
+    color:#fff;
+    box-shadow: 0 6px 14px rgba(77,150,255,0.35);
+  }
+
+  .switch-row{
+    display:flex; align-items:center; justify-content:center; gap:14px;
+  }
+  .switch{ position:relative; display:inline-block; width:64px; height:36px; flex:none; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch-track{
+    position:absolute; inset:0; cursor:pointer;
+    background:#D8E3EC; border-radius:999px; transition:.2s;
+  }
+  .switch-track::before{
+    content:""; position:absolute; height:28px; width:28px; left:4px; bottom:4px;
+    background:white; border-radius:50%; transition:.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .switch-track{ background: var(--c4); }
+  .switch input:checked + .switch-track::before{ transform: translateX(28px); }
+
+  .play-btn{
+    font-family:'Baloo 2', sans-serif;
+    font-size:clamp(1.3rem,3.6vw,1.7rem);
+    font-weight:800;
+    color:#fff;
+    background: linear-gradient(180deg, #FF8A6B, var(--c1));
+    border:none;
+    padding:18px 42px;
+    border-radius:22px;
+    cursor:pointer;
+    box-shadow: 0 10px 0 #D94F4F, 0 14px 24px rgba(255,107,107,0.3);
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .play-btn:active{
+    transform: translateY(6px);
+    box-shadow: 0 4px 0 #D94F4F, 0 8px 16px rgba(255,107,107,0.3);
+  }
+  .secondary-btn{
+    font-family:'Baloo 2', sans-serif;
+    font-size:clamp(1rem,3vw,1.2rem);
+    font-weight:700;
+    color:var(--ink-soft);
+    background:#F0F4F8;
+    border:none;
+    padding:14px 28px;
+    border-radius:18px;
+    cursor:pointer;
+  }
+
+  /* ---------- Game screen ---------- */
+  #game-screen{
+    justify-content:space-between;
+    padding: 14px 12px 22px;
+  }
+  .game-topbar{
+    width:100%;
+    display:flex; align-items:center; justify-content:space-between;
+    max-width:900px;
+  }
+  .icon-btn{
+    font-size:1.4rem;
+    background:var(--card-bg);
+    border:none;
+    width:52px; height:52px;
+    border-radius:16px;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .range-label{
+    font-size:clamp(1.1rem,3vw,1.5rem);
+    font-weight:700;
+    background:var(--card-bg);
+    padding:10px 22px;
+    border-radius:16px;
+    box-shadow:var(--shadow);
+  }
+
+  .slots-row{
+    display:flex; flex-wrap:wrap; justify-content:center; align-content:center;
+    gap: clamp(8px,1.6vw,16px);
+    max-width:920px;
+    margin-top: 4px;
+  }
+  .slot{
+    position:relative;
+    border-radius:20px;
+    border:3px dashed var(--slot-border);
+    background: rgba(255,255,255,0.5);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800;
+    color: rgba(45,49,66,0.28);
+    transition: background .25s ease, border-color .25s ease, transform .25s ease;
+  }
+  .slots-row.range-5 .slot{
+    width:clamp(66px,11vw,104px); height:clamp(66px,11vw,104px);
+    font-size:clamp(1.6rem,4.5vw,2.6rem);
+  }
+  .slots-row.range-10 .slot{
+    width:clamp(48px,8vw,78px); height:clamp(48px,8vw,78px);
+    font-size:clamp(1.1rem,3.2vw,1.9rem);
+  }
+  .slot.filled{
+    border-style:solid;
+    border-color: var(--success);
+    background: var(--slot-fill);
+    color: var(--ink);
+  }
+  .slot.pop{
+    animation: pop-in .4s ease-out;
+  }
+  @keyframes pop-in{
+    0%{ transform: scale(0.85); }
+    100%{ transform: scale(1); }
+  }
+  .slot.next-hint{
+    border-color:#8FC8FF;
+    box-shadow: 0 0 0 4px rgba(143,200,255,0.2);
+  }
+
+  .tray{
+    display:flex; flex-wrap:wrap; justify-content:center; align-content:flex-end;
+    gap: clamp(10px,2vw,20px);
+    max-width:920px;
+    padding: 10px 4px;
+  }
+  .balloon{
+    position:relative;
+    border:none;
+    cursor:pointer;
+    color:#fff;
+    font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
+    box-shadow: inset -6px -8px 0 rgba(0,0,0,0.08), 0 8px 14px rgba(45,49,66,0.18);
+  }
+  .tray.range-5 .balloon{
+    width:clamp(72px,13vw,110px); height:clamp(86px,15.5vw,132px);
+    font-size:clamp(2.1rem,5.8vw,3.2rem);
+  }
+  .tray.range-10 .balloon{
+    width:clamp(54px,9.5vw,80px); height:clamp(64px,11.5vw,96px);
+    font-size:clamp(1.5rem,4.2vw,2.2rem);
+  }
+  .balloon::after{
+    content:"";
+    position:absolute;
+    left:50%; bottom:-9px; transform:translateX(-50%);
+    width:0; height:0;
+    border-left:7px solid transparent;
+    border-right:7px solid transparent;
+    border-top:10px solid currentColor;
+  }
+  .balloon.c1{ background:var(--c1); color:var(--c1); }
+  .balloon.c2{ background:var(--c2); color:var(--c2); }
+  .balloon.c3{ background:var(--c3); color:var(--c3); }
+  .balloon.c4{ background:var(--c4); color:var(--c4); }
+  .balloon.c5{ background:var(--c5); color:var(--c5); }
+  .balloon.c6{ background:var(--c6); color:var(--c6); }
+  .balloon .balloon-num{ color:#fff; }
+
+  @media (prefers-reduced-motion: no-preference){
+    .balloon{ animation: bob 3s ease-in-out infinite; }
+    .balloon:nth-child(2n){ animation-duration:3.4s; }
+    .balloon:nth-child(3n){ animation-duration:2.7s; }
+  }
+  @keyframes bob{
+    0%,100%{ transform: translateY(0); }
+    50%{ transform: translateY(-3px); }
+  }
+
+  .balloon.hidden-taken{ visibility:hidden; }
+  .balloon.shake{ animation: shake .4s ease; }
+  @keyframes shake{
+    0%,100%{ transform: translateX(0) rotate(0); }
+    20%{ transform: translateX(-6px) rotate(-4deg); }
+    40%{ transform: translateX(6px) rotate(4deg); }
+    60%{ transform: translateX(-5px) rotate(-3deg); }
+    80%{ transform: translateX(5px) rotate(3deg); }
+  }
+
+  .flyer{
+    position:fixed;
+    z-index:50;
+    pointer-events:none;
+    border:none;
+    color:#fff;
+    font-weight:800;
+    font-family:'Baloo 2', sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
+    box-shadow: inset -6px -8px 0 rgba(0,0,0,0.08), 0 8px 14px rgba(45,49,66,0.25);
+  }
+
+  .spark{
+    position:fixed;
+    z-index:60;
+    pointer-events:none;
+    border-radius:50%;
+  }
+
+  /* ---------- Overlay ---------- */
+  .overlay{
+    position:absolute; inset:0;
+    background: rgba(45,49,66,0.35);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index:100;
+  }
+  .overlay.active{ display:flex; }
+  .overlay-card{
+    background:var(--card-bg);
+    border-radius:28px;
+    padding: 34px 30px;
+    text-align:center;
+    width:min(360px,86vw);
+    box-shadow: 0 20px 50px rgba(45,49,66,0.3);
+    animation: pop-in .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .overlay-emoji{ font-size:3rem; margin-bottom:4px; }
+  .overlay-card h2{ margin:0 0 6px 0; font-size:1.8rem; }
+  .overlay-card p{ margin:0 0 20px 0; color:var(--ink-soft); font-weight:700; }
+  .overlay-actions{ display:flex; flex-direction:column; gap:10px; }
+
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
+  button:focus-visible, .switch input:focus-visible + .switch-track{
+    outline: 3px solid #4D96FF;
+    outline-offset:2px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="sun" aria-hidden="true"></div>
+  <div class="cloud cloud1" aria-hidden="true"></div>
+  <div class="cloud cloud2" aria-hidden="true"></div>
+
+  <section id="start-screen" class="screen active">
+    <h1>Number <span class="accent">Balloons</span></h1>
+    <p class="subtitle">Tap the numbers in order and watch them float up!</p>
+
+    <div class="option-group">
+      <p class="option-label">Count to</p>
+      <div class="choice-row" role="group" aria-label="Choose number range">
+        <button class="choice-btn active" data-start="1" data-end="5" type="button">1–5</button>
+        <button class="choice-btn" data-start="1" data-end="10" type="button">1–10</button>
+        <button class="choice-btn" data-start="6" data-end="10" type="button">6–10</button>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <p class="option-label">Ghost numbers</p>
+      <p class="option-hint">Show a faint hint number in each box</p>
+      <div class="switch-row">
+        <label class="switch">
+          <input type="checkbox" id="ghost-toggle" checked>
+          <span class="switch-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <button id="play-btn" class="play-btn" type="button">Let's Play! 🎈</button>
+  </section>
+
+  <section id="game-screen" class="screen">
+    <div class="game-topbar">
+      <button id="home-btn" class="icon-btn" type="button" aria-label="Back to start">🏠</button>
+      <div class="range-label" id="range-label">1–5</div>
+      <button id="mute-btn" class="icon-btn" type="button" aria-label="Mute sound">🔊</button>
+    </div>
+
+    <div class="slots-row" id="slots-row"></div>
+    <div class="tray" id="tray"></div>
+  </section>
+
+  <div id="celebration-overlay" class="overlay">
+    <div class="overlay-card">
+      <div class="overlay-emoji">🎉</div>
+      <h2>Amazing job!</h2>
+      <p>You counted them all the way up!</p>
+      <div class="overlay-actions">
+        <button id="play-again-btn" class="play-btn" type="button">Play Again</button>
+        <button id="change-btn" class="secondary-btn" type="button">Change Numbers</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="live-region" class="sr-only" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var startScreen = document.getElementById('start-screen');
+  var gameScreen = document.getElementById('game-screen');
+  var overlay = document.getElementById('celebration-overlay');
+  var slotsRow = document.getElementById('slots-row');
+  var tray = document.getElementById('tray');
+  var rangeLabel = document.getElementById('range-label');
+  var liveRegion = document.getElementById('live-region');
+  var muteBtn = document.getElementById('mute-btn');
+
+  var state = {
+    rangeStart: 1,
+    rangeEnd: 5,
+    ghost: true,
+    nextExpected: 1,
+    muted: false
+  };
+
+  var colorClasses = ['c1','c2','c3','c4','c5','c6'];
+
+  // ---------- Start screen interactions ----------
+  var choiceBtns = document.querySelectorAll('.choice-btn');
+  choiceBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      choiceBtns.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.rangeStart = parseInt(btn.getAttribute('data-start'), 10);
+      state.rangeEnd = parseInt(btn.getAttribute('data-end'), 10);
+    });
+  });
+
+  var ghostToggle = document.getElementById('ghost-toggle');
+  ghostToggle.addEventListener('change', function(){
+    state.ghost = ghostToggle.checked;
+  });
+
+  document.getElementById('play-btn').addEventListener('click', function(){
+    ensureAudio();
+    startGame();
+  });
+  document.getElementById('play-again-btn').addEventListener('click', function(){
+    overlay.classList.remove('active');
+    startGame();
+  });
+  document.getElementById('change-btn').addEventListener('click', function(){
+    overlay.classList.remove('active');
+    goHome();
+  });
+  document.getElementById('home-btn').addEventListener('click', goHome);
+  muteBtn.addEventListener('click', function(){
+    state.muted = !state.muted;
+    muteBtn.textContent = state.muted ? '🔇' : '🔊';
+  });
+
+  function goHome(){
+    startScreen.classList.add('active');
+    gameScreen.classList.remove('active');
+  }
+
+  // ---------- Game setup ----------
+  function shuffle(arr){
+    for(var i = arr.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  function startGame(){
+    var start = state.rangeStart, end = state.rangeEnd;
+    state.nextExpected = start;
+    rangeLabel.textContent = start + '–' + end;
+    startScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+
+    var slotSizeClass = end > 5 ? 'range-10' : 'range-5';
+    var trayCount = end - start + 1;
+    var traySizeClass = trayCount > 5 ? 'range-10' : 'range-5';
+
+    slotsRow.className = 'slots-row ' + slotSizeClass;
+    slotsRow.innerHTML = '';
+    for(var i = 1; i <= end; i++){
+      var slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.setAttribute('data-slot', i);
+      if(i < start){
+        slot.textContent = i;
+        slot.classList.add('filled', 'prefilled');
+      } else if(state.ghost){
+        slot.textContent = i;
+      }
+      slotsRow.appendChild(slot);
+    }
+    highlightNextSlot();
+
+    tray.className = 'tray ' + traySizeClass;
+    tray.innerHTML = '';
+    var numbers = [];
+    for(var n = start; n <= end; n++){ numbers.push(n); }
+    shuffle(numbers);
+    numbers.forEach(function(num, idx){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'balloon ' + colorClasses[idx % colorClasses.length];
+      b.setAttribute('data-num', num);
+      b.setAttribute('aria-label', 'Number ' + num);
+      var span = document.createElement('span');
+      span.className = 'balloon-num';
+      span.textContent = num;
+      b.appendChild(span);
+      b.addEventListener('click', onBalloonClick);
+      tray.appendChild(b);
+    });
+  }
+
+  function highlightNextSlot(){
+    var slots = slotsRow.querySelectorAll('.slot');
+    slots.forEach(function(s){ s.classList.remove('next-hint'); });
+    var target = slotsRow.querySelector('.slot[data-slot="' + state.nextExpected + '"]');
+    if(target) target.classList.add('next-hint');
+  }
+
+  function onBalloonClick(e){
+    var btn = e.currentTarget;
+    if(btn.classList.contains('hidden-taken')) return;
+    var num = parseInt(btn.getAttribute('data-num'), 10);
+
+    if(num === state.nextExpected){
+      handleCorrect(btn, num);
+    } else {
+      handleWrong(btn);
+    }
+  }
+
+  function handleWrong(btn){
+    btn.classList.remove('shake');
+    void btn.offsetWidth; // restart animation
+    btn.classList.add('shake');
+    setTimeout(function(){ btn.classList.remove('shake'); }, 400);
+  }
+
+  function handleCorrect(btn, num){
+    var slot = slotsRow.querySelector('.slot[data-slot="' + num + '"]');
+    if(!slot) return;
+
+    var startRect = btn.getBoundingClientRect();
+    var endRect = slot.getBoundingClientRect();
+
+    btn.classList.add('hidden-taken');
+
+    var flyer = document.createElement('div');
+    var colorClass = Array.prototype.find.call(btn.classList, function(c){ return /^c[1-6]$/.test(c); }) || 'c1';
+    flyer.className = 'flyer ' + colorClass;
+    flyer.style.width = startRect.width + 'px';
+    flyer.style.height = startRect.height + 'px';
+    flyer.style.left = startRect.left + 'px';
+    flyer.style.top = startRect.top + 'px';
+    flyer.style.fontSize = window.getComputedStyle(btn).fontSize;
+    flyer.textContent = num;
+    document.body.appendChild(flyer);
+
+    var startX = startRect.left, startY = startRect.top;
+    var endX = endRect.left + (endRect.width - startRect.width) / 2;
+    var endY = endRect.top + (endRect.height - startRect.height) / 2;
+    var wobbleDir = (Math.random() < 0.5 ? -1 : 1);
+    var duration = 550;
+    var t0 = null;
+
+    function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+    function step(ts){
+      if(!t0) t0 = ts;
+      var elapsed = ts - t0;
+      var p = Math.min(elapsed / duration, 1);
+      var eased = easeOutCubic(p);
+      var x = startX + (endX - startX) * eased;
+      var y = startY + (endY - startY) * eased;
+      var wobble = Math.sin(p * Math.PI) * 10 * wobbleDir;
+      var scale = 1 + Math.sin(p * Math.PI) * 0.06;
+      flyer.style.transform = 'translate(' + wobble + 'px,0) scale(' + scale + ')';
+      flyer.style.left = x + 'px';
+      flyer.style.top = y + 'px';
+      if(p < 1){
+        requestAnimationFrame(step);
+      } else {
+        finishFly();
+      }
+    }
+    requestAnimationFrame(step);
+
+    function finishFly(){
+      flyer.remove();
+      btn.remove();
+      slot.textContent = num;
+      slot.classList.remove('next-hint');
+      slot.classList.add('filled');
+      slot.classList.remove('pop');
+      void slot.offsetWidth;
+      slot.classList.add('pop');
+      spawnSparkles(endRect.left + endRect.width / 2, endRect.top + endRect.height / 2);
+      playChime(num);
+      liveRegion.textContent = num + ' placed. ';
+
+      state.nextExpected++;
+      if(state.nextExpected > state.rangeEnd){
+        setTimeout(showCelebration, 450);
+      } else {
+        highlightNextSlot();
+      }
+    }
+  }
+
+  function spawnSparkles(cx, cy, count){
+    var colors = ['#FFD166','#4ECDC4','#A78BFA','#6BCB77'];
+    count = count || 7;
+    for(var i = 0; i < count; i++){
+      var s = document.createElement('div');
+      s.className = 'spark';
+      var size = 5 + Math.random() * 4;
+      s.style.width = size + 'px';
+      s.style.height = size + 'px';
+      s.style.left = cx + 'px';
+      s.style.top = cy + 'px';
+      s.style.background = colors[i % colors.length];
+      document.body.appendChild(s);
+
+      var angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+      var dist = 26 + Math.random() * 24;
+      var dx = Math.cos(angle) * dist;
+      var dy = Math.sin(angle) * dist;
+
+      var anim = s.animate([
+        { transform: 'translate(0,0) scale(1)', opacity: 0.9 },
+        { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(0.3)', opacity: 0 }
+      ], { duration: 450 + Math.random() * 150, easing: 'ease-out' });
+      anim.onfinish = function(el){ return function(){ el.remove(); }; }(s);
+    }
+  }
+
+  function showCelebration(){
+    overlay.classList.add('active');
+    playCelebrationSound();
+    var w = window.innerWidth;
+    var cy = window.innerHeight * 0.35;
+    spawnSparkles(w * 0.3, cy, 8);
+    setTimeout(function(){ spawnSparkles(w * 0.7, cy, 8); }, 150);
+    setTimeout(function(){ spawnSparkles(w * 0.5, cy * 0.8, 8); }, 300);
+  }
+
+  // ---------- Sound (Web Audio) ----------
+  var audioCtx = null;
+  function ensureAudio(){
+    if(!audioCtx){
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch(e){ audioCtx = null; }
+    }
+  }
+
+  function playTone(freq, delay, duration, gainPeak){
+    if(!audioCtx || state.muted) return;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    var start = audioCtx.currentTime + delay;
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(gainPeak || 0.18, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+    osc.start(start);
+    osc.stop(start + duration + 0.05);
+  }
+
+  function playChime(num){
+    if(!audioCtx || state.muted) return;
+    playTone(523.25, 0, 0.16);
+    playTone(659.25, 0.08, 0.2);
+  }
+
+  function playCelebrationSound(){
+    if(!audioCtx || state.muted) return;
+    var notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach(function(f, i){
+      playTone(f, i * 0.12, 0.3, 0.14);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
