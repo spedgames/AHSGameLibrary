@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ultimate Farm Counting!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --grass-green: #7fb069;
+            --text-dark: #1a1a1a;
+            --barn-red: #d62828;
+            --toggle-on: #4ade80;
+            --toggle-off: #ccc;
+            --glow-color: rgba(255, 255, 255, 0.9);
+            --accent-blue: #4895ef;
+            --cream-bg: #fffef0;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--grass-green);
+            font-family: 'Lexend', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; touch-action: manipulation;
+        }
+
+        /* Full Screen States */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* --- STARTING WELCOME MENU CONFIGURATOR --- */
+        #start-screen {
+            background-color: var(--grass-green);
+            padding: 20px;
+        }
+
+        .menu-box {
+            background: var(--cream-bg);
+            border: 8px solid #333;
+            border-radius: 40px;
+            padding: 30px;
+            width: 90vw;
+            max-width: 500px;
+            box-shadow: 0 15px 0 #333;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 4vh, 2.6rem);
+            font-weight: 900;
+            color: var(--text-dark);
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: clamp(1rem, 2vh, 1.3rem);
+            margin: 15px 0 8px 0;
+            text-align: left;
+            color: #444;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .config-grid.split-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .menu-choice-btn {
+            padding: 12px 5px;
+            font-family: 'Lexend', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            background-color: white;
+            border: 3px solid #ccc;
+            border-radius: 16px;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .menu-choice-btn.selected {
+            background-color: var(--accent-blue);
+            color: white;
+            border-color: #333;
+            box-shadow: 0 4px 0 #2a6fbf;
+            transform: translateY(-2px);
+        }
+
+        .launch-game-btn {
+            width: 100%;
+            margin-top: 25px;
+            padding: 15px;
+            font-family: 'Lexend', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: white;
+            background-color: var(--barn-red);
+            border: 4px solid #333;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #333;
+            transition: all 0.1s ease;
+        }
+
+        .launch-game-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #333;
+        }
+
+        /* --- ACTIVE PLAYING GAMEPLAY SCREEN --- */
+        #game-container {
+            width: 95vw; 
+            height: 94vh;
+            max-width: 1100px; 
+            max-height: 850px; 
+            background: var(--cream-bg);
+            border-radius: 40px;
+            border: 8px solid #333;
+            box-shadow: 0 15px 0 #333;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: space-between;
+            padding: 2vh 2vw; box-sizing: border-box;
+            position: relative;
+        }
+
+        #top-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            margin-bottom: 10px;
+        }
+
+        #header {
+            font-size: clamp(1.1rem, 2.5vh, 1.6rem);
+            font-weight: 900;
+            color: var(--text-dark);
+            background: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 4px solid #333;
+            white-space: nowrap;
+        }
+
+        .controls-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .mode-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 8px 18px;
+            border-radius: 50px;
+            border: 3px solid #333;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-label { font-weight: 700; font-size: clamp(0.8rem, 1.5vh, 1rem); }
+
+        .switch {
+            width: 44px; height: 22px;
+            background: var(--toggle-on);
+            border-radius: 30px;
+            position: relative;
+            border: 2px solid #333;
+            transition: 0.3s;
+        }
+
+        .switch::after {
+            content: '';
+            position: absolute;
+            width: 16px; height: 16px;
+            background: white;
+            border-radius: 50%;
+            top: 1px; left: 23px;
+            transition: 0.3s;
+            border: 2px solid #333;
+        }
+
+        .mode-off .switch { background: var(--toggle-off); }
+        .mode-off .switch::after { left: 3px; }
+
+        #display-area {
+            flex-grow: 1;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            align-content: center;
+            gap: clamp(10px, 3vh, 30px);
+            padding: 10px;
+        }
+
+        .animal-wrapper {
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .animal-icon {
+            font-size: clamp(3.2rem, 13vh, 7.2rem);
+            filter: grayscale(1) opacity(0.3);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
+        }
+
+        .animal-wrapper:hover .animal-icon { transform: scale(1.05); }
+
+        .animal-icon.light-up {
+            filter: grayscale(0) opacity(1) drop-shadow(0 0 25px var(--glow-color)) brightness(1.1);
+        }
+
+        .count-bubble {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--text-dark);
+            color: white;
+            width: clamp(35px, 6vh, 50px); 
+            height: clamp(35px, 6vh, 50px);
+            border-radius: 14px;
+            display: flex;
+            justify-content: center; align-items: center;
+            font-weight: 900; 
+            font-size: clamp(1.2rem, 3vh, 1.8rem);
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s;
+            border: 4px solid #000;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .count-bubble.active { opacity: 1; transform: scale(1); }
+
+        #options-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        .option-btn {
+            flex: 1;
+            max-width: 180px;
+            background: white;
+            border: 6px solid #333;
+            border-radius: 25px;
+            padding: clamp(10px, 2.5vh, 20px);
+            font-size: clamp(1.8rem, 5vh, 3.5rem);
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #333;
+            color: var(--text-dark);
+            transition: transform 0.1s;
+        }
+
+        .option-btn:hover { background-color: #f8f8f8; }
+        .option-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #333; }
+        .option-btn.correct { background-color: #4ade80 !important; color: #fff; }
+        .option-btn.wrong { background-color: #ffb3b3 !important; animation: shake 0.3s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        #progress-container {
+            width: 100%; height: 18px; background: #ddd;
+            border-radius: 50px; border: 3px solid #333;
+            overflow: hidden; margin-top: 15px;
+        }
+
+        #progress-fill {
+            width: 0%; height: 100%; background: var(--barn-red);
+            transition: width 0.4s;
+        }
+
+        #overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(127, 176, 105, 0.98);
+            flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+        }
+
+        .win-box { 
+            background: white; padding: 40px; border-radius: 40px; 
+            border: 10px solid #333; text-align: center;
+            max-width: 85%;
+        }
+
+        @media (max-width: 600px) {
+            #game-container { border-radius: 20px; border-width: 5px; padding: 10px; }
+            #top-bar { padding: 0; }
+            #header { padding: 5px 12px; }
+            .controls-group { gap: 8px; }
+            .mode-selector { padding: 6px 12px; }
+            .option-btn { border-width: 4px; border-radius: 18px; }
+            .menu-box { padding: 20px; border-radius: 24px; }
+            .win-box { padding: 25px; border-radius: 24px; border-width: 6px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="menu-screen" class="screen active">
+    <div class="menu-box">
+        <h1>Farm Counting! 🌾</h1>
+        
+        <h2>How many rounds?</h2>
+        <div class="config-grid">
+            <button class="menu-choice-btn selected" id="r-5" onclick="setRoundConfig(5)">5</button>
+            <button class="menu-choice-btn" id="r-10" onclick="setRoundConfig(10)">10</button>
+            <button class="menu-choice-btn" id="r-12" onclick="setRoundConfig(12)">12</button>
+        </div>
+
+        <h2>How high to count?</h2>
+        <div class="config-grid split-2">
+            <button class="menu-choice-btn selected" id="sc-5" onclick="setScopeConfig(5)">1 - 5</button>
+            <button class="menu-choice-btn" id="sc-10" onclick="setScopeConfig(10)">1 - 10</button>
+        </div>
+
+        <h2>How many options at bottom?</h2>
+        <div class="config-grid split-2">
+            <button class="menu-choice-btn selected" id="op-2" onclick="setOptionsConfig(2)">2 Options</button>
+            <button class="menu-choice-btn" id="op-3" onclick="setOptionsConfig(3)">3 Options</button>
+        </div>
+
+        <button class="launch-game-btn" onclick="launchGameSetup()">START GAME! 🐄</button>
+    </div>
+</div>
+
+<div id="game-screen" class="screen">
+    <div id="game-container">
+        <div id="top-bar">
+            <div id="header">Round 1</div>
+            <div class="controls-group">
+                <div class="mode-selector" id="mode-toggle" onclick="toggleHint()">
+                    <span class="toggle-label">Hints</span>
+                    <div class="switch"></div>
+                </div>
+            </div>
+        </div>
+        <div id="display-area"></div>
+        <div id="options-grid"></div>
+        <div id="progress-container"><div id="progress-fill"></div></div>
+    </div>
+</div>
+
+<div id="overlay">
+    <div class="win-box">
+        <h2 style="font-size: clamp(1.8rem, 5vh, 3rem); margin: 0; color: #1a1a1a;">FARM CHAMPION! 🏆</h2>
+        <p id="final-msg" style="font-size: clamp(1.2rem, 3vh, 2rem); margin: 25px 0; font-weight: 800; color: #1a1a1a;"></p>
+        <button onclick="returnToMenu()" style="background:var(--barn-red); color:white; border:5px solid #333; padding: 15px 40px; font-size: 1.5rem; border-radius: 50px; cursor:pointer; font-weight:900;">PLAY AGAIN</button>
+    </div>
+</div>
+
+<script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Configurable tracking parameters
+    let totalRounds = 5;
+    let maxRange = 5;
+    let targetOptionsCount = 2;
+    
+    let currentRoundIndex = 1;
+    let currentNumber = 0;
+    let lastNumber = 0; 
+    let score = 0;
+    let numberingEnabled = true;
+    let globalTapCounter = 0;
+    const farmAnimals = ['🐄', '🐖', '🐥', '🐑', '🐎', '🐐'];
+
+// We added a default frequency of 220, and default type to 'sine'
+function playSound(freq = 220, type = 'sine') {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    
+    osc.type = type;
+    osc.connect(g);
+    g.connect(audioCtx.destination);
+    
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    
+    // Smooth, gentle envelope settings
+    g.gain.setValueAtTime(0, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.5);
+}
+
+    // Config option selection toggles
+    function setRoundConfig(num) {
+        document.getElementById('r-5').classList.toggle('selected', num === 5);
+        document.getElementById('r-10').classList.toggle('selected', num === 10);
+        document.getElementById('r-12').classList.toggle('selected', num === 12);
+        totalRounds = num;
+    }
+
+    function setScopeConfig(max) {
+        document.getElementById('sc-5').classList.toggle('selected', max === 5);
+        document.getElementById('sc-10').classList.toggle('selected', max === 10);
+        maxRange = max;
+    }
+
+    function setOptionsConfig(count) {
+        document.getElementById('op-2').classList.toggle('selected', count === 2);
+        document.getElementById('op-3').classList.toggle('selected', count === 3);
+        targetOptionsCount = count;
+    }
+
+    function launchGameSetup() {
+        score = 0;
+        currentRoundIndex = 1;
+        lastNumber = 0;
+        
+        document.getElementById('menu-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+        
+        initRound();
+    }
+
+    function toggleHint() {
+        numberingEnabled = !numberingEnabled;
+        const toggle = document.getElementById('mode-toggle');
+        if (numberingEnabled) {
+            toggle.classList.remove('mode-off');
+            // Show steps counter for items already lit up
+            let count = 1;
+            document.querySelectorAll('.animal-wrapper').forEach(item => {
+                const bubble = item.querySelector('.count-bubble');
+                if (item.querySelector('.animal-icon').classList.contains('light-up')) {
+                    bubble.innerText = count;
+                    bubble.classList.add('active');
+                    count++;
+                }
+            });
+            globalTapCounter = count - 1;
+        } else {
+            toggle.classList.add('mode-off');
+            document.querySelectorAll('.count-bubble').forEach(b => b.classList.remove('active'));
+        }
+        playSound(440);
+    }
+
+    function initRound() {
+        if (currentRoundIndex > totalRounds) {
+            showWin();
+            return;
+        }
+
+        globalTapCounter = 0;
+        document.getElementById('header').textContent = `Round ${currentRoundIndex} / ${totalRounds}`;
+
+        let nextNumber;
+        do {
+            nextNumber = Math.floor(Math.random() * maxRange) + 1;
+        } while (nextNumber === lastNumber && maxRange > 1); 
+        
+        currentNumber = nextNumber;
+        lastNumber = currentNumber;
+        
+        const display = document.getElementById('display-area');
+        display.innerHTML = '';
+        const selectedAnimal = farmAnimals[Math.floor(Math.random() * farmAnimals.length)];
+        
+        for (let i = 1; i <= currentNumber; i++) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'animal-wrapper';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'count-bubble';
+            
+            const animal = document.createElement('div');
+            animal.className = 'animal-icon';
+            animal.innerText = selectedAnimal;
+            
+            wrapper.onclick = () => {
+                if (animal.classList.contains('light-up')) {
+                    // Turn off light
+                    animal.classList.remove('light-up');
+                    bubble.classList.remove('active');
+                    
+                    // Recalculate if hint is enabled
+                    if (numberingEnabled) {
+                        let reIndex = 1;
+                        document.querySelectorAll('.animal-wrapper').forEach(w => {
+                            const activeAnimal = w.querySelector('.animal-icon');
+                            const activeBubble = w.querySelector('.count-bubble');
+                            if (activeAnimal.classList.contains('light-up')) {
+                                activeBubble.innerText = reIndex;
+                                reIndex++;
+                            }
+                        });
+                        globalTapCounter = reIndex - 1;
+                    }
+                } else {
+                    // Light up dessert card / item
+                    animal.classList.add('light-up');
+                    if (numberingEnabled) {
+                        globalTapCounter++;
+                        bubble.innerText = globalTapCounter;
+                        bubble.classList.add('active');
+                    }
+                    animal.style.transform = 'scale(1.2) translateY(-10px)';
+                    setTimeout(() => { animal.style.transform = 'scale(1.1)'; }, 200);
+                }
+            };
+
+            wrapper.appendChild(bubble);
+            wrapper.appendChild(animal);
+            display.appendChild(wrapper);
+        }
+        setupOptions();
+        updateProgress();
+    }
+
+    function setupOptions() {
+        const grid = document.getElementById('options-grid');
+        grid.innerHTML = '';
+        let choices = [currentNumber];
+        
+        while (choices.length < targetOptionsCount) {
+            let rand = Math.floor(Math.random() * maxRange) + 1;
+            if (!choices.includes(rand)) choices.push(rand);
+        }
+        choices.sort(() => Math.random() - 0.5);
+
+        choices.forEach(val => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = val;
+            btn.onclick = () => {
+                if (val === currentNumber) {
+                    btn.classList.add('correct');
+                    playSound(600);
+                    score++;
+                    currentRoundIndex++;
+                    
+                    // Turn on everything on success celebration sequence
+                    document.querySelectorAll('.animal-wrapper').forEach((w, index) => {
+                        w.querySelector('.animal-icon').classList.add('light-up');
+                        if (numberingEnabled) {
+                            const b = w.querySelector('.count-bubble');
+                            b.innerText = index + 1;
+                            b.classList.add('active');
+                        }
+                    });
+
+                    setTimeout(initRound, 1000);
+                } else {
+                    btn.classList.add('wrong');
+                    playSound(150, 'sawtooth');
+                    setTimeout(() => btn.classList.remove('wrong'), 400);
+                }
+            };
+            grid.appendChild(btn);
+        });
+    }
+
+    function updateProgress() {
+        // Tracker update handles completed rounds ratio cleanly
+        const progressRatio = (currentRoundIndex - 1) / totalRounds;
+        document.getElementById('progress-fill').style.width = (progressRatio * 100) + '%';
+    }
+
+    function showWin() {
+        document.getElementById('final-msg').innerText = `You got ${score} out of ${totalRounds} rounds correct!`;
+        document.getElementById('overlay').style.display = 'flex';
+        playSound(500); setTimeout(() => playSound(800), 150);
+    }
+
+    function returnToMenu() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('game-screen').classList.remove('active');
+        document.getElementById('menu-screen').classList.add('active');
+    }
+</script>
+</body>
+</html>
