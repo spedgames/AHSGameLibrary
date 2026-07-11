@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emotions Typing Game</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --font-primary: 'Inter', sans-serif;
+      --font-display: 'Poppins', sans-serif;
+      --color-bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      --color-primary: #4f46e5;
+      --color-primary-hover: #4338ca;
+      --color-accent: #db2777;
+      --color-correct: #10b981;
+      --color-text-dark: #1f2937;
+      --color-text-muted: #4b5563;
+      --shadow-card: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --radius-full: 9999px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    body {
+      font-family: var(--font-primary);
+      background: var(--color-bg-gradient);
+      color: var(--color-text-dark);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      padding: 1.5rem;
+    }
+
+    #game-wrapper {
+      background: #ffffff;
+      width: 100%;
+      max-width: 1000px;
+      height: 90vh;
+      max-height: 850px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Changed from space-between */
+  align-items: center;
+  gap: 1.5rem; /* Ensures consistent spacing between header, configs, and button */
+  opacity: 0;
+  transform: scale(0.98);
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+    .screen.active { opacity: 1; transform: scale(1); pointer-events: auto; z-index: 2; }
+
+    #screen-preloader { background: #ffffff; justify-content: center; gap: 1.5rem; }
+    .spinner { width: 60px; height: 60px; border: 5px solid #e5e7eb; border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    h1 { font-family: var(--font-display); font-weight: 800; font-size: 2.5rem; color: var(--color-primary); text-align: center; }
+    h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--color-text-dark); margin-bottom: 0.5rem; width: 100%; }
+    h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; color: var(--color-primary); text-align: center; width: 100%; margin: 0.25rem 0; }
+    .subtitle { font-size: 1.1rem; color: var(--color-text-muted); text-align: center; }
+
+    .btn {
+      font-family: var(--font-display); font-weight: 600; font-size: 1.2rem;
+      background: var(--color-primary); color: #ffffff; border: none;
+      padding: 0.8rem 3rem; border-radius: var(--radius-full);
+      cursor: pointer; transition: all 0.2s ease;
+      box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+    }
+    .btn:hover { background: var(--color-primary-hover); transform: translateY(-2px); }
+
+.config-grid { 
+  display: grid; 
+  grid-template-columns: 1fr; 
+  gap: 1.25rem; 
+  width: 100%; 
+  flex-grow: 1; 
+  min-height: 0; /* Add this to prevent the grid from overflowing its flex parent */
+  margin: 1rem 0; 
+  overflow-y: auto; 
+}
+    .config-panel { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: var(--radius-md); padding: 1.25rem; width: 100%; }
+
+    .chips-layout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; width: 100%; }
+    .chip-label {
+      display: flex; align-items: center; background: #ffffff; border: 2px solid #e5e7eb;
+      border-radius: var(--radius-md); padding: 0.75rem; cursor: pointer; transition: all 0.2s ease;
+    }
+    .chip-label.selected { border-color: var(--color-primary); background: #f5f3ff; }
+    .chip-label.disabled-chip { opacity: 0.4; cursor: not-allowed; }
+    .chip-label input { margin-right: 0.75rem; accent-color: var(--color-primary); pointer-events: none; }
+
+    .emotion-count-hint {
+      font-size: 0.85rem; color: var(--color-text-muted);
+      margin-top: 0.6rem; text-align: right;
+    }
+    .emotion-count-hint span { font-weight: 700; color: var(--color-primary); }
+
+    .mode-stack { display: flex; gap: 1rem; width: 100%; }
+    .mode-card { flex: 1; background: #ffffff; border: 2px solid #e5e7eb; border-radius: var(--radius-md); padding: 1rem; cursor: pointer; transition: all 0.2s ease; }
+    .mode-card.selected { border-color: var(--color-primary); background: #f5f3ff; }
+    .mode-title { display: block; font-weight: 700; color: var(--color-text-dark); }
+    .mode-desc { font-size: 0.85rem; color: var(--color-text-muted); }
+
+    .game-layout { display: flex; flex-direction: column; width: 100%; height: 100%; gap: 0.75rem; }
+
+.sidebar-metrics {
+  width: 100%; 
+  height: 60px; 
+  flex-shrink: 0; /* Ensures the top progress layout is never crushed by children */
+  background: #f9fafb; 
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-md); 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  padding: 0.5rem;
+}
+    .progress-track-horizontal { display: flex; gap: 0.5rem; width: 100%; max-width: 800px; justify-content: space-evenly; }
+    .progress-box {
+      width: 40px; height: 40px; background: #ffffff; border: 2px solid #e5e7eb;
+      border-radius: 8px; display: flex; justify-content: center; align-items: center;
+      font-weight: 800; font-family: var(--font-display); transition: 0.3s;
+    }
+    .progress-box.completed { background: #4b5563; border-color: #1f2937; color: white; }
+
+.game-workspace { 
+  flex-grow: 1; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; 
+  min-height: 0; /* Prevents the workspace container from expanding past its boundaries */
+  max-height: 80%; /* Safely caps the scale layout space */
+}
+
+.viewport-frame { 
+  width: 100%; 
+  flex-grow: 1; /* Allows the image wrapper to scale fluidly */
+  min-height: 120px; /* Ensures it never collapses completely */
+  max-height: 240px; /* Keeps your original size maximum on large screens */
+  background: #f3f4f6; 
+  border-radius: var(--radius-md); 
+  overflow: hidden; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  border: 1px solid #e5e7eb; 
+}
+
+    .stimulus-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+    .help-words-wrapper { width: 100%; margin: 0.4rem 0; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: var(--radius-md); padding: 0.6rem; }
+    .help-words-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .help-words-table td { border: 1px solid #e5e7eb; padding: 0.4rem; text-align: center; font-weight: 700; background: #fff; }
+
+    .workspace-interaction-block { width: 100%; background: #f5f3ff; border: 1px solid #e0e7ff; border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    .sentence-output-view { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; }
+    .dynamic-blank { border-bottom: 3px solid var(--color-primary); display: inline-block; min-width: 160px; text-align: center; }
+    .dynamic-blank.guided { color: rgba(79, 70, 229, 0.3); }
+    .dynamic-blank.user-typing { color: var(--color-accent); }
+
+    .input-row { display: flex; gap: 0.75rem; width: 100%; max-width: 500px; }
+    .text-input-field { flex-grow: 1; padding: 0.8rem 1.5rem; font-size: 1.1rem; border: 2px solid #c7d2fe; border-radius: var(--radius-full); outline: none; text-align: center; font-weight: 600; }
+    .text-input-field:focus { border-color: var(--color-primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+
+    #screen-end h1 { font-size: 5rem; color: var(--color-correct); margin-bottom: 2rem; }
+
+    @keyframes structuralShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+    .error-shake { animation: structuralShake 0.4s ease-in-out; }
+    @keyframes successPulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); background-color: #d1fae5; } 100% { transform: scale(1); } }
+    .success-pulse { animation: successPulse 0.4s ease-out; }
+  </style>
+</head>
+<body>
+
+  <div id="game-wrapper">
+
+    <div id="screen-preloader" class="screen active">
+      <div class="spinner"></div>
+      <p class="loader-text">Loading Educational Assets...</p>
+    </div>
+
+    <div id="screen-start" class="screen">
+      <div>
+        <h1>Emotions Typing Game</h1>
+        <p class="subtitle">Select your preferences to begin the educational exercise.</p>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-panel">
+          <h2>1. Included Emotions (Select 2 – 6)</h2>
+          <div class="chips-layout">
+            <label class="chip-label selected"><input type="checkbox" checked value="Happy"><span>Happy</span></label>
+            <label class="chip-label selected"><input type="checkbox" checked value="Angry"><span>Angry</span></label>
+            <label class="chip-label selected"><input type="checkbox" checked value="Sad"><span>Sad</span></label>
+            <label class="chip-label selected"><input type="checkbox" checked value="Irritated"><span>Irritated</span></label>
+            <label class="chip-label selected"><input type="checkbox" checked value="Proud"><span>Proud</span></label>
+            <label class="chip-label selected"><input type="checkbox" checked value="Embarrassed"><span>Embarrassed</span></label>
+          </div>
+          <p class="emotion-count-hint">Selected: <span id="emotion-count">6</span> / 6</p>
+        </div>
+
+        <div class="config-panel">
+          <h2>2. Number of Questions</h2>
+          <div class="chips-layout" style="grid-template-columns: repeat(4, 1fr);">
+            <label class="chip-label"><input type="radio" name="qCount" value="3"><span>3</span></label>
+            <label class="chip-label"><input type="radio" name="qCount" value="6"><span>6</span></label>
+            <label class="chip-label"><input type="radio" name="qCount" value="8"><span>8</span></label>
+            <label class="chip-label selected"><input type="radio" name="qCount" value="10" checked><span>10</span></label>
+          </div>
+        </div>
+
+        <div class="config-panel">
+          <h2>3. Scaffolding Mode</h2>
+          <div class="mode-stack">
+            <label class="mode-card selected" data-mode="Guided">
+              <input type="radio" name="mode" value="Guided" checked>
+              <span class="mode-title">Guided</span>
+              <span class="mode-desc">Semi-transparent hints in the blank.</span>
+            </label>
+            <label class="mode-card" data-mode="Non-Guided">
+              <input type="radio" name="mode" value="Non-Guided">
+              <span class="mode-title">Non-Guided</span>
+              <span class="mode-desc">No hints. Independent recall.</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-start" class="btn">Start Game</button>
+    </div>
+
+    <div id="screen-game" class="screen">
+      <div class="game-layout">
+        <div class="sidebar-metrics">
+          <div id="progress-indicator-track" class="progress-track-horizontal"></div>
+        </div>
+
+        <h3 id="query-question-prompt">How is he feeling?</h3>
+
+        <div class="game-workspace">
+          <div id="image-frame-viewport" class="viewport-frame"></div>
+
+          <div class="help-words-wrapper">
+            <table id="words-table-target" class="help-words-table"></table>
+          </div>
+
+          <div id="interaction-card-block" class="workspace-interaction-block">
+            <div class="sentence-output-view">
+              <span id="gender-pronoun-slot">He</span> is feeling <span id="text-blank-slot" class="dynamic-blank">_______</span>.
+            </div>
+            <div class="input-row">
+              <input type="text" id="typing-input" class="text-input-field" placeholder="Type here..." autocomplete="off">
+              <button id="btn-submit" class="btn" style="padding: 0.5rem 1.5rem;">Submit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="screen-end" class="screen" style="justify-content: center; gap: 3rem;">
+      <h1>Finished!</h1>
+      <button id="btn-replay" class="btn">Play Again</button>
+    </div>
+
+  </div>
+
+  <script>
+    const ASSETS = {
+      Happy: [
+        { url: "https://images.pexels.com/photos/5275849/pexels-photo-5275849.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/10787961/pexels-photo-10787961.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/30963125/pexels-photo-30963125.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/4680787/pexels-photo-4680787.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/34471623/pexels-photo-34471623.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/9582997/pexels-photo-9582997.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" }
+      ],
+      Angry: [
+        { url: "https://images.pexels.com/photos/9443587/pexels-photo-9443587.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/8727513/pexels-photo-8727513.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/8727390/pexels-photo-8727390.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/783941/pexels-photo-783941.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/7342420/pexels-photo-7342420.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/3812739/pexels-photo-3812739.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" }
+      ],
+      Sad: [
+        { url: "https://images.pexels.com/photos/7743433/pexels-photo-7743433.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/14105480/pexels-photo-14105480.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/7820628/pexels-photo-7820628.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/9964634/pexels-photo-9964634.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/4680623/pexels-photo-4680623.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/7743435/pexels-photo-7743435.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" }
+      ],
+      Irritated: [
+        { url: "https://images.pexels.com/photos/8638016/pexels-photo-8638016.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/8727450/pexels-photo-8727450.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/4545999/pexels-photo-4545999.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/29247751/pexels-photo-29247751.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/8560258/pexels-photo-8560258.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/6275023/pexels-photo-6275023.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" }
+      ],
+      Proud: [
+        { url: "https://images.pexels.com/photos/6250866/pexels-photo-6250866.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/4605240/pexels-photo-4605240.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/5888193/pexels-photo-5888193.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/4506159/pexels-photo-4506159.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/6250898/pexels-photo-6250898.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/4720407/pexels-photo-4720407.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" }
+      ],
+      Embarrassed: [
+        { url: "https://images.pexels.com/photos/3771679/pexels-photo-3771679.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/8280263/pexels-photo-8280263.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/15164838/pexels-photo-15164838.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/5240467/pexels-photo-5240467.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "He" },
+        { url: "https://images.pexels.com/photos/6274992/pexels-photo-6274992.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" },
+        { url: "https://images.pexels.com/photos/17884396/pexels-photo-17884396.jpeg?auto=compress&cs=tinysrgb&w=600", pronoun: "She" }
+      ]
+    };
+
+    /* --- STATE --- */
+    let selectedEmotions = ["Happy", "Angry", "Sad", "Irritated", "Proud", "Embarrassed"];
+    let mode = "Guided";
+    let questionCount = 10;
+    let deck = [];
+    let currentIndex = 0;
+
+    const MIN_EMOTIONS = 2;
+    const MAX_EMOTIONS = 6;
+
+    /* --- DOM --- */
+    const screens = {
+      preloader: document.getElementById('screen-preloader'),
+      start: document.getElementById('screen-start'),
+      game: document.getElementById('screen-game'),
+      end: document.getElementById('screen-end')
+    };
+    const typingInput = document.getElementById('typing-input');
+    const blankSlot = document.getElementById('text-blank-slot');
+    const queryPrompt = document.getElementById('query-question-prompt');
+    const pronounSlot = document.getElementById('gender-pronoun-slot');
+    const emotionCountDisplay = document.getElementById('emotion-count');
+
+    /* --- PRELOAD --- */
+    document.addEventListener("DOMContentLoaded", () => {
+      const urls = Object.values(ASSETS).flat().map(item => item.url);
+      let loaded = 0;
+      urls.forEach(url => {
+        const img = new Image();
+        img.src = url;
+        img.onload = img.onerror = () => {
+          if (++loaded >= urls.length) showScreen('start');
+        };
+      });
+    });
+
+    function showScreen(key) {
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[key].classList.add('active');
+
+const wrapper = document.getElementById('game-wrapper');
+  if (wrapper) wrapper.scrollTop = 0;
+  screens[key].scrollTop = 0;    
+}
+
+    /* --- CHIP STATE MANAGER --- */
+    function updateChipStates() {
+      const count = selectedEmotions.length;
+      emotionCountDisplay.textContent = count;
+
+      document.querySelectorAll('.chip-label input[type="checkbox"]').forEach(cb => {
+        const label = cb.parentElement;
+        // Grey out checked chips when at min (can't remove more)
+        // Grey out unchecked chips when at max (can't add more)
+        const blocked = (cb.checked && count <= MIN_EMOTIONS) || (!cb.checked && count >= MAX_EMOTIONS);
+        label.classList.toggle('disabled-chip', blocked);
+      });
+    }
+
+    /* --- CHECKBOX LOGIC --- */
+    document.querySelectorAll('.chip-label input[type="checkbox"]').forEach(cb => {
+      cb.parentElement.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const isChecked = cb.checked;
+        const count = selectedEmotions.length;
+
+        // Enforce minimum: can't uncheck if only MIN_EMOTIONS remain
+        if (isChecked && count <= MIN_EMOTIONS) return;
+
+        // Enforce maximum: can't check if already at MAX_EMOTIONS
+        if (!isChecked && count >= MAX_EMOTIONS) return;
+
+        cb.checked = !cb.checked;
+        cb.parentElement.classList.toggle('selected', cb.checked);
+
+        selectedEmotions = Array.from(
+          document.querySelectorAll('.chip-label input[type="checkbox"]:checked')
+        ).map(i => i.value);
+
+        updateChipStates();
+      });
+    });
+
+    updateChipStates();
+
+    /* --- RADIO / MODE HANDLERS --- */
+    document.querySelectorAll('input[name="qCount"]').forEach(rb => {
+      rb.parentElement.addEventListener('click', () => {
+        document.querySelectorAll('input[name="qCount"]').forEach(i => i.parentElement.classList.remove('selected'));
+        rb.checked = true;
+        rb.parentElement.classList.add('selected');
+        questionCount = parseInt(rb.value);
+      });
+    });
+
+    document.querySelectorAll('.mode-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        mode = card.getAttribute('data-mode');
+      });
+    });
+
+    /* --- GAME LOGIC --- */
+    document.getElementById('btn-start').addEventListener('click', () => {
+      deck = [];
+      selectedEmotions.forEach(emo => {
+        ASSETS[emo].forEach(item => deck.push({ emotion: emo, url: item.url, pronoun: item.pronoun }));
+      });
+      deck.sort(() => Math.random() - 0.5);
+      deck = deck.slice(0, questionCount);
+      currentIndex = 0;
+      initProgress();
+      renderTable();
+      loadQuestion();
+      showScreen('game');
+    });
+
+    function initProgress() {
+      const track = document.getElementById('progress-indicator-track');
+      track.innerHTML = '';
+      for (let i = 0; i < deck.length; i++) {
+        const box = document.createElement('div');
+        box.className = 'progress-box';
+        box.textContent = i + 1;
+        track.appendChild(box);
+      }
+    }
+
+    function renderTable() {
+      const table = document.getElementById('words-table-target');
+      table.innerHTML = '';
+      let row;
+      selectedEmotions.forEach((emo, i) => {
+        if (i % 3 === 0) row = table.insertRow();
+        row.insertCell().textContent = emo.toLowerCase();
+      });
+    }
+
+    function loadQuestion() {
+      if (currentIndex >= deck.length) return showScreen('end');
+
+      const q = deck[currentIndex];
+      document.querySelectorAll('.progress-box').forEach((b, i) => {
+        b.classList.toggle('completed', i < currentIndex);
+      });
+
+      queryPrompt.textContent = `How is ${q.pronoun.toLowerCase()} feeling?`;
+      pronounSlot.textContent = q.pronoun;
+
+      document.getElementById('image-frame-viewport').innerHTML =
+        `<img src="${q.url}" class="stimulus-img" alt="emotion image">`;
+
+      typingInput.value = '';
+      updateBlank();
+      setTimeout(() => typingInput.focus(), 100);
+    }
+
+    function updateBlank() {
+      const val = typingInput.value.trim();
+      if (val === '') {
+        if (mode === "Guided") {
+          blankSlot.textContent = deck[currentIndex].emotion.toLowerCase();
+          blankSlot.className = 'dynamic-blank guided';
+        } else {
+blankSlot.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+      blankSlot.className = 'dynamic-blank';
+        }
+      } else {
+        blankSlot.textContent = val;
+        blankSlot.className = 'dynamic-blank user-typing';
+      }
+    }
+
+    typingInput.addEventListener('input', updateBlank);
+    typingInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') validate(); });
+    document.getElementById('btn-submit').addEventListener('click', validate);
+
+    function validate() {
+      const correct = deck[currentIndex].emotion.toLowerCase();
+      const guess = typingInput.value.trim().toLowerCase();
+      const block = document.getElementById('interaction-card-block');
+
+      if (guess === correct) {
+        block.classList.add('success-pulse');
+        setTimeout(() => {
+          block.classList.remove('success-pulse');
+          currentIndex++;
+          loadQuestion();
+        }, 400);
+      } else {
+        block.classList.add('error-shake');
+        typingInput.style.borderColor = "var(--color-accent)";
+        setTimeout(() => {
+          block.classList.remove('error-shake');
+          typingInput.style.borderColor = "#c7d2fe";
+          typingInput.focus();
+        }, 400);
+      }
+    }
+
+    document.getElementById('btn-replay').addEventListener('click', () => showScreen('start'));
+  </script>
+</body>
+</html>
