@@ -29,10 +29,10 @@
 
   *{box-sizing:border-box;}
   html,body{
-    margin:0; padding:0; height:100%;
+    margin:0; padding:0;
+    min-height:100%;
     font-family:'Nunito', sans-serif;
     color:var(--ink);
-    overflow:hidden;
     -webkit-tap-highlight-color: transparent;
     user-select:none;
   }
@@ -42,9 +42,13 @@
 
   #app{
     position:relative;
-    width:100vw; height:100vh;
+    width:100%;
+    min-height:100vh;
+    min-height:100dvh;
     background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-bottom) 65%);
     display:flex; align-items:center; justify-content:center;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   /* ---------- Ambient decoration ---------- */
@@ -88,7 +92,10 @@
 
   /* ---------- Screens ---------- */
   .screen{
-    position:absolute; inset:0;
+    position:relative;
+    width:100%;
+    min-height:100vh;
+    min-height:100dvh;
     display:none;
     flex-direction:column;
     align-items:center;
@@ -354,7 +361,7 @@
 
   /* ---------- Overlay ---------- */
   .overlay{
-    position:absolute; inset:0;
+    position:fixed; inset:0;
     background: rgba(45,49,66,0.35);
     display:none;
     align-items:center; justify-content:center;
@@ -406,8 +413,8 @@
     </div>
 
     <div class="option-group">
-      <p class="option-label">Hints</p>
-      <p class="option-hint">Show a faint number in each box</p>
+      <p class="option-label">Ghost numbers</p>
+      <p class="option-hint">Show a faint hint number in each box</p>
       <div class="switch-row">
         <label class="switch">
           <input type="checkbox" id="ghost-toggle" checked>
