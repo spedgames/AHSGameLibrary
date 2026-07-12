@@ -1179,6 +1179,7 @@ const HOME_FEATURED_COUNT = 4;
 const HOME_RECENT_COUNT   = 4;
 
 let allGames = [];
+let currentCategory = ''; // Track category to prevent redundant DOM overwrites
 const avatarSvg = `<div class="creator-avatar"><svg width="12" height="12" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>`;
 
 /* ── HELPERS ── */
@@ -1407,16 +1408,19 @@ function applyFilters() {
     const dateTo   = document.getElementById('date-to').value;
     const sort     = document.getElementById('sort-select').value;
 
-    // Rebuild topic options for selected category, preserving selections
-    populateTopicOptions(category || null);
-    syncToMobile(category);
-    
-    checkedTopics.forEach(t => {
-        const el = document.querySelector(`#body-topic input[value="${CSS.escape(t)}"]`);
-        if (el) el.checked = true;
-        const mel = document.querySelector(`#body-mtopic input[value="${CSS.escape(t)}"]`);
-        if (mel) mel.checked = true;
-    });
+    // Only rebuild topic options if the main category selection has changed
+    if (category !== currentCategory) {
+        currentCategory = category;
+        populateTopicOptions(category || null);
+        syncToMobile(category);
+        
+        checkedTopics.forEach(t => {
+            const el = document.querySelector(`#body-topic input[value="${CSS.escape(t)}"]`);
+            if (el) el.checked = true;
+            const mel = document.querySelector(`#body-mtopic input[value="${CSS.escape(t)}"]`);
+            if (mel) mel.checked = true;
+        });
+    }
 
     let list = [...allGames];
     if (category) list = list.filter(g => g.category === category);
@@ -1445,6 +1449,7 @@ function clearFilters() {
     document.getElementById('mdate-from').value = '';
     document.getElementById('mdate-to').value   = '';
     document.getElementById('sort-select').value = 'newest';
+    currentCategory = ''; // Reset cached category reference
     populateTopicOptions(null);
     syncToMobile('');
     applyFilters();
