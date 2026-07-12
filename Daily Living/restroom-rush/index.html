@@ -264,12 +264,25 @@ function init() {
     document.getElementById('start-btn').onclick = startFullGame;
     document.getElementById('retry-btn').onclick = resetGame;
 
+    let lastTouchTime = 0;
     const bindBtn = (id, key) => {
         const el = document.getElementById(id);
-        const start = (e) => { e.preventDefault(); keys[key] = true; if (id === 'btn-enter') handleAction(); };
+        const start = (e) => {
+            e.preventDefault();
+            if (e.type === 'touchstart') lastTouchTime = Date.now();
+            // Some browsers still dispatch a synthetic mousedown shortly after a
+            // touch even when preventDefault was called; ignore it so Enter
+            // doesn't fire (or misfire) twice for a single tap.
+            if (e.type === 'mousedown' && Date.now() - lastTouchTime < 800) return;
+            keys[key] = true;
+            if (id === 'btn-enter') handleAction();
+        };
         const end = (e) => { e.preventDefault(); keys[key] = false; };
         el.addEventListener('touchstart', start, { passive: false });
         el.addEventListener('touchend', end, { passive: false });
+        // If the OS cancels the touch (common when a finger drifts off the
+        // button), make sure the key doesn't get stuck "held down" forever.
+        el.addEventListener('touchcancel', end, { passive: false });
         el.addEventListener('mousedown', start);
         el.addEventListener('mouseup', end);
     };
@@ -442,11 +455,38 @@ function resetGame() {
     }, 500); 
 }
 
+let lastW = 0, lastH = 0;
 function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const newW = window.innerWidth;
+    const newH = window.innerHeight;
+    // Mobile browsers (esp. iOS/Android Safari & Chrome) fire visualViewport/resize
+    // events very often — e.g. when the address bar shows/hides as you scroll or tap,
+    // even though the usable size hasn't really changed. Bail out on no-op events.
+    if (newW === lastW && newH === lastH) return;
+    lastW = newW; lastH = newH;
+
+    canvas.width = newW;
+    canvas.height = newH;
     computeScale();
-    if (gameState === 'PLAY') setupLevel();
+
+    if (gameState === 'PLAY') {
+        // Reposition the EXISTING doors/player to fit the new canvas size —
+        // don't regenerate the level. Randomizing new door positions and
+        // snapping the player back to the start here used to happen on every
+        // resize, which could relocate the doors mid-round (e.g. right as
+        // the player lined up to press Enter) and make the button seem dead.
+        const doorW = 140 * scale, margin = 20 * scale;
+        doors.forEach(d => {
+            d.w = doorW;
+            d.h = 240 * scale;
+            d.y = 80 * scale;
+            d.x = Math.max(margin, Math.min(d.x, canvas.width - doorW - margin));
+        });
+        player.w = 70 * scale;
+        player.h = 120 * scale;
+        player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+        player.y = Math.max(220 * scale, Math.min(canvas.height - player.h, player.y));
+    }
 }
 
 function update() {
