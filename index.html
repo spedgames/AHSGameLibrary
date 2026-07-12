@@ -417,6 +417,36 @@
         .detail-desc { line-height: 1.6; color: var(--text-light); margin-bottom: 18px; font-size: 0.85rem; }
         .play-btn { background: var(--primary); color: white; padding: 11px; border-radius: 9px; font-weight: 600; border: none; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 0.9rem; width: 100%; transition: background 0.2s; }
         .play-btn:hover { background: var(--primary-hover); }
+
+        /* ── COMPATIBILITY WARNING MODAL ── */
+        #compat-warning-view {
+            display: none; position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15,23,42,0.85); z-index: 4000;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .compat-warning-box {
+            max-width: 380px; width: 100%; margin: auto;
+            background: white; border-radius: 16px;
+            padding: 24px 22px; text-align: center;
+        }
+        .compat-warning-icon {
+            width: 46px; height: 46px; border-radius: 50%;
+            background: #fff7ed; color: #ea580c;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 14px; font-size: 1.4rem; font-weight: 700;
+        }
+        .compat-warning-text { font-size: 0.88rem; line-height: 1.55; color: var(--text-dark); margin-bottom: 20px; }
+        .compat-warning-actions { display: flex; gap: 10px; }
+        .compat-warning-actions button {
+            flex: 1; padding: 10px; border-radius: 9px; font-weight: 600;
+            font-family: 'Poppins', sans-serif; font-size: 0.85rem; cursor: pointer;
+            border: none; transition: background 0.2s;
+        }
+        .compat-cancel-btn { background: #f1f5f9; color: var(--text-dark); }
+        .compat-cancel-btn:hover { background: #e2e8f0; }
+        .compat-continue-btn { background: var(--primary); color: white; }
+        .compat-continue-btn:hover { background: var(--primary-hover); }
         .qr-area { text-align: center; border-left: 1px solid #f1f5f9; padding-left: 20px; }
         .qr-label { font-size: 0.78rem; font-weight: 600; margin-bottom: 8px; }
         .qr-code { width: 110px; height: 110px; border-radius: 8px; margin-bottom: 8px; }
@@ -1155,12 +1185,24 @@
                     <div id="detail-compat"></div>
                 </div>
                 <p id="detail-desc" class="detail-desc"></p>
-<a id="detail-play-btn" href="" target="_self" class="play-btn" style="text-decoration: none; text-align: center; display: block;">Play Game</a>            </div>
+<a id="detail-play-btn" href="" target="_self" class="play-btn" style="text-decoration: none; text-align: center; display: block;" onclick="return handlePlayClick(event)">Play Game</a>            </div>
             <div class="qr-area">
                 <p class="qr-label">Open on Tablet</p>
                 <img id="detail-qr" src="" class="qr-code" alt="QR Code">
                 <p id="detail-id" class="qr-id"></p>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- COMPATIBILITY WARNING MODAL -->
+<div id="compat-warning-view">
+    <div class="compat-warning-box">
+        <div class="compat-warning-icon">!</div>
+        <p class="compat-warning-text" id="compat-warning-text"></p>
+        <div class="compat-warning-actions">
+            <button class="compat-cancel-btn" onclick="closeCompatWarning()">Cancel</button>
+            <button class="compat-continue-btn" onclick="confirmCompatContinue()">Continue</button>
         </div>
     </div>
 </div>
@@ -1498,6 +1540,7 @@ function openDetails(id) {
     const playBtn = document.getElementById('detail-play-btn');
     if (playBtn) {
         playBtn.href = absUrl;
+        playBtn.dataset.gameId = g.id;
     }
 
     // Set up QR Code image and display ID
@@ -1514,16 +1557,53 @@ function closeDetails() {
 }
 function handleBackdropClick(e) { if (e.target.id === 'detail-view') closeDetails(); }
 
-function validateAndPlay(id) {
-    const g = allGames.find(x => x.id === id);
+function detectDevice() {
     const ua = navigator.userAgent;
     const isTablet = (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) || /iPad/i.test(ua);
-    const device = isTablet ? 'tablet' : (/Mobile/i.test(ua) ? 'mobile' : 'desktop');
-    const ok = !g.compatibility || g.compatibility.includes(device);
-    if (!ok && !confirm(`This game is optimised for ${g.compatibility.join('/')} and may not work well on your device. Open anyway?`)) return;
+    return isTablet ? 'tablet' : (/Mobile/i.test(ua) ? 'mobile' : 'desktop');
+}
 
-    // Open the game directly in the same tab instead of launching a new window
-    window.location.href = new URL(getGameUrl(g), window.location.href).href;
+function formatDeviceList(devices) {
+    if (!devices || !devices.length) return '';
+    if (devices.length === 1) return devices[0];
+    if (devices.length === 2) return `${devices[0]} and ${devices[1]}`;
+    return `${devices.slice(0, -1).join(', ')} and ${devices[devices.length - 1]}`;
+}
+
+// Holds the destination URL while the compatibility warning modal is open
+let pendingPlayUrl = null;
+
+// Called on click of the (real, right-clickable) Play Game link.
+// Returns true to let the link navigate normally, or false to block it
+// and show the compatibility warning modal instead.
+function handlePlayClick(event) {
+    const linkEl = event.currentTarget;
+    const id = linkEl.dataset.gameId;
+    const g = allGames.find(x => x.id === id);
+    if (!g) return true;
+
+    const device = detectDevice();
+    const ok = !g.compatibility || !g.compatibility.length || g.compatibility.includes(device);
+    if (ok) return true;
+
+    event.preventDefault();
+    pendingPlayUrl = linkEl.href;
+    document.getElementById('compat-warning-text').textContent =
+        `This game is compatible with ${formatDeviceList(g.compatibility)} devices. It may not work properly with the device you are using. Continue?`;
+    document.getElementById('compat-warning-view').style.display = 'flex';
+    return false;
+}
+
+function closeCompatWarning() {
+    document.getElementById('compat-warning-view').style.display = 'none';
+    pendingPlayUrl = null;
+}
+
+function confirmCompatContinue() {
+    const url = pendingPlayUrl;
+    document.getElementById('compat-warning-view').style.display = 'none';
+    pendingPlayUrl = null;
+    if (url) window.location.href = url;
 }
 
 /* ── CONTRIBUTE & FEEDBACK ── */
