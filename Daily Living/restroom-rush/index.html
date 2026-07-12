@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Restroom Rush</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
     <style>
@@ -27,7 +27,11 @@
             font-family: 'Poppins', sans-serif;
         }
 
-        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+        #game-container {
+            position: relative; width: 100vw; display: flex; flex-direction: column;
+            height: 100vh;
+            height: 100dvh; /* accounts for mobile browser toolbars so nothing gets clipped */
+        }
 
         /* UI Elements with smooth fade transitions */
         #top-bar, #controls, .screen {
@@ -41,14 +45,17 @@
         }
 
         #top-bar {
-            position: absolute; top: 0; width: 100%; height: 60px;
+            position: absolute; top: 0; width: 100%; height: clamp(46px, 9vh, 60px);
             background: var(--top-bar); display: flex; align-items: center;
-            justify-content: space-between; padding: 0 20px; z-index: 80; color: white;
+            justify-content: space-between; z-index: 80; color: white;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); border-bottom: 3px solid var(--primary);
+            padding: 0 clamp(10px, 3vw, 20px);
+            padding-left: max(clamp(10px, 3vw, 20px), env(safe-area-inset-left));
+            padding-right: max(clamp(10px, 3vw, 20px), env(safe-area-inset-right));
         }
 
-        .hud-display { font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; }
-        .timer-display { font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; }
+        .hud-display { font-size: clamp(0.75rem, 2.6vw, 1.2rem); font-weight: 800; letter-spacing: 1px; white-space: nowrap; }
+        .timer-display { font-size: clamp(0.9rem, 3.2vw, 1.5rem); font-weight: 800; letter-spacing: 1px; white-space: nowrap; }
         .timer-warning { color: var(--danger); animation: blink 0.5s infinite; }
 
         @keyframes blink { 50% { opacity: 0.5; } }
@@ -56,7 +63,8 @@
         .screen {
             position: absolute; inset: 0;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(255, 255, 255, 0.98); z-index: 100; padding: 20px; text-align: center;
+            background: rgba(255, 255, 255, 0.98); z-index: 100; text-align: center;
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
         }
 
         #start-screen {
@@ -101,28 +109,37 @@
         canvas { display: block; width: 100%; height: 100%; }
 
         #controls {
-            position: absolute; bottom: 30px; width: 100%;
+            position: absolute; bottom: 0; width: 100%;
             display: flex; justify-content: space-around; align-items: center;
-            padding: 0 20px; z-index: 90;
+            padding: 0 clamp(10px, 3vw, 20px);
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+            z-index: 90;
         }
 
-        .d-pad { display: grid; grid-template-columns: repeat(3, 75px); gap: 10px; pointer-events: auto; }
+        /* Button sizes scale with the viewport so the whole control panel
+           (d-pad + gaps + enter button) never exceeds the screen width */
+        .d-pad { display: grid; grid-template-columns: repeat(3, clamp(48px, 15vw, 75px)); gap: clamp(6px, 2vw, 10px); pointer-events: auto; }
         .ctrl {
-            background: white; width: 75px; height: 75px;
+            background: white; width: clamp(48px, 15vw, 75px); height: clamp(48px, 15vw, 75px);
             border-radius: 20px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.6rem; box-shadow: 0 6px 0 #cbd5e1; cursor: pointer;
+            font-size: clamp(1.1rem, 4.5vw, 1.6rem); box-shadow: 0 6px 0 #cbd5e1; cursor: pointer;
         }
         .ctrl:active { transform: translateY(4px); box-shadow: 0 2px 0 #cbd5e1; }
 
         .enter-btn {
-            width: 130px; height: 130px; border-radius: 50%;
+            width: clamp(85px, 24vw, 130px); height: clamp(85px, 24vw, 130px); border-radius: 50%;
             background: var(--secondary); color: white; font-weight: 900;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 8px 0 #5b21b6; pointer-events: auto; cursor: pointer;
-            font-size: 1.5rem;
+            font-size: clamp(0.95rem, 3.4vw, 1.5rem);
         }
 
-        @media (min-width: 1025px) { #controls { display: none !important; } }
+        /* Show the on-screen controls for touch devices (phones, iPads) and hide
+           them for devices with a real mouse/trackpad — based on input capability
+           rather than screen width, so wide touch screens like iPads still get them */
+        @media (hover: hover) and (pointer: fine) {
+            #controls { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -198,6 +215,17 @@ let baseSpeed = 8;
 let totalScore = 0;
 let currentTheme = themes[0];
 
+// Reference height the original layout numbers (wall height, door size, player
+// size, etc.) were designed around. Everything visual is multiplied by `scale`,
+// which is derived from the real screen size, so the game keeps the same
+// proportions whether it's running on a phone, an iPad, or a desktop window.
+const BASE_HEIGHT = 720;
+let scale = 1;
+function computeScale() {
+    scale = canvas.height / BASE_HEIGHT;
+    scale = Math.max(0.55, Math.min(scale, 1.5));
+}
+
 let player = { x: 0, y: 0, w: 70, h: 120, speed: 8, emoji: '', gender: '' };
 let doors = [];
 let gameState = 'START'; 
@@ -254,6 +282,8 @@ function init() {
 
     resize();
     window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', resize);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
     requestAnimationFrame(gameLoop);
 }
 
@@ -281,7 +311,9 @@ function startRound() {
     const isBoy = Math.random() < 0.5;
     player.gender = isBoy ? 'male' : 'female';
     player.emoji = isBoy ? charPair.male : charPair.female;
-    player.speed = baseSpeed + (currentRound - 1) * 1.5;
+    player.w = 70 * scale;
+    player.h = 120 * scale;
+    player.speed = (baseSpeed + (currentRound - 1) * 1.5) * scale;
 
     const pIdx = Math.floor(Math.random() * assetPairs.length);
     activePair = { male: loadedImages[`p${pIdx}_male`], female: loadedImages[`p${pIdx}_female`] };
@@ -315,14 +347,14 @@ function startRound() {
 }
 
 function setupLevel() {
-    player.x = canvas.width / 2 - 35;
-    player.y = canvas.height - 200;
+    player.x = canvas.width / 2 - player.w / 2;
+    player.y = canvas.height - 200 * scale;
     
     doors = [{ type: 'male', img: activePair.male }, { type: 'female', img: activePair.female }].sort(() => Math.random() - 0.5);
     
-    const doorW = 140;
-    const gap = 30;
-    const margin = 20;
+    const doorW = 140 * scale;
+    const gap = 30 * scale;
+    const margin = 20 * scale;
     let x1, x2;
 
     if (canvas.width < (doorW * 2 + gap + margin * 2)) {
@@ -344,13 +376,13 @@ function setupLevel() {
 
     doors[0].x = x1;
     doors[1].x = x2;
-    doors.forEach((d) => { d.w = doorW; d.h = 240; d.y = 80; d.openRatio = 0; });
+    doors.forEach((d) => { d.w = doorW; d.h = 240 * scale; d.y = 80 * scale; d.openRatio = 0; });
 }
 
 function handleAction() {
     if (gameState !== 'PLAY') return;
     const midX = player.x + player.w / 2;
-    const d = doors.find(d => midX > d.x && midX < d.x + d.w && player.y < d.y + d.h + 60);
+    const d = doors.find(d => midX > d.x && midX < d.x + d.w && player.y < d.y + d.h + 60 * scale);
     
     if (d) {
         if (d.type === player.gender) {
@@ -413,6 +445,7 @@ function resetGame() {
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    computeScale();
     if (gameState === 'PLAY') setupLevel();
 }
 
@@ -429,12 +462,12 @@ function update() {
     player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
     
     // Constrain Y bounds (Prevent character from flying over the wall baseboard)
-    // Floor begins at Y 320, Baseboard at 310. Using 220 ensures feet stay on the tiles.
-    player.y = Math.max(220, Math.min(canvas.height - player.h, player.y));
+    // Floor begins at Y 320*scale, Baseboard at 310*scale. Using 220*scale ensures feet stay on the tiles.
+    player.y = Math.max(220 * scale, Math.min(canvas.height - player.h, player.y));
 
     doors.forEach(d => {
         const dist = Math.abs((player.x + player.w/2) - (d.x + d.w/2));
-        const near = dist < 120 && player.y < d.y + d.h + 100;
+        const near = dist < 120 * scale && player.y < d.y + d.h + 100 * scale;
         
         // Open max 15% (0.15) for a slight visual peek
         d.openRatio = near ? Math.min(d.openRatio + 0.12, 0.15) : Math.max(d.openRatio - 0.12, 0);
@@ -456,23 +489,25 @@ function draw() {
     if (gameState === 'START' || gameState === 'END') return;
 
     // Floor
+    const wallH = 320 * scale;
+    const tile = 60 * scale;
     ctx.fillStyle = currentTheme.floor;
-    ctx.fillRect(0, 320, canvas.width, canvas.height);
+    ctx.fillRect(0, wallH, canvas.width, canvas.height);
     ctx.strokeStyle = currentTheme.line;
     ctx.lineWidth = 1;
-    for(let i=0; i<canvas.width; i+=60) { ctx.beginPath(); ctx.moveTo(i, 320); ctx.lineTo(i, canvas.height); ctx.stroke(); }
-    for(let j=320; j<canvas.height; j+=60) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke(); }
+    for(let i=0; i<canvas.width; i+=tile) { ctx.beginPath(); ctx.moveTo(i, wallH); ctx.lineTo(i, canvas.height); ctx.stroke(); }
+    for(let j=wallH; j<canvas.height; j+=tile) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke(); }
 
     // Wall
     ctx.fillStyle = currentTheme.wall;
-    ctx.fillRect(0, 0, canvas.width, 320);
+    ctx.fillRect(0, 0, canvas.width, wallH);
     ctx.fillStyle = currentTheme.base;
-    ctx.fillRect(0, 310, canvas.width, 10);
+    ctx.fillRect(0, wallH - 10 * scale, canvas.width, 10 * scale);
 
     // Doors
     doors.forEach(d => {
         ctx.fillStyle = '#3e2723';
-        ctx.fillRect(d.x - 8, d.y - 8, d.w + 16, d.h + 8);
+        ctx.fillRect(d.x - 8 * scale, d.y - 8 * scale, d.w + 16 * scale, d.h + 8 * scale);
         ctx.fillStyle = '#111';
         ctx.fillRect(d.x, d.y, d.w, d.h);
 
@@ -494,17 +529,17 @@ function draw() {
         ctx.stroke();
 
         if (d.img) {
-            const displayWidth = (d.w - 40) * (1 - d.openRatio);
+            const displayWidth = (d.w - 40 * scale) * (1 - d.openRatio);
             if (displayWidth > 10) {
                 ctx.globalAlpha = 1 - d.openRatio;
-                ctx.drawImage(d.img, d.x + 20, d.y + 30, displayWidth, displayWidth);
+                ctx.drawImage(d.img, d.x + 20 * scale, d.y + 30 * scale, displayWidth, displayWidth);
                 ctx.globalAlpha = 1.0;
             }
         }
         
         ctx.fillStyle = '#ffd700';
         ctx.beginPath();
-        ctx.arc(d.x + d.w - 20 - swingWidth, d.y + d.h/2 + 20, 6, 0, Math.PI*2);
+        ctx.arc(d.x + d.w - 20 * scale - swingWidth, d.y + d.h/2 + 20 * scale, 6 * scale, 0, Math.PI*2);
         ctx.fill();
         ctx.restore();
     });
@@ -512,16 +547,16 @@ function draw() {
     // Feedback (X mark)
     if (wrongFeedback.active) {
         ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 120px Poppins';
+        ctx.font = `bold ${120 * scale}px Poppins`;
         ctx.textAlign = 'center';
-        ctx.fillText('X', wrongFeedback.x, wrongFeedback.y + 40);
+        ctx.fillText('X', wrongFeedback.x, wrongFeedback.y + 40 * scale);
     }
 
     // Player
     if (player.emoji) {
-        ctx.font = "110px serif";
+        ctx.font = `${110 * scale}px serif`;
         ctx.textAlign = "center";
-        ctx.fillText(player.emoji, player.x + player.w/2, player.y + 80);
+        ctx.fillText(player.emoji, player.x + player.w/2, player.y + 80 * scale);
     }
 
     // Round clear text overlay
@@ -532,14 +567,14 @@ function draw() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = `rgba(255, 255, 255, ${transitionAlpha})`;
-        ctx.font = 'bold 50px Poppins';
+        ctx.font = `bold ${50 * scale}px Poppins`;
         ctx.textAlign = 'center';
-        ctx.fillText(transitionTitle, canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillText(transitionTitle, canvas.width / 2, canvas.height / 2 - 10 * scale);
         
         if (transitionSub) {
             ctx.fillStyle = `rgba(252, 211, 77, ${transitionAlpha})`;
-            ctx.font = 'bold 35px Poppins';
-            ctx.fillText(transitionSub, canvas.width / 2, canvas.height / 2 + 50);
+            ctx.font = `bold ${35 * scale}px Poppins`;
+            ctx.fillText(transitionSub, canvas.width / 2, canvas.height / 2 + 50 * scale);
         }
     }
 
