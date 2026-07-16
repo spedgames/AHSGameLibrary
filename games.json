@@ -36,7 +36,7 @@
     "creatorName": "Teacher Joan",
     "category": "SEL",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["featured", "zones of regulation", "emotions", "behaviour"],
+    "tags": ["featured", "zones of regulation", "emotions", "behaviour", "SE.SF.3.2"],
     "uploadDate": "2026-07-11"
   },
    {
@@ -46,7 +46,7 @@
     "creatorName": "Teacher Joan",
     "category": "SEL",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["regulation", "good choices", "bad choices"],
+    "tags": ["regulation", "good choices", "bad choices", "SE.SF.3.2"],
     "uploadDate": "2026-07-11"
   },
    {
@@ -66,7 +66,7 @@
     "creatorName": "Teacher Joan",
     "category": "SEL",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["emotions", "feelings"],
+    "tags": ["emotions", "feelings", "SE.SF.3.1"],
     "uploadDate": "2026-07-11"
   },
    {
@@ -76,7 +76,7 @@
     "creatorName": "Teacher Joan",
     "category": "SEL",
     "compatibility": ["desktop"],
-    "tags": ["emotions", "feelings"],
+    "tags": ["emotions", "feelings", "SE.SF.3.1", "SE.SF.3.2"],
     "uploadDate": "2026-07-11"
   },
    {
