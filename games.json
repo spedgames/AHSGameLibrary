@@ -216,7 +216,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["letters", "alphabet", "case"],
+    "tags": ["letters", "alphabet", "case", "LC.RD.4.2"],
     "uploadDate": "2026-06-01"
   },
   {
@@ -236,7 +236,7 @@
     "creatorName": "Teacher Carmina",
     "category": "SEL",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["public and private places", "public and private behaviours"],
+    "tags": ["public and private places", "public and private behaviours", "SE.SO.3.1"],
     "uploadDate": "2026-05-31"
   },
   {
