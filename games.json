@@ -196,7 +196,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop"],
-    "tags": ["spelling", "typing", "ICT", "digital literacy"],
+    "tags": ["spelling", "typing", "ICT", "digital literacy", "LC.RD.5.5"],
     "uploadDate": "2026-06-05"
   },
   {
@@ -265,7 +265,7 @@
     "description": "Listen and tap or spell the CVC, CVCC, or CCVC word.",
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
-    "compatibility": ["desktop", "tablet", "mobile"],
+    "compatibility": ["desktop", "tablet", "mobile", "LC.RD.5.2"],
     "tags": ["phonics", "dictation"],
     "uploadDate": "2026-05-30"
   },
@@ -276,7 +276,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop", "tablet", "mobile"],
-    "tags": ["reading", "coding", "sight words"],
+    "tags": ["reading", "coding", "sight words", "LC.RD.5.5"],
     "uploadDate": "2026-05-28"
   },
   {
@@ -366,7 +366,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop", "tablet"],
-    "tags": ["body parts", "sentence building", "vocabulary", "typing"],
+    "tags": ["body parts", "sentence building", "vocabulary", "typing", "LC.SL.3.1"],
     "uploadDate": "2026-05-25"
   },
   {
@@ -376,7 +376,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop", "tablet"],
-    "tags": ["attributes", "sentence building", "vocabulary", "writing"],
+    "tags": ["attributes", "sentence building", "vocabulary", "writing", "LC.SL.3.1"],
     "uploadDate": "2026-05-26"
   },
   {
@@ -386,7 +386,7 @@
     "creatorName": "Teacher Carmina",
     "category": "Literacy",
     "compatibility": ["desktop"],
-    "tags": ["predictable charts", "sentence building", "vocabulary", "writing", "typing"],
+    "tags": ["predictable charts", "sentence building", "vocabulary", "writing", "typing", "LC.SL.3.1"],
     "uploadDate": "2026-05-02"
   },
   {
