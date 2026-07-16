@@ -45,7 +45,7 @@
     "description": "Everyday, we need to regulate our emotions. Let's identify some of the good and bad choices!",
     "creatorName": "Teacher Joan",
     "category": "SEL",
-    "compatibility": ["desktop"],
+    "compatibility": ["desktop", "tablet", "mobile"],
     "tags": ["regulation", "good choices", "bad choices"],
     "uploadDate": "2026-07-11"
   },
@@ -65,7 +65,7 @@
     "description": "Think you know your emotions well? Let's see how you draw them out!",
     "creatorName": "Teacher Joan",
     "category": "SEL",
-    "compatibility": ["desktop"],
+    "compatibility": ["desktop", "tablet", "mobile"],
     "tags": ["emotions", "feelings"],
     "uploadDate": "2026-07-11"
   },
