@@ -47,7 +47,11 @@
     }
 
     html, body {
-      width: 100%; height: 100%; overflow: hidden;
+      width: 100%;
+      height: 100vh;                        /* fallback */
+      height: calc(var(--vh, 1vh) * 100);   /* JS-corrected fallback for iOS/older mobile */
+      height: 100dvh;                       /* accounts for mobile browser chrome */
+      overflow: hidden;
       font-family: var(--font-body);
       background: linear-gradient(145deg, #dde3f8 0%, #c8d0ef 100%);
       color: var(--ink);
@@ -56,9 +60,17 @@
     }
 
     #shell {
-      width: 100vw; height: 100vh;
+      width: 100%;
+      height: 100vh;
+      height: calc(var(--vh, 1vh) * 100);
+      height: 100dvh;
       display: flex; align-items: center; justify-content: center;
+      box-sizing: border-box;
       padding: 12px;
+      padding-top:    max(12px, env(safe-area-inset-top));
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      padding-left:   max(12px, env(safe-area-inset-left));
+      padding-right:  max(12px, env(safe-area-inset-right));
     }
 
     #card {
@@ -502,6 +514,22 @@
 </div><!-- #shell -->
 
 <script>
+/* ============================================================
+   VIEWPORT HEIGHT FIX (mobile/tablet browser chrome)
+   Sets --vh to 1% of the *actual visible* window height so the
+   CSS `calc(var(--vh,1vh) * 100)` fallback matches the real
+   viewport even on browsers where 100dvh isn't fully reliable.
+============================================================ */
+function setViewportHeightVar() {
+  document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+}
+setViewportHeightVar();
+window.addEventListener('resize', setViewportHeightVar);
+window.addEventListener('orientationchange', () => setTimeout(setViewportHeightVar, 100));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', setViewportHeightVar);
+}
+
 /* ============================================================
    QUESTIONS DATA
    Each entry:
