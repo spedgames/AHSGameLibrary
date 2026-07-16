@@ -35,7 +35,7 @@
     "description": "Which zone does the emotion or behavior belong to?",
     "creatorName": "Teacher Joan",
     "category": "SEL",
-    "compatibility": ["desktop"],
+    "compatibility": ["desktop", "tablet", "mobile"],
     "tags": ["featured", "zones of regulation", "emotions", "behaviour"],
     "uploadDate": "2026-07-11"
   },
