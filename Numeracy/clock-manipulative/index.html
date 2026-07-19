@@ -235,7 +235,7 @@
   <div id="toolbar">
     <h1><span class="dot"></span>Clock Workshop</h1>
     <button id="addClockBtn">+ Add clock</button>
-    <div class="hint">Drag a hand to set the time. Drag the clock face to move the clock. Pinch, scroll, or use the +/- buttons to zoom the canvas.</div>
+    <div class="hint">Drag a hand to set the time. Drag the clockface to move a clock. Pinch, scroll, or use the +/- buttons to zoom the canvas.</div>
   </div>
 
   <div id="workspace">
@@ -330,7 +330,7 @@
   }
 
   workspace.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.clockCard')) return;
+    if (e.target.closest('.clockCard') || e.target.closest('#zoomControls')) return;
     try { workspace.setPointerCapture(e.pointerId); } catch(err){}
     activePointers.set(e.pointerId, workspacePoint(e));
     if (activePointers.size === 1){
@@ -434,11 +434,11 @@
     const minutePoly = `${CX},${CY-120} ${CX-10},${CY-16} ${CX+10},${CY-16}`;
     return `
       <g class="hand hourHand" data-hand="hour">
-        <polygon points="${hourPoly}" fill="var(--pink)"/>
+        <polygon class="handShape" points="${hourPoly}" fill="var(--pink)"/>
         <polygon points="${hourPoly}" fill="var(--pink)" opacity="0" pointer-events="fill" class="hitArea" transform="scale(1.6)" transform-origin="${CX}px ${CY}px"/>
       </g>
       <g class="hand minuteHand" data-hand="minute">
-        <polygon points="${minutePoly}" fill="var(--blue)"/>
+        <polygon class="handShape" points="${minutePoly}" fill="var(--blue)"/>
         <polygon points="${minutePoly}" fill="var(--blue)" opacity="0" pointer-events="fill" class="hitArea" transform="scale(1.6)" transform-origin="${CX}px ${CY}px"/>
       </g>
       <g class="hub">
@@ -455,7 +455,9 @@
       minuteIndex: 0,
       geared: true,
       showDigital: true,
-      minuteMode: '5'
+      minuteMode: '5',
+      colorHands: true,
+      snapFive: false
     };
 
     const card = document.createElement('div');
@@ -481,6 +483,14 @@
             <span>Digital clock</span>
             <button class="switch on" data-toggle="digital"></button>
           </div>
+          <div class="toggleRow">
+            <span>Colour-coded hands</span>
+            <button class="switch on" data-toggle="colorHands"></button>
+          </div>
+          <div class="toggleRow">
+            <span>Snap to 5 minutes</span>
+            <button class="switch" data-toggle="snapFive"></button>
+          </div>
           <div class="minuteModeBlock">
             <span>Minute numbers</span>
             <div class="segmented" data-segmented="minuteMode">
@@ -500,6 +510,8 @@
     const svg = card.querySelector('svg.clockFace');
     const hourHandG = card.querySelector('.hourHand');
     const minuteHandG = card.querySelector('.minuteHand');
+    const hourHandShape = hourHandG.querySelector('.handShape');
+    const minuteHandShape = minuteHandG.querySelector('.handShape');
     const digitalEl = card.querySelector('.digitalReadout');
     const minuteNumberEls = card.querySelectorAll('.minuteNumbers text');
     const removeBtn = card.querySelector('.removeBtn');
@@ -508,7 +520,9 @@
     const minuteModeBtns = card.querySelectorAll('[data-segmented="minuteMode"] button');
     const switches = {
       geared: card.querySelector('[data-toggle="geared"]'),
-      digital: card.querySelector('[data-toggle="digital"]')
+      digital: card.querySelector('[data-toggle="digital"]'),
+      colorHands: card.querySelector('[data-toggle="colorHands"]'),
+      snapFive: card.querySelector('[data-toggle="snapFive"]')
     };
 
     function render(){
@@ -532,8 +546,14 @@
         el.style.display = visible ? '' : 'none';
       });
 
+      const neutral = '#5A5652';
+      hourHandShape.setAttribute('fill', state.colorHands ? 'var(--pink)' : neutral);
+      minuteHandShape.setAttribute('fill', state.colorHands ? 'var(--blue)' : neutral);
+
       switches.geared.classList.toggle('on', state.geared);
       switches.digital.classList.toggle('on', state.showDigital);
+      switches.colorHands.classList.toggle('on', state.colorHands);
+      switches.snapFive.classList.toggle('on', state.snapFive);
       minuteModeBtns.forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-value') === state.minuteMode);
       });
@@ -541,6 +561,8 @@
 
     switches.geared.addEventListener('click', () => { state.geared = !state.geared; render(); });
     switches.digital.addEventListener('click', () => { state.showDigital = !state.showDigital; render(); });
+    switches.colorHands.addEventListener('click', () => { state.colorHands = !state.colorHands; render(); });
+    switches.snapFive.addEventListener('click', () => { state.snapFive = !state.snapFive; render(); });
     minuteModeBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         state.minuteMode = btn.getAttribute('data-value');
@@ -589,11 +611,15 @@
       });
     })();
 
-    function nearestFiveMinuteIndex(deg){
-      const raw = deg / 6;
-      let idx = Math.round(raw/5)*5;
-      if (idx >= 60) idx = 0;
-      return idx;
+    // Returns a raw minute value (may be 60, uncapped) so callers can detect hour wrap.
+    // When snapFive is on, values within 1.5 minutes of a 5-minute mark snap to it;
+    // otherwise it rounds to the nearest whole minute as usual.
+    function snapMinuteRaw(rawMinutes, snapFive){
+      if (snapFive){
+        const nearestFive = Math.round(rawMinutes / 5) * 5;
+        if (Math.abs(rawMinutes - nearestFive) <= 1.5) return nearestFive;
+      }
+      return Math.round(rawMinutes);
     }
     function nearestHourIndex(deg){
       let idx = Math.round(deg/30) % 12;
@@ -613,12 +639,15 @@
         const deg = angleFromCenter(e.clientX, e.clientY, svg);
 
         if (kind === 'minute'){
-          const newMinuteIndex = nearestFiveMinuteIndex(deg);
+          let newMinuteIndex = snapMinuteRaw(deg / 6, state.snapFive);
+          if (newMinuteIndex >= 60) newMinuteIndex = 0;
+          if (newMinuteIndex < 0) newMinuteIndex += 60;
           if (state.geared){
             const oldIdx = state.minuteIndex;
-            if (oldIdx >= 45 && newMinuteIndex <= 10){
+            const delta = newMinuteIndex - oldIdx;
+            if (delta < -30){
               state.hourIndex = (state.hourIndex + 1) % 12;
-            } else if (oldIdx <= 10 && newMinuteIndex >= 45){
+            } else if (delta > 30){
               state.hourIndex = (state.hourIndex - 1 + 12) % 12;
             }
           }
@@ -629,7 +658,7 @@
             let hourIdx = Math.floor(rawHour) % 12;
             if (hourIdx < 0) hourIdx += 12;
             let frac = rawHour - Math.floor(rawHour);
-            let minIdx = Math.round((frac*60)/5)*5;
+            let minIdx = snapMinuteRaw(frac*60, state.snapFive);
             if (minIdx >= 60){ minIdx = 0; hourIdx = (hourIdx+1)%12; }
             state.hourIndex = hourIdx;
             state.minuteIndex = minIdx;
