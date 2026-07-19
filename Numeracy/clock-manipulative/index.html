@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Clock Manipulative</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Nunito:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --face-yellow: #FBDE5E;
+    --pink: #E8195C;
+    --blue: #1C86D6;
+    --ink: #2b2b2b;
+    --paper: #FAFAF8;
+    --grid-dot: #E7E2D4;
+    --panel: #FFFFFF;
+    --panel-edge: #ECE7D8;
+    --accent-green: #2F7D5A;
+    --accent-green-dark: #245F45;
+    --font-numerals: 'Fredoka', Verdana, sans-serif;
+    --font-ui: 'Nunito', 'Segoe UI', sans-serif;
+    --toolbar-h: 60px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0;
+    height:100vh; height:100dvh;
+    font-family: var(--font-ui);
+    background: var(--paper);
+    color: var(--ink);
+    overflow:hidden;
+    overscroll-behavior:none;
+    -webkit-text-size-adjust:100%;
+  }
+  #app{
+    position:fixed; inset:0;
+    height:100vh; height:100dvh;
+    display:flex; flex-direction:column;
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  #toolbar{
+    flex: 0 0 auto;
+    z-index:50;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:12px 18px;
+    background: var(--panel);
+    border-bottom: 3px solid var(--panel-edge);
+  }
+  #toolbar h1{
+    font-size:19px; margin:0; letter-spacing:0.3px;
+    color: var(--ink);
+    display:flex; align-items:center; gap:10px;
+    font-family: var(--font-numerals);
+    font-weight:700;
+    white-space:nowrap;
+  }
+  #toolbar h1 .dot{
+    width:14px;height:14px;border-radius:50%;
+    background: var(--pink);
+    box-shadow: 6px 0 0 var(--blue);
+    margin-right:6px;
+    flex-shrink:0;
+  }
+  #addClockBtn{
+    background: var(--accent-green);
+    color:#fff; border:none; border-radius:10px;
+    padding:10px 18px; font-size:15px; font-weight:700;
+    font-family: var(--font-ui);
+    cursor:pointer; box-shadow: 0 4px 0 var(--accent-green-dark);
+    transition: transform 0.05s ease;
+    white-space:nowrap;
+  }
+  #addClockBtn:hover{ filter:brightness(1.05); }
+  #addClockBtn:active{ transform: translateY(3px); box-shadow: 0 1px 0 var(--accent-green-dark); }
+  .hint{
+    font-size:13px; color:#8a8371; flex:1; text-align:right; min-width:160px;
+  }
+  @media (max-width: 720px){
+    .hint{ display:none; }
+  }
+
+  #workspace{
+    position:relative;
+    flex: 1 1 auto;
+    min-height:0;
+    overflow:hidden;
+    touch-action:none;
+    background: var(--paper);
+  }
+  #zoomLayer{
+    position:absolute; top:0; left:0;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+  #canvas{
+    position:relative;
+    width:2400px; height:1600px;
+    background-image: radial-gradient(var(--grid-dot) 1.6px, transparent 1.6px);
+    background-size: 26px 26px;
+  }
+
+  #zoomControls{
+    position:absolute;
+    right: calc(16px + env(safe-area-inset-right));
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    z-index:40;
+    display:flex; flex-direction:column; align-items:stretch;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 14px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    overflow:hidden;
+  }
+  #zoomControls button{
+    border:none; background:#fff; width:44px; height:44px;
+    font-size:20px; font-weight:700; color:var(--ink);
+    cursor:pointer; font-family: var(--font-ui);
+  }
+  #zoomControls button:active{ background:#f1ecda; }
+  #zoomPercent{
+    font-size:11px; text-align:center; color:#8a8371; font-weight:700;
+    padding:4px 0; border-top:1px solid var(--panel-edge); border-bottom:1px solid var(--panel-edge);
+  }
+  #zoomResetBtn{ font-size:14px; }
+
+  .clockCard{
+    position:absolute;
+    width:260px;
+    user-select:none;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .clockCard.dragging{ z-index:10; }
+
+  .clockStage{
+    position:relative;
+    width:100%;
+  }
+
+  .iconBtn{
+    position:absolute; top:2px;
+    width:32px; height:32px; border-radius:50%;
+    background:#fff; border:1px solid var(--panel-edge);
+    box-shadow:0 2px 6px rgba(0,0,0,0.18);
+    cursor:pointer; font-size:15px;
+    display:flex; align-items:center; justify-content:center;
+    z-index:6; padding:0;
+  }
+  .iconBtn:hover{ background:#faf7ee; }
+  .gearBtn{ right:2px; color:#5a5344; }
+  .removeBtn{ left:2px; color:#b23; font-size:14px; }
+
+  .settingsPopover{
+    position:absolute; top:38px; right:2px;
+    background:#fff; border:1px solid var(--panel-edge);
+    border-radius:14px; padding:12px 14px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.2);
+    display:none; flex-direction:column; gap:9px;
+    width:180px; z-index:7;
+  }
+  .settingsPopover.open{ display:flex; }
+
+  svg.clockFace{
+    display:block; width:100%; height:auto; touch-action:none;
+    filter: drop-shadow(0 10px 14px rgba(0,0,0,0.28)) drop-shadow(0 2px 0 rgba(0,0,0,0.08));
+    cursor: grab;
+  }
+  svg.clockFace.dragging{ cursor: grabbing; }
+
+  .hand{ cursor: grab; }
+  .hand:active{ cursor: grabbing; }
+
+  .digitalReadout{
+    margin-top:14px;
+    background: #1b1b1b;
+    color: #FFDD55;
+    font-family: 'Fredoka', monospace;
+    font-weight:700;
+    font-size: 26px;
+    letter-spacing: 2px;
+    text-align:center;
+    border-radius: 10px;
+    padding: 6px 18px;
+    border: 3px solid #0d0d0d;
+  }
+
+  .toggleRow{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:13px; font-weight:700; color:#4a4436;
+  }
+  .switch{
+    position:relative; width:44px; height:23px;
+    background:#ddd4bb; border-radius:999px; cursor:pointer;
+    border:none; flex-shrink:0;
+    transition: background 0.15s ease;
+  }
+  .switch::after{
+    content:''; position:absolute; top:3px; left:3px;
+    width:17px; height:17px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.3);
+    transition: transform 0.15s ease;
+  }
+  .switch.on{ background: var(--accent-green); }
+  .switch.on::after{ transform: translateX(21px); }
+
+  .minuteModeBlock{
+    display:flex; flex-direction:column; gap:6px;
+    font-size:13px; font-weight:700; color:#4a4436;
+  }
+  .segmented{
+    display:flex; background:#f1ecda; border-radius:8px; padding:3px; gap:3px;
+  }
+  .segmented button{
+    flex:1; border:none; background:transparent; border-radius:6px;
+    padding:5px 0; font-size:12px; font-weight:700; color:#8a8371;
+    cursor:pointer; font-family: var(--font-ui);
+  }
+  .segmented button.active{
+    background:#fff; color:var(--ink);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="toolbar">
+    <h1><span class="dot"></span>Clock Workshop</h1>
+    <button id="addClockBtn">+ Add clock</button>
+    <div class="hint">Drag a hand to set the time. Drag the clock face to move the clock. Pinch, scroll, or use the +/- buttons to zoom the canvas.</div>
+  </div>
+
+  <div id="workspace">
+    <div id="zoomLayer">
+      <div id="canvas"></div>
+    </div>
+    <div id="zoomControls">
+      <button id="zoomInBtn" title="Zoom in">+</button>
+      <div id="zoomPercent">100%</div>
+      <button id="zoomOutBtn" title="Zoom out">−</button>
+      <button id="zoomResetBtn" title="Reset view">⤢</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  const canvas = document.getElementById('canvas');
+  const workspace = document.getElementById('workspace');
+  const zoomLayer = document.getElementById('zoomLayer');
+  const zoomPercentEl = document.getElementById('zoomPercent');
+  let clockCount = 0;
+  let topZ = 1;
+
+  const CX = 150, CY = 150;
+
+  // ---------------- pan / zoom engine ----------------
+  const MIN_SCALE = 0.4, MAX_SCALE = 2.5;
+  const view = { scale: 1, x: 0, y: 0 };
+
+  function applyView(){
+    zoomLayer.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
+    zoomPercentEl.textContent = Math.round(view.scale * 100) + '%';
+  }
+
+  function zoomAt(screenX, screenY, newScaleRaw){
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, newScaleRaw));
+    const worldX = (screenX - view.x) / view.scale;
+    const worldY = (screenY - view.y) / view.scale;
+    view.scale = newScale;
+    view.x = screenX - worldX * newScale;
+    view.y = screenY - worldY * newScale;
+    applyView();
+  }
+
+  function workspacePoint(e){
+    const rect = workspace.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  document.getElementById('zoomInBtn').addEventListener('click', () => {
+    const rect = workspace.getBoundingClientRect();
+    zoomAt(rect.width/2, rect.height/2, view.scale * 1.25);
+  });
+  document.getElementById('zoomOutBtn').addEventListener('click', () => {
+    const rect = workspace.getBoundingClientRect();
+    zoomAt(rect.width/2, rect.height/2, view.scale / 1.25);
+  });
+  document.getElementById('zoomResetBtn').addEventListener('click', () => {
+    view.scale = 1; view.x = 0; view.y = 0;
+    applyView();
+  });
+
+  workspace.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const p = workspacePoint(e);
+    const factor = Math.exp(-e.deltaY * 0.0015);
+    zoomAt(p.x, p.y, view.scale * factor);
+  }, { passive:false });
+
+  // Safari-specific pinch gesture events (fallback safety net)
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
+
+  // background pan + two-finger pinch (only when the pointer isn't on a clock)
+  const activePointers = new Map();
+  let panState = null;
+  let pinchState = null;
+
+  function beginPinch(){
+    const pts = [...activePointers.values()];
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    const midX = (pts[0].x + pts[1].x) / 2, midY = (pts[0].y + pts[1].y) / 2;
+    pinchState = {
+      initialDist: dist || 1,
+      initialScale: view.scale,
+      anchorWorldX: (midX - view.x) / view.scale,
+      anchorWorldY: (midY - view.y) / view.scale
+    };
+    panState = null;
+  }
+
+  workspace.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.clockCard')) return;
+    try { workspace.setPointerCapture(e.pointerId); } catch(err){}
+    activePointers.set(e.pointerId, workspacePoint(e));
+    if (activePointers.size === 1){
+      const p = workspacePoint(e);
+      panState = { startX: p.x, startY: p.y, startViewX: view.x, startViewY: view.y };
+      pinchState = null;
+    } else if (activePointers.size === 2){
+      beginPinch();
+    }
+  });
+
+  workspace.addEventListener('pointermove', (e) => {
+    if (!activePointers.has(e.pointerId)) return;
+    activePointers.set(e.pointerId, workspacePoint(e));
+
+    if (activePointers.size >= 2 && pinchState){
+      const pts = [...activePointers.values()];
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const midX = (pts[0].x + pts[1].x) / 2, midY = (pts[0].y + pts[1].y) / 2;
+      const scaleFactor = dist / pinchState.initialDist;
+      const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, pinchState.initialScale * scaleFactor));
+      view.scale = newScale;
+      view.x = midX - pinchState.anchorWorldX * newScale;
+      view.y = midY - pinchState.anchorWorldY * newScale;
+      applyView();
+    } else if (activePointers.size === 1 && panState){
+      const p = workspacePoint(e);
+      view.x = panState.startViewX + (p.x - panState.startX);
+      view.y = panState.startViewY + (p.y - panState.startY);
+      applyView();
+    }
+  });
+
+  function endPointer(e){
+    if (!activePointers.has(e.pointerId)) return;
+    activePointers.delete(e.pointerId);
+    if (activePointers.size === 1){
+      const remaining = [...activePointers.values()][0];
+      panState = { startX: remaining.x, startY: remaining.y, startViewX: view.x, startViewY: view.y };
+      pinchState = null;
+    } else if (activePointers.size === 0){
+      panState = null; pinchState = null;
+    }
+  }
+  workspace.addEventListener('pointerup', endPointer);
+  workspace.addEventListener('pointercancel', endPointer);
+
+  applyView();
+
+  // ---------------- clock geometry helpers ----------------
+  function angleFromCenter(clientX, clientY, svgEl){
+    const rect = svgEl.getBoundingClientRect();
+    const scale = 300 / rect.width;
+    const x = (clientX - rect.left) * scale - CX;
+    const y = (clientY - rect.top) * scale - CY;
+    let deg = Math.atan2(y, x) * 180/Math.PI + 90;
+    if (deg < 0) deg += 360;
+    return deg;
+  }
+
+  function polar(radius, deg){
+    const rad = (deg - 90) * Math.PI/180;
+    return { x: CX + radius*Math.cos(rad), y: CY + radius*Math.sin(rad) };
+  }
+
+  function buildFaceSVG(uid){
+    let s = '';
+    s += `<circle cx="${CX}" cy="${CY}" r="145" fill="var(--face-yellow)"/>`;
+
+    // 60 uniform blue ticks (short)
+    for(let i=0;i<60;i++){
+      const deg = i*6;
+      const outer = polar(138, deg);
+      const inner = polar(133, deg);
+      s += `<line x1="${outer.x}" y1="${outer.y}" x2="${inner.x}" y2="${inner.y}" stroke="var(--blue)" stroke-width="2.4" stroke-linecap="round"/>`;
+    }
+
+    // minute-ring numbers (00,5,10,...55)
+    s += `<g class="minuteNumbers">`;
+    for(let i=0;i<12;i++){
+      const val = i*5;
+      const label = val === 0 ? '00' : String(val);
+      const deg = i*30;
+      const pos = polar(118, deg);
+      s += `<text data-value="${val}" x="${pos.x}" y="${pos.y}" font-family="Fredoka" font-size="13" font-weight="700" fill="var(--blue)" text-anchor="middle" dominant-baseline="middle">${label}</text>`;
+    }
+    s += `</g>`;
+
+    // hour numbers 1-12
+    for(let i=1;i<=12;i++){
+      const deg = i*30;
+      const pos = polar(92, deg);
+      s += `<text x="${pos.x}" y="${pos.y+3}" font-family="Fredoka" font-size="30" font-weight="700" fill="var(--pink)" text-anchor="middle" dominant-baseline="middle">${i}</text>`;
+    }
+
+    return s;
+  }
+
+  function buildHandsSVG(){
+    const hourPoly = `${CX},${CY-86} ${CX-9},${CY-16} ${CX+9},${CY-16}`;
+    const minutePoly = `${CX},${CY-120} ${CX-10},${CY-16} ${CX+10},${CY-16}`;
+    return `
+      <g class="hand hourHand" data-hand="hour">
+        <polygon points="${hourPoly}" fill="var(--pink)"/>
+        <polygon points="${hourPoly}" fill="var(--pink)" opacity="0" pointer-events="fill" class="hitArea" transform="scale(1.6)" transform-origin="${CX}px ${CY}px"/>
+      </g>
+      <g class="hand minuteHand" data-hand="minute">
+        <polygon points="${minutePoly}" fill="var(--blue)"/>
+        <polygon points="${minutePoly}" fill="var(--blue)" opacity="0" pointer-events="fill" class="hitArea" transform="scale(1.6)" transform-origin="${CX}px ${CY}px"/>
+      </g>
+      <g class="hub">
+        <circle cx="${CX}" cy="${CY}" r="15" fill="#ffffff" stroke="var(--blue)" stroke-width="4"/>
+      </g>`;
+  }
+
+  function createClock(x, y){
+    clockCount++;
+    const uid = clockCount;
+
+    const state = {
+      hourIndex: 3,
+      minuteIndex: 0,
+      geared: true,
+      showDigital: true,
+      minuteMode: '5'
+    };
+
+    const card = document.createElement('div');
+    card.className = 'clockCard';
+    card.style.left = x + 'px';
+    card.style.top = y + 'px';
+    card.style.zIndex = ++topZ;
+
+    card.innerHTML = `
+      <div class="clockStage">
+        <svg class="clockFace" viewBox="0 0 300 300">
+          ${buildFaceSVG(uid)}
+          ${buildHandsSVG()}
+        </svg>
+        <button class="iconBtn removeBtn" title="Remove clock">✕</button>
+        <button class="iconBtn gearBtn" title="Settings">⚙</button>
+        <div class="settingsPopover">
+          <div class="toggleRow">
+            <span>Geared hands</span>
+            <button class="switch on" data-toggle="geared"></button>
+          </div>
+          <div class="toggleRow">
+            <span>Digital clock</span>
+            <button class="switch on" data-toggle="digital"></button>
+          </div>
+          <div class="minuteModeBlock">
+            <span>Minute numbers</span>
+            <div class="segmented" data-segmented="minuteMode">
+              <button data-value="off">Off</button>
+              <button data-value="5">5</button>
+              <button data-value="15">15</button>
+              <button data-value="30">30</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="digitalReadout">12:00</div>
+    `;
+
+    canvas.appendChild(card);
+
+    const svg = card.querySelector('svg.clockFace');
+    const hourHandG = card.querySelector('.hourHand');
+    const minuteHandG = card.querySelector('.minuteHand');
+    const digitalEl = card.querySelector('.digitalReadout');
+    const minuteNumberEls = card.querySelectorAll('.minuteNumbers text');
+    const removeBtn = card.querySelector('.removeBtn');
+    const gearBtn = card.querySelector('.gearBtn');
+    const popover = card.querySelector('.settingsPopover');
+    const minuteModeBtns = card.querySelectorAll('[data-segmented="minuteMode"] button');
+    const switches = {
+      geared: card.querySelector('[data-toggle="geared"]'),
+      digital: card.querySelector('[data-toggle="digital"]')
+    };
+
+    function render(){
+      const minuteDeg = state.minuteIndex * 6;
+      minuteHandG.setAttribute('transform', `rotate(${minuteDeg} ${CX} ${CY})`);
+
+      const creep = state.geared ? (state.minuteIndex/60)*30 : 0;
+      const hourDeg = state.hourIndex*30 + creep;
+      hourHandG.setAttribute('transform', `rotate(${hourDeg} ${CX} ${CY})`);
+
+      const displayHour = state.hourIndex === 0 ? 12 : state.hourIndex;
+      const mm = String(state.minuteIndex).padStart(2,'0');
+      digitalEl.textContent = `${displayHour}:${mm}`;
+
+      digitalEl.style.display = state.showDigital ? 'block' : 'none';
+
+      const step = state.minuteMode === 'off' ? null : parseInt(state.minuteMode, 10);
+      minuteNumberEls.forEach(el => {
+        const val = parseInt(el.getAttribute('data-value'), 10);
+        const visible = step !== null && val % step === 0;
+        el.style.display = visible ? '' : 'none';
+      });
+
+      switches.geared.classList.toggle('on', state.geared);
+      switches.digital.classList.toggle('on', state.showDigital);
+      minuteModeBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-value') === state.minuteMode);
+      });
+    }
+
+    switches.geared.addEventListener('click', () => { state.geared = !state.geared; render(); });
+    switches.digital.addEventListener('click', () => { state.showDigital = !state.showDigital; render(); });
+    minuteModeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.minuteMode = btn.getAttribute('data-value');
+        render();
+      });
+    });
+    removeBtn.addEventListener('click', () => { card.remove(); });
+
+    gearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      popover.classList.toggle('open');
+    });
+    document.addEventListener('pointerdown', (e) => {
+      if (!popover.classList.contains('open')) return;
+      if (e.target === gearBtn || popover.contains(e.target)) return;
+      popover.classList.remove('open');
+    });
+
+    // drag whole clock by clicking the face background (not the hands)
+    (function enableCardDrag(){
+      let dragging = false, startX=0, startY=0, origX=0, origY=0;
+      svg.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.hand')) return;
+        dragging = true;
+        svg.classList.add('dragging');
+        card.classList.add('dragging');
+        card.style.zIndex = ++topZ;
+        startX = e.clientX; startY = e.clientY;
+        origX = parseFloat(card.style.left); origY = parseFloat(card.style.top);
+        svg.setPointerCapture(e.pointerId);
+        e.stopPropagation();
+      });
+      svg.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = (e.clientX - startX) / view.scale;
+        const dy = (e.clientY - startY) / view.scale;
+        card.style.left = (origX + dx) + 'px';
+        card.style.top = (origY + dy) + 'px';
+        e.stopPropagation();
+      });
+      svg.addEventListener('pointerup', (e) => {
+        dragging = false;
+        svg.classList.remove('dragging');
+        card.classList.remove('dragging');
+        e.stopPropagation();
+      });
+    })();
+
+    function nearestFiveMinuteIndex(deg){
+      const raw = deg / 6;
+      let idx = Math.round(raw/5)*5;
+      if (idx >= 60) idx = 0;
+      return idx;
+    }
+    function nearestHourIndex(deg){
+      let idx = Math.round(deg/30) % 12;
+      if (idx < 0) idx += 12;
+      return idx;
+    }
+
+    function setupHandDrag(handG, kind){
+      let dragging = false;
+      handG.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        handG.setPointerCapture(e.pointerId);
+        e.stopPropagation();
+      });
+      handG.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const deg = angleFromCenter(e.clientX, e.clientY, svg);
+
+        if (kind === 'minute'){
+          const newMinuteIndex = nearestFiveMinuteIndex(deg);
+          if (state.geared){
+            const oldIdx = state.minuteIndex;
+            if (oldIdx >= 45 && newMinuteIndex <= 10){
+              state.hourIndex = (state.hourIndex + 1) % 12;
+            } else if (oldIdx <= 10 && newMinuteIndex >= 45){
+              state.hourIndex = (state.hourIndex - 1 + 12) % 12;
+            }
+          }
+          state.minuteIndex = newMinuteIndex;
+        } else {
+          if (state.geared){
+            const rawHour = deg/30;
+            let hourIdx = Math.floor(rawHour) % 12;
+            if (hourIdx < 0) hourIdx += 12;
+            let frac = rawHour - Math.floor(rawHour);
+            let minIdx = Math.round((frac*60)/5)*5;
+            if (minIdx >= 60){ minIdx = 0; hourIdx = (hourIdx+1)%12; }
+            state.hourIndex = hourIdx;
+            state.minuteIndex = minIdx;
+          } else {
+            state.hourIndex = nearestHourIndex(deg);
+          }
+        }
+        render();
+        e.stopPropagation();
+      });
+      handG.addEventListener('pointerup', (e) => { dragging = false; e.stopPropagation(); });
+    }
+
+    setupHandDrag(minuteHandG, 'minute');
+    setupHandDrag(hourHandG, 'hour');
+
+    render();
+    return card;
+  }
+
+  let placeIndex = 0;
+  document.getElementById('addClockBtn').addEventListener('click', () => {
+    const col = placeIndex % 4;
+    const row = Math.floor(placeIndex/4);
+    createClock(40 + col*300 + (row%3)*30, 40 + row*430);
+    placeIndex++;
+  });
+
+  createClock(60, 60);
+
+})();
+</script>
+</body>
+</html>
