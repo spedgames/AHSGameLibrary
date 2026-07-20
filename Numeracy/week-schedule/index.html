@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Weekly Schedule Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+        .game-container {
+            max-height: 96vh;
+            max-height: 96dvh;
+        }
+        button:active {
+            transform: scale(0.96);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center p-3 sm:p-5 antialiased text-slate-800 selection:bg-transparent">
+
+    <div class="game-container w-full max-w-5xl bg-white rounded-3xl shadow-md border-2 border-slate-200/60 p-5 flex flex-col justify-between transition-all duration-300 aspect-[16/10] md:aspect-auto overflow-hidden">
+        
+        <!-- START SCREEN -->
+        <div id="start-screen" class="flex-1 flex flex-col justify-center items-center text-center space-y-8">
+            <div>
+                <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">Schedule Quiz! 🎉</h1>
+                <p class="text-lg sm:text-xl text-slate-500 mt-2 font-medium">Pick a game mode to start playing!</p>
+            </div>
+            <div class="flex items-center gap-6 w-full max-w-2xl pt-2">
+                <button onclick="startGame('school')" class="flex-1 py-6 px-6 bg-indigo-600 hover:bg-indigo-700 text-white text-2xl font-bold rounded-2xl shadow-lg transition-all focus:outline-none">
+                    🏫 School Days
+                </button>
+                <button onclick="startGame('activities')" class="flex-1 py-6 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-2xl font-bold rounded-2xl shadow-lg transition-all focus:outline-none">
+                    🎨 Activities
+                </button>
+            </div>
+        </div>
+
+        <!-- GAME SCREEN -->
+        <div id="game-screen" class="hidden flex-1 flex flex-col justify-between h-full min-h-0 space-y-2">
+            <!-- Top Status Bar -->
+            <div class="flex items-center justify-between border-b-2 border-slate-100 pb-2">
+                <span id="mode-badge" class="px-4 py-1.5 text-sm font-bold rounded-xl tracking-wide uppercase"></span>
+                <span id="progress-text" class="text-sm font-bold text-slate-400 uppercase tracking-widest">Question 1 of 5</span>
+            </div>
+
+            <!-- Core Split Layout -->
+            <div class="flex-1 flex flex-row items-center gap-6 min-h-0 overflow-hidden my-1">
+                <!-- Left: Visual Asset -->
+                <div class="w-1/2 h-full bg-slate-50 border-2 border-slate-100 rounded-2xl overflow-hidden flex items-center justify-center relative shadow-inner">
+                    <img id="question-image" src="" alt="Activity illustration" class="h-full w-full object-cover">
+                </div>
+
+                <!-- Right: Content & Large Question Blocks -->
+                <div class="w-1/2 flex flex-col justify-center items-center h-full space-y-4 px-2 min-h-0">
+                    <h2 id="question-text" class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 text-center tracking-tight leading-tight max-w-full block break-words">
+                        <!-- Injected via JS -->
+                    </h2>
+                    
+                    <!-- Dynamic Feedback Line -->
+                    <div id="feedback" class="text-center text-xl sm:text-2xl font-extrabold min-h-[2.5rem] flex items-center justify-center transition-all duration-150"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Answer Options -->
+            <div id="options-container" class="flex flex-row gap-3 w-full justify-center pt-3 border-t-2 border-slate-100">
+                <!-- Buttons injected here -->
+            </div>
+        </div>
+
+        <!-- COMPLETE SCREEN -->
+        <div id="complete-screen" class="hidden flex-1 flex flex-col justify-center items-center text-center space-y-6 py-4">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full text-green-600 animate-bounce">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <div>
+                <h2 class="text-4xl font-extrabold text-slate-900">Awesome Job! 🌟</h2>
+                <p class="text-lg text-slate-500 mt-2 font-medium">You finished the entire schedule quiz!</p>
+            </div>
+            <button onclick="showStartScreen()" class="w-full max-w-md py-5 px-6 bg-slate-900 hover:bg-slate-800 text-white text-xl font-bold rounded-2xl shadow-md transition-all focus:outline-none">
+                Play Again 🔄
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        
+        const schoolSchedule = {
+            'Monday': true, 'Tuesday': true, 'Wednesday': true, 'Thursday': true, 'Friday': true,
+            'Saturday': false, 'Sunday': false
+        };
+
+        const activitySchedule = [
+            { name: 'PD at MPH', targetDays: ['Tuesday', 'Wednesday'], image: 'assets/PD.png' },
+            { name: 'Swimming or Water Play', targetDays: ['Thursday'], image: 'assets/swimming.png' },
+            { name: 'Art Room', targetDays: ['Friday'], image: 'assets/artroom.png' }
+        ];
+
+        let currentMode = '';
+        let currentQuestionIndex = 0;
+        let questions = [];
+
+        function showStartScreen() {
+            document.getElementById('start-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('complete-screen').classList.add('hidden');
+        }
+
+        function startGame(mode) {
+            currentMode = mode;
+            currentQuestionIndex = 0;
+            
+            const badge = document.getElementById('mode-badge');
+            if (mode === 'school') {
+                badge.innerText = '🏫 School Days';
+                badge.className = 'px-4 py-1.5 text-sm font-bold rounded-xl bg-indigo-50 text-indigo-700';
+                generateSchoolQuestions();
+            } else {
+                badge.innerText = '🎨 Activities';
+                badge.className = 'px-4 py-1.5 text-sm font-bold rounded-xl bg-emerald-50 text-emerald-700';
+                generateActivityQuestions();
+            }
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            clearFeedback();
+            renderQuestion();
+        }
+
+        function generateSchoolQuestions() {
+            let uniqueDays = [...DAYS].sort(() => 0.5 - Math.random());
+            questions = uniqueDays.slice(0, 5).map(day => ({
+                day: day,
+                correctAnswers: [schoolSchedule[day] ? 'Yes' : 'No']
+            }));
+        }
+
+        function generateActivityQuestions() {
+            questions = [];
+            let lastItemName = '';
+
+            for (let i = 0; i < 5; i++) {
+                let availableItems = activitySchedule.filter(item => item.name !== lastItemName);
+                if (availableItems.length === 0) availableItems = activitySchedule;
+
+                const item = availableItems[Math.floor(Math.random() * availableItems.length)];
+                lastItemName = item.name;
+
+                // Pick ONE active correct answer day for this specific turn
+                const selectedCorrectDay = item.targetDays[Math.floor(Math.random() * item.targetDays.length)];
+                
+                // Which days are completely wrong for this whole activity item?
+                const absoluteWrongDays = DAYS.filter(d => !item.targetDays.includes(d));
+
+                // Grab a clean pool of proximity candidates close to our target day
+                const targetIdx = DAYS.indexOf(selectedCorrectDay);
+                let proximityWrongPool = [];
+                
+                // Check all possible offsets (-3 to +3) to find valid wrong days
+                for (let offset = -3; offset <= 3; offset++) {
+                    let loopIdx = (targetIdx + offset) % 7;
+                    if (loopIdx < 0) loopIdx += 7;
+                    let dayCandidate = DAYS[loopIdx];
+                    
+                    if (absoluteWrongDays.includes(dayCandidate) && !proximityWrongPool.includes(dayCandidate)) {
+                        proximityWrongPool.push(dayCandidate);
+                    }
+                }
+
+                // Pick exactly 3 unique wrong days from the proximity pool
+                let selectedWrongDays = proximityWrongPool.slice(0, 3);
+                
+                // If proximity pool didn't give us enough due to index clipping, fill from total wrong pool
+                while (selectedWrongDays.length < 3) {
+                    let fallback = absoluteWrongDays.find(d => !selectedWrongDays.includes(d));
+                    if (fallback) selectedWrongDays.push(fallback);
+                }
+
+                // Merge our 1 correct day and 3 unique wrong days, then shuffle the 4 elements
+                const completeOptions = [selectedCorrectDay, ...selectedWrongDays].sort(() => 0.5 - Math.random());
+
+                questions.push({
+                    displayName: item.name,
+                    correctAnswers: item.targetDays, 
+                    image: item.image,
+                    options: completeOptions
+                });
+            }
+        }
+
+        function renderQuestion() {
+            clearFeedback();
+            const q = questions[currentQuestionIndex];
+            document.getElementById('progress-text').innerText = `Question ${currentQuestionIndex + 1} of 5`;
+
+            const imgElement = document.getElementById('question-image');
+            const textElement = document.getElementById('question-text');
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            if (currentMode === 'school') {
+                imgElement.src = 'assets/school.png';
+                textElement.innerText = `Do you have school on ${q.day}?`;
+                
+                const yesBtn = createOptionButton('Yes', q.correctAnswers.includes('Yes'), 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent text-xl sm:text-2xl py-5 px-10 flex-1');
+                const noBtn = createOptionButton('No', q.correctAnswers.includes('No'), 'bg-rose-500 hover:bg-rose-600 text-white border-transparent text-xl sm:text-2xl py-5 px-10 flex-1');
+                
+                optionsContainer.appendChild(yesBtn);
+                optionsContainer.appendChild(noBtn);
+            } else {
+                imgElement.src = q.image;
+                textElement.innerText = `Which day is ${q.displayName}?`;
+                
+                q.options.forEach(day => {
+                    const isCorrect = q.correctAnswers.includes(day);
+                    const dayBtn = createOptionButton(day, isCorrect, 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300/80 text-base sm:text-lg md:text-xl py-4 px-2 flex-1 text-center justify-center');
+                    optionsContainer.appendChild(dayBtn);
+                });
+            }
+        }
+
+        function createOptionButton(text, isCorrect, baseClasses) {
+            const btn = document.createElement('button');
+            btn.innerText = text;
+            btn.className = `${baseClasses} font-bold border-2 rounded-2xl transition-all duration-150 focus:outline-none flex items-center justify-center shadow-sm tracking-wide whitespace-nowrap`;
+            
+            btn.dataset.isCorrect = isCorrect;
+            btn.dataset.originalClass = btn.className;
+
+            btn.onclick = () => handleAnswer(isCorrect, btn);
+            return btn;
+        }
+
+        function handleAnswer(isCorrect, clickedButton) {
+            const feedback = document.getElementById('feedback');
+            const buttons = document.getElementById('options-container').querySelectorAll('button');
+            
+            buttons.forEach(b => b.disabled = true);
+
+            if (isCorrect) {
+                clickedButton.className = "flex-1 py-4 sm:py-5 px-2 bg-amber-400 text-slate-900 font-extrabold rounded-2xl text-center justify-center border-transparent text-xl sm:text-2xl shadow-md transition-all duration-150";
+                feedback.innerText = "🌟 Correct! 🌟";
+                feedback.className = "text-center text-2xl font-extrabold text-amber-500 animate-bounce scale-110";
+
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < 5) {
+                        renderQuestion();
+                    } else {
+                        showCompleteScreen();
+                    }
+                }, 1200);
+            } else {
+                clickedButton.className = "flex-1 py-4 sm:py-5 px-2 bg-sky-500 text-white font-extrabold rounded-2xl text-center justify-center border-transparent text-xl sm:text-2xl shadow-md transition-all duration-150";
+                feedback.innerText = "💙 Try again! 💙";
+                feedback.className = "text-center text-2xl font-extrabold text-sky-500";
+                
+                setTimeout(() => {
+                    buttons.forEach(b => {
+                        b.disabled = false;
+                        b.className = b.dataset.originalClass;
+                    });
+                    clearFeedback();
+                }, 1200);
+            }
+        }
+
+        function clearFeedback() {
+            const feedback = document.getElementById('feedback');
+            feedback.innerText = "";
+            feedback.className = "text-center text-xl font-bold min-h-[2.5rem] flex items-center justify-center";
+        }
+
+        function showCompleteScreen() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('complete-screen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
